@@ -9,7 +9,7 @@
 
 // Sua InfiniteTag (sem o $). Com ela preenchida, o pagamento é pela InfinitePay
 // e a base aparece sozinha no mapa quando o Pix cai (Pix sem taxa).
-const INFINITE_TAG = '';
+const INFINITE_TAG = 'lumoyss';
 const SITE_URL = 'https://lumoyss.github.io/colonia/';
 
 const ABA_SOBREVIVENTES = 'Sobreviventes';
