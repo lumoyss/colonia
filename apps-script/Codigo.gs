@@ -7,6 +7,11 @@
  * clicar em "Executar" na função setup e depois em "Implantar".
  */
 
+// Sua InfiniteTag (sem o $). Com ela preenchida, o pagamento é pela InfinitePay
+// e a base aparece sozinha no mapa quando o Pix cai (Pix sem taxa).
+const INFINITE_TAG = '';
+const SITE_URL = 'https://lumoyss.github.io/colonia/';
+
 const ABA_SOBREVIVENTES = 'Sobreviventes';
 const ABA_IDEIAS = 'Ideias';
 const ABA_TERRENOS = 'Terrenos';
@@ -63,6 +68,8 @@ function doPost(e) {
   let dados;
   try { dados = JSON.parse(e.postData.contents); } catch (err) { return json_({ ok: false, erro: 'Dados inválidos.' }); }
   if (dados.site) return json_({ ok: true, numero: 0 }); // armadilha para robôs
+  // Aviso automático da InfinitePay de que um pagamento caiu
+  if (dados.invoice_slug && dados.order_nsu) dados = { acao: 'confirmar', order_nsu: dados.order_nsu, transaction_nsu: dados.transaction_nsu, slug: dados.invoice_slug };
 
   const trava = LockService.getScriptLock();
   trava.waitLock(15000);
@@ -73,6 +80,7 @@ function doPost(e) {
     else if (dados.acao === 'ideia') r = ideia_(ss, dados);
     else if (dados.acao === 'terreno') r = terreno_(ss, dados);
     else if (dados.acao === 'verificar') r = verificar_(ss, String(dados.codigo || ''));
+    else if (dados.acao === 'confirmar') r = confirmarInfinite_(ss, dados);
     else r = { ok: false, erro: 'Ação desconhecida.' };
     if (r.ok) CacheService.getScriptCache().remove('lista');
     return json_(r);
@@ -128,6 +136,26 @@ function terreno_(ss, d) {
   if (!codigo) return { ok: false, erro: 'Código inválido.' };
   if (!valor) return { ok: false, erro: 'Plano inválido.' };
 
+  // Com a InfinitePay ligada, cria um link de pagamento que volta para o site
+  if (INFINITE_TAG) {
+    const r = UrlFetchApp.fetch('https://api.checkout.infinitepay.io/links', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      payload: JSON.stringify({
+        handle: INFINITE_TAG,
+        order_nsu: codigo,
+        redirect_url: SITE_URL,
+        webhook_url: ScriptApp.getService().getUrl(),
+        items: [{ quantity: 1, price: Math.round(valor * 100), description: plano + ' - ' + lugar }]
+      })
+    });
+    let link = null;
+    try { link = JSON.parse(r.getContentText()).url; } catch (err) { Logger.log('InfinitePay: ' + r.getContentText()); }
+    if (link) {
+      ss.getSheetByName(ABA_TERRENOS).appendRow([codigo, new Date(), texto_(lugar), texto_(dono), instagram ? texto_('@' + instagram) : '', texto_(plano), valor, 'aguardando pagamento', 'infinitepay']);
+      return { ok: true, codigo: codigo, link: link };
+    }
+  }
+
   // Com Mercado Pago ligado, cria um Pix que se confirma sozinho (API de Orders).
   // Se o Mercado Pago falhar, o site usa o Pix da sua chave e você confirma à mão.
   let pix = null, mpId = '';
@@ -179,6 +207,32 @@ function verificarPendentes() {
   linhas_(ss.getSheetByName(ABA_TERRENOS)).forEach(function (l) {
     if (l[8] && String(l[7]).toLowerCase() !== 'pago' && new Date(l[1]).getTime() > limite) verificar_(ss, String(l[0]));
   });
+}
+
+/* ---------- Confirmação automática (InfinitePay) ---------- */
+function confirmarInfinite_(ss, d) {
+  const codigo = String(d.order_nsu || '');
+  const aba = ss.getSheetByName(ABA_TERRENOS);
+  const ls = linhas_(aba);
+  for (let i = 0; i < ls.length; i++) {
+    if (String(ls[i][0]) !== codigo) continue;
+    if (String(ls[i][7]).toLowerCase() === 'pago') return { ok: true, pago: true, lugar: ls[i][2] };
+    if (!INFINITE_TAG) return { ok: true, pago: false };
+    const r = UrlFetchApp.fetch('https://api.checkout.infinitepay.io/payment_check', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      payload: JSON.stringify({ handle: INFINITE_TAG, order_nsu: codigo, transaction_nsu: String(d.transaction_nsu || ''), slug: String(d.slug || '') })
+    });
+    let res = {};
+    try { res = JSON.parse(r.getContentText()); } catch (err) { /* resposta inválida */ }
+    if (res.paid && Number(res.amount) >= Math.round(Number(ls[i][6]) * 100)) {
+      aba.getRange(i + 2, 8).setValue('pago');
+      aba.getRange(i + 2, 9).setValue('infinitepay ' + (d.slug || ''));
+      CacheService.getScriptCache().remove('lista');
+      return { ok: true, pago: true, lugar: ls[i][2] };
+    }
+    return { ok: true, pago: false };
+  }
+  return { ok: false, erro: 'Reserva não encontrada.' };
 }
 
 function tokenMP_() {

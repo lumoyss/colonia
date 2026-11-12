@@ -557,6 +557,7 @@
     enviar(dados).then(function (r) {
       btn.disabled = false;
       if (!r.ok) return mensagem("msgTerreno", r.erro || "Algo deu errado. Tente de novo.");
+      if (r.link) { mensagem("msgTerreno", "Indo para a página de pagamento...", true); location.href = r.link; return; }
       var pix = r.pix || codigoPix(plano.valor, codigo);
       if (r.automatico) { document.getElementById("pixManual").hidden = true; document.getElementById("pixAuto").hidden = false; esperarPagamento(codigo); }
       document.getElementById("formTerreno").hidden = true; document.getElementById("planos").hidden = true;
@@ -596,7 +597,26 @@
   document.querySelectorAll("[data-aba]").forEach(function (b) { b.onclick = function () { irPara(b.dataset.aba); }; });
   document.querySelectorAll("[data-ir]").forEach(function (b) { b.onclick = function () { irPara(b.dataset.ir); }; });
   if (/ideia/.test(location.hash)) irPara("ideias");
-  if (/terreno/.test(location.hash)) irPara("terrenos");
+  if (/terreno|base/.test(location.hash)) irPara("terrenos");
+
+  // Voltando da página de pagamento da InfinitePay
+  var volta = new URLSearchParams(location.search);
+  if (volta.get("order_nsu") && volta.get("slug")) {
+    irPara("terrenos");
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+    document.getElementById("formTerreno").hidden = true; document.getElementById("planos").hidden = true;
+    mensagem("msgTerreno", "Confirmando seu pagamento...", true);
+    document.getElementById("formTerreno").hidden = false;
+    Array.prototype.forEach.call(document.getElementById("formTerreno").children, function (el) { if (el.id !== "msgTerreno") el.hidden = true; });
+    var tentativas = 0;
+    (function confirmar() {
+      enviar({ acao: "confirmar", order_nsu: volta.get("order_nsu"), transaction_nsu: volta.get("transaction_nsu") || "", slug: volta.get("slug") }).then(function (r) {
+        if (r && r.pago) { mensagem("msgTerreno", "PAGAMENTO CONFIRMADO! A base " + (r.lugar || "") + " já foi construída no mapa. Tire um print e poste nos stories!", true); carregar(); }
+        else if (++tentativas < 12) setTimeout(confirmar, 5000);
+        else mensagem("msgTerreno", "Ainda não recebemos a confirmação do pagamento. Se você pagou, ela aparece no mapa em alguns minutos.");
+      });
+    })();
+  }
 
   /* ---------------- início ---------------- */
   if (TESTE) document.getElementById("avisoTeste").hidden = false;
