@@ -98,12 +98,12 @@
   <header>
     <img src="perfil.png" alt="">
     <h1 class="pix">COLÔNIA</h1>
-    <p class="sub">A Terra caiu. As naves pousaram num planeta com pouquíssimo oxigênio.<br>Por enquanto todos vivem na nave, mas o ar dela está acabando.<br>Cada pessoa que entra pelo link é um sobrevivente.</p>
-    <div class="contador pix">AGORA TEM <b id="total">0</b> SOBREVIVENTES</div>
+    <p class="sub">A Terra caiu. As naves pousaram num planeta com pouquíssimo oxigênio.<br>Todos a bordo dormem em hibernação, e o ar da nave está acabando.<br>Entre pelo link para acordar o seu sobrevivente.</p>
+    <div class="contador pix"><b id="total">0</b> SOBREVIVENTES ACORDADOS</div>
   </header>
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas></div>
-  <p class="legenda">A colônia ao vivo. Cada bonequinho é alguém que entrou pelo link.</p>
+  <p class="legenda">A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação.</p>
 
   <nav class="abas" role="tablist">
     <button role="tab" aria-selected="true" data-aba="entrar">ENTRAR</button>
@@ -114,7 +114,7 @@
   <!-- ===================== ENTRAR ===================== -->
   <section class="painel ativo" id="painel-entrar" role="tabpanel">
     <div id="formCadastro">
-      <h2 class="pix">CRIE SEU SOBREVIVENTE</h2>
+      <h2 class="pix">ACORDE SEU SOBREVIVENTE</h2>
       <div class="criador">
         <div class="preview">
           <canvas id="preview" width="10" height="14"></canvas>
@@ -150,7 +150,7 @@
         <textarea id="historia" maxlength="400" placeholder="Quem você era na Terra? Como entrou na nave? O que você quer fazer aqui?"></textarea>
         <div class="dica"><span id="contaHist">0</span>/400</div>
         <input name="site" id="site" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-        <button class="btn" type="submit" id="btnCadastro">ENTRAR NA COLÔNIA</button>
+        <button class="btn" type="submit" id="btnCadastro">ACORDAR DA HIBERNAÇÃO</button>
         <div class="msg" id="msgCadastro" role="status"></div>
       </form>
     </div>
@@ -416,7 +416,7 @@
     if (vivos.length <= 80) vivos.forEach(function (b) { rotulo(b.nome, b.x * esc, (b.y + 4) * esc, "#F3E9D6", "rgba(11,22,28,.75)"); });
     if (!vivos.length) {
       cctx.font = Math.round(Math.min(esc * 4, 9 / tela)) + "px 'Press Start 2P', monospace";
-      rotulo("A COLÔNIA ESPERA SEU PRIMEIRO MORADOR", cena.width / 2, cena.height * 0.9, "#F3E9D6", "rgba(11,22,28,.8)");
+      rotulo("TODOS AINDA ESTÃO EM HIBERNAÇÃO", cena.width / 2, cena.height * 0.9, "#F3E9D6", "rgba(11,22,28,.8)");
     }
     requestAnimationFrame(quadro);
   }
@@ -461,7 +461,7 @@
     document.getElementById("cartao").hidden = false;
     spriteEm(document.getElementById("cartaoSprite"), lerVisual(eu.visual, eu.nome));
     document.getElementById("cartaoNum").textContent = "SOBREVIVENTE #" + eu.numero;
-    document.getElementById("cartaoTexto").textContent = eu.nome + ", " + eu.profissao + ". Você está a bordo da nave. Agora é garantir seu oxigênio.";
+    document.getElementById("cartaoTexto").textContent = eu.nome + ", " + eu.profissao + ". Você acordou da hibernação. Agora é garantir seu oxigênio.";
     document.getElementById("autorIdeia").value = eu.nome;
     document.getElementById("dono").value = eu.nome;
     if (eu.instagram) document.getElementById("instaTerreno").value = eu.instagram;
@@ -476,9 +476,9 @@
     };
     if (dados.nome.length < 2) return mensagem("msgCadastro", "Escolha um nome com pelo menos 2 letras.");
     if (!prof) return mensagem("msgCadastro", "Escolha uma profissão.");
-    var btn = document.getElementById("btnCadastro"); btn.disabled = true; btn.textContent = "POUSANDO...";
+    var btn = document.getElementById("btnCadastro"); btn.disabled = true; btn.textContent = "ACORDANDO...";
     enviar(dados).then(function (r) {
-      btn.disabled = false; btn.textContent = "ENTRAR NA COLÔNIA";
+      btn.disabled = false; btn.textContent = "ACORDAR DA HIBERNAÇÃO";
       if (!r.ok) return mensagem("msgCadastro", r.erro || "Algo deu errado. Tente de novo.");
       var eu = { numero: r.numero, nome: dados.nome, profissao: dados.profissao, visual: dados.visual, instagram: dados.instagram };
       gravarLocal("colonia_eu", eu);
