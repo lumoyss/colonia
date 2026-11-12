@@ -138,7 +138,8 @@ function terreno_(ss, d) {
       processing_mode: 'automatic',
       total_amount: v,
       external_reference: codigo,
-      payer: { email: 'sobrevivente.' + codigo.toLowerCase() + '@gmail.com' },
+      // E-mail do pagador: o seu, com +código (os avisos do Mercado Pago chegam para você)
+      payer: { email: Session.getEffectiveUser().getEmail().replace('@', '+' + codigo.toLowerCase() + '@') },
       transactions: { payments: [{ amount: v, payment_method: { id: 'pix', type: 'bank_transfer' } }] }
     }, codigo);
     try {
