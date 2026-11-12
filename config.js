@@ -11,8 +11,8 @@ window.COLONIA = {
 
   // ---- PIX (para venda de terrenos) ----
   // Deixe PIX_CHAVE vazio para mostrar "em breve" no lugar da loja.
-  PIX_CHAVE: "",          // ex.: seu e-mail, celular (+5511999999999) ou chave aleatória
-  PIX_NOME: "",           // seu nome como está no banco (até 25 letras, sem acento)
+  PIX_CHAVE: "7bf3675b-4bb1-4a4a-9d73-21460e8e8f51",          // ex.: seu e-mail, celular (+5511999999999) ou chave aleatória
+  PIX_NOME: "COLONIA",           // seu nome como está no banco (até 25 letras, sem acento)
   PIX_CIDADE: "",         // sua cidade (até 15 letras, sem acento)
 
   // Quando a colônia conseguir produzir oxigênio, mude para true:
