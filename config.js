@@ -4,7 +4,7 @@
 window.COLONIA = {
   // Link do "cérebro" (Google Apps Script). Vazio = modo de teste
   // (os cadastros ficam só no seu navegador, ninguém mais vê).
-  API_URL: "",
+  API_URL: "https://script.google.com/macros/s/AKfycbwxbLAOoQFzxEyoqHgM4LFplAV7sxuUsRxlOZCv9nHAPO0xTcodDeGYsEeoHIukaKau/exec",
 
   // Instagram do projeto (sem @)
   INSTAGRAM: "",
