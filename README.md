@@ -59,3 +59,31 @@ Enquanto isso não for preenchido, a aba Terrenos mostra "em breve".
 
 ## Mudar preços ou textos
 Os preços e nomes dos planos ficam no arquivo `config.js`. É só pedir ao Claude.
+
+---
+
+## Passo 4: confirmar o Pix sozinho (Mercado Pago)
+
+Com isso o site gera um Pix só daquela reserva, percebe sozinho quando ele foi pago
+e constrói a base no mapa na hora. Você não precisa mexer na planilha.
+Custo: o Mercado Pago cobra uma taxa pequena por Pix recebido (cerca de 1%, uns 5 centavos numa base de R$ 5).
+
+### A. Pegar o código do Mercado Pago (Access Token)
+1. Crie ou entre na sua conta em https://www.mercadopago.com.br
+2. Cadastre uma chave Pix **dentro do Mercado Pago** (app do Mercado Pago → Pix → Minhas chaves). Sem isso ele não recebe Pix pelo site.
+3. Abra https://www.mercadopago.com.br/developers/panel/app e clique em **Criar aplicação**.
+   - Nome: `Colonia`. Tipo: pagamentos online / Checkout Transparente (ou "Checkout API"). Confirme.
+4. Dentro da aplicação, abra **Credenciais de produção**. Se pedir para ativar, preencha o ramo (entretenimento) e o site `https://lumoyss.github.io/colonia`.
+5. Copie o **Access Token** (começa com `APP_USR-`). **Não mande esse código para ninguém, nem no chat.**
+
+### B. Colocar no Apps Script
+1. Abra o projeto Colônia em https://script.google.com
+2. Apague todo o código e cole o novo `Codigo.gs` (pasta apps-script). Salve.
+3. Clique na engrenagem (**Configurações do projeto**), desça até **Propriedades do script** → **Adicionar propriedade do script**:
+   - Propriedade: `MP_TOKEN`
+   - Valor: o Access Token copiado
+   - **Salvar propriedades do script**
+4. Volte ao código (ícone `< >`), escolha a função **setup** e clique em **Executar**. Vai pedir autorização de novo (agora para falar com o Mercado Pago): permita igual da primeira vez. Embaixo deve aparecer "Mercado Pago ligado".
+5. **Implantar** → **Gerenciar implantações** → lápis (editar) → em Versão escolha **Nova versão** → **Implantar**. O link /exec continua o mesmo.
+
+Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bater com os do `config.js`.

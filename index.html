@@ -212,7 +212,9 @@
         <label for="pixCopia">Pix copia e cola</label>
         <textarea id="pixCopia" readonly></textarea>
         <button class="btn sec" type="button" id="btnCopiar">COPIAR CÓDIGO PIX</button>
-        <p class="dica" style="margin-top:14px">Depois de pagar, mande o comprovante por mensagem no Instagram com o código <b id="pixCodigo"></b>. Sua base aparece no mapa assim que o pagamento for confirmado.</p>
+        <p class="dica" style="margin-top:14px" id="pixManual">Depois de pagar, mande o comprovante por mensagem no Instagram com o código <b id="pixCodigo"></b>. Sua base aparece no mapa assim que o pagamento for confirmado.</p>
+        <p class="dica" style="margin-top:14px" id="pixAuto" hidden>Pague no app do seu banco e deixe esta página aberta. Assim que o Pix cair, sua base é construída sozinha no mapa.</p>
+        <div class="msg ok mostrar" id="pixPago" hidden><b>PAGAMENTO CONFIRMADO!</b> Sua base já foi construída no mapa da colônia. Tire um print e poste nos stories!</div>
       </div>
     </div>
   </section>
@@ -555,7 +557,8 @@
     enviar(dados).then(function (r) {
       btn.disabled = false;
       if (!r.ok) return mensagem("msgTerreno", r.erro || "Algo deu errado. Tente de novo.");
-      var pix = codigoPix(plano.valor, codigo);
+      var pix = r.pix || codigoPix(plano.valor, codigo);
+      if (r.automatico) { document.getElementById("pixManual").hidden = true; document.getElementById("pixAuto").hidden = false; esperarPagamento(codigo); }
       document.getElementById("formTerreno").hidden = true; document.getElementById("planos").hidden = true;
       document.getElementById("pixbox").hidden = false;
       document.getElementById("pixResumo").textContent = plano.nome + " \"" + dados.lugar + "\" por R$ " + plano.valor.toFixed(2).replace(".", ",");
@@ -566,6 +569,18 @@
       catch (e) { qr.hidden = true; }
     });
   });
+  function esperarPagamento(codigo) {
+    var inicio = Date.now();
+    (function checar() {
+      if (Date.now() - inicio > 30 * 60 * 1000) return;
+      enviar({ acao: "verificar", codigo: codigo }).then(function (r) {
+        if (r && r.pago) {
+          document.getElementById("pixAuto").hidden = true; document.getElementById("qr").hidden = true;
+          document.getElementById("pixPago").hidden = false; carregar();
+        } else setTimeout(checar, 5000);
+      });
+    })();
+  }
   document.getElementById("btnCopiar").addEventListener("click", function () {
     var t = document.getElementById("pixCopia"); t.select();
     var feito = function () { document.getElementById("btnCopiar").textContent = "COPIADO!"; };
