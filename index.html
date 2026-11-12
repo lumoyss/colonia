@@ -98,7 +98,7 @@
   <header>
     <img src="perfil.png" alt="">
     <h1 class="pix">COLÔNIA</h1>
-    <p class="sub">A Terra caiu. As naves pousaram num planeta novo.<br>Aqui não tem oxigênio: todo mundo chega de capacete.<br>Cada pessoa que entra pelo link é um sobrevivente.</p>
+    <p class="sub">A Terra caiu. As naves pousaram num planeta com pouquíssimo oxigênio.<br>Por enquanto todos vivem na nave, mas o ar dela está acabando.<br>Cada pessoa que entra pelo link é um sobrevivente.</p>
     <div class="contador pix">AGORA TEM <b id="total">0</b> SOBREVIVENTES</div>
   </header>
 
@@ -190,10 +190,10 @@
 
   <!-- ===================== TERRENOS ===================== -->
   <section class="painel" id="painel-terrenos" role="tabpanel">
-    <h2 class="pix">GARANTA SUA BASE DE OXIGÊNIO</h2>
+    <h2 class="pix">ADQUIRA SUA BASE DE OXIGÊNIO</h2>
     <div id="lojaFechada" hidden><p>A venda de bases abre em breve. Fique de olho no Instagram!</p></div>
     <div id="loja">
-      <p>Ninguém aguenta para sempre só com o oxigênio do traje. A equipe da colônia monta bases oxigenadas para os primeiros sobreviventes. Garanta a sua com o seu nome e ela aparece no mapa para sempre. O dinheiro ajuda a manter a história andando.</p>
+      <p>O oxigênio da nave está acabando. A equipe da colônia está montando bases oxigenadas no planeta, e quem adquire a sua primeiro sai da nave com ar garantido. Sua base leva o seu nome e fica no mapa para sempre. O valor ajuda a manter a história andando.</p>
       <div class="planos" id="planos"></div>
       <form id="formTerreno" autocomplete="off">
         <label for="lugar">Nome da sua base</label>
@@ -202,7 +202,7 @@
         <input id="dono" maxlength="24" required placeholder="O nome do seu sobrevivente">
         <label for="instaTerreno">Seu @ do Instagram</label>
         <input id="instaTerreno" maxlength="31" placeholder="@seuperfil">
-        <button class="btn" type="submit" id="btnTerreno">RESERVAR E PAGAR COM PIX</button>
+        <button class="btn" type="submit" id="btnTerreno">ADQUIRIR MINHA BASE</button>
         <div class="msg" id="msgTerreno" role="status"></div>
       </form>
       <div class="pixbox" id="pixbox" hidden>
@@ -461,7 +461,7 @@
     document.getElementById("cartao").hidden = false;
     spriteEm(document.getElementById("cartaoSprite"), lerVisual(eu.visual, eu.nome));
     document.getElementById("cartaoNum").textContent = "SOBREVIVENTE #" + eu.numero;
-    document.getElementById("cartaoTexto").textContent = eu.nome + ", " + eu.profissao + ". Você chegou à colônia.";
+    document.getElementById("cartaoTexto").textContent = eu.nome + ", " + eu.profissao + ". Você está a bordo da nave. Agora é garantir seu oxigênio.";
     document.getElementById("autorIdeia").value = eu.nome;
     document.getElementById("dono").value = eu.nome;
     if (eu.instagram) document.getElementById("instaTerreno").value = eu.instagram;
