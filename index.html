@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colônia — Entre como sobrevivente</title>
+<meta name="description" content="A Terra caiu. As naves chegaram a um novo planeta. Crie seu sobrevivente e ajude a escrever a história da colônia.">
+<meta property="og:title" content="Colônia — Entre como sobrevivente">
+<meta property="og:description" content="Crie seu sobrevivente, escolha sua profissão e ajude a escrever a história.">
+<meta property="og:image" content="perfil.png">
+<link rel="icon" href="perfil.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fundo:#0B161C; --fundo2:#12242C; --fundo3:#1a333d;
+    --verde:#3FA7A0; --verde2:#7FD6C8;
+    --laranja:#E07A3A; --brasa:#B8472A; --ferrugem:#7A2E22;
+    --creme:#F3E9D6; --apagado:#9bb3b0;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0}
+  body{background:var(--fundo);color:var(--creme);font-family:"Pixelify Sans",system-ui,sans-serif;font-size:18px;line-height:1.45;
+    background-image:radial-gradient(1px 1px at 20% 30%,#fff8 50%,transparent 51%),radial-gradient(1px 1px at 70% 10%,#fff6 50%,transparent 51%),radial-gradient(1px 1px at 40% 80%,#fff5 50%,transparent 51%),radial-gradient(1px 1px at 90% 60%,#fff6 50%,transparent 51%);
+    background-size:180px 180px,230px 230px,150px 150px,260px 260px}
+  .pix{font-family:"Press Start 2P",monospace;letter-spacing:.5px}
+  main{max-width:760px;margin:0 auto;padding:16px 16px 60px}
+  header{text-align:center;padding:18px 0 6px}
+  header img{width:96px;height:96px;image-rendering:pixelated;border:4px solid var(--verde);border-radius:50%}
+  h1{font-size:22px;margin:14px 0 6px;color:var(--laranja);text-shadow:3px 3px 0 var(--ferrugem)}
+  .sub{color:var(--verde2);margin:0 0 6px}
+  .contador{display:inline-block;margin-top:10px;background:var(--fundo2);border:3px solid var(--verde);padding:10px 14px;font-size:12px;color:var(--creme)}
+  .contador b{color:var(--laranja);font-size:16px}
+  .cena{margin:18px 0 6px;border:4px solid var(--fundo3);background:#000;position:relative}
+  .cena canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+  .legenda{font-size:14px;color:var(--apagado);text-align:center;margin:0 0 10px}
+  nav.abas{display:flex;gap:6px;margin:22px 0 0;flex-wrap:wrap}
+  nav.abas button{flex:1 1 140px;font-family:"Press Start 2P",monospace;font-size:10px;padding:12px 8px;background:var(--fundo2);color:var(--apagado);border:3px solid var(--fundo3);border-bottom:none;cursor:pointer}
+  nav.abas button[aria-selected=true]{background:var(--fundo3);color:var(--creme);border-color:var(--verde)}
+  section.painel{background:var(--fundo3);border:3px solid var(--verde);padding:18px 16px;display:none}
+  section.painel.ativo{display:block}
+  h2{font-size:13px;color:var(--verde2);margin:0 0 12px;line-height:1.6}
+  p{margin:0 0 12px}
+  label{display:block;font-size:15px;color:var(--verde2);margin:14px 0 6px}
+  input,select,textarea{width:100%;font:inherit;font-size:17px;color:var(--creme);background:var(--fundo);border:3px solid var(--fundo2);padding:10px;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--laranja)}
+  textarea{min-height:96px;resize:vertical}
+  .dica{font-size:13px;color:var(--apagado);margin-top:4px}
+  .btn{display:inline-block;line-height:1.6;font-family:"Press Start 2P",monospace;font-size:12px;padding:14px 16px;margin-top:18px;background:var(--laranja);color:var(--fundo);border:none;box-shadow:0 4px 0 var(--ferrugem);cursor:pointer;width:100%}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ferrugem)}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .btn.sec{background:var(--verde);box-shadow:0 4px 0 #1f5c58}
+  .criador{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:start}
+  .preview{background:var(--fundo);border:3px solid var(--fundo2);padding:10px;text-align:center}
+  .preview canvas{width:100px;height:140px;image-rendering:pixelated}
+  .preview .nome{font-family:"Press Start 2P",monospace;font-size:9px;margin-top:6px;word-break:break-word;color:var(--creme)}
+  .cores{display:flex;gap:6px;flex-wrap:wrap}
+  .cores button{width:34px;height:34px;border:3px solid var(--fundo);cursor:pointer;padding:0}
+  .cores button[aria-pressed=true]{border-color:var(--creme);outline:2px solid var(--laranja)}
+  .opcoes{display:flex;gap:6px;flex-wrap:wrap}
+  .opcoes button{font:inherit;font-size:15px;padding:6px 10px;background:var(--fundo);color:var(--creme);border:3px solid var(--fundo2);cursor:pointer}
+  .opcoes button[aria-pressed=true]{border-color:var(--laranja);color:var(--laranja)}
+  .msg{margin-top:12px;padding:10px;border:3px solid var(--brasa);background:#2a1410;display:none}
+  .msg.ok{border-color:var(--verde);background:#0f2a28}
+  .msg.mostrar{display:block}
+  .cartao{text-align:center;padding:8px 0}
+  .cartao canvas{width:120px;height:168px;image-rendering:pixelated}
+  .cartao .num{font-family:"Press Start 2P",monospace;color:var(--laranja);font-size:14px;margin:10px 0}
+  .mural{list-style:none;padding:0;margin:18px 0 0}
+  .mural li{background:var(--fundo);border-left:4px solid var(--verde);padding:10px 12px;margin-bottom:8px}
+  .mural .autor{font-size:13px;color:var(--apagado)}
+  .tag{font-family:"Press Start 2P",monospace;font-size:8px;background:var(--fundo2);color:var(--verde2);padding:3px 5px;margin-right:6px;vertical-align:middle}
+  .planos{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+  .plano{background:var(--fundo);border:3px solid var(--fundo2);padding:12px;cursor:pointer;text-align:left;color:var(--creme);font:inherit}
+  .plano[aria-pressed=true]{border-color:var(--laranja)}
+  .plano .preco{font-family:"Press Start 2P",monospace;color:var(--laranja);font-size:13px;margin:6px 0}
+  .plano small{color:var(--apagado);font-size:14px}
+  .pixbox{text-align:center}
+  .pixbox #qr{background:#fff;display:inline-block;padding:10px;margin:10px 0;width:240px;height:240px}
+  .pixbox #qr svg{width:100%;height:100%;display:block}
+  .pixbox textarea{font-size:12px;min-height:80px;font-family:monospace}
+  .aviso-teste{background:var(--ferrugem);color:var(--creme);text-align:center;font-size:14px;padding:6px 10px}
+  footer{text-align:center;color:var(--apagado);font-size:14px;margin-top:28px}
+  footer a{color:var(--verde2)}
+  @media (max-width:520px){
+    h1{font-size:16px}
+    .criador{grid-template-columns:1fr}
+    .preview{display:flex;align-items:center;gap:14px;text-align:left}
+    .planos{grid-template-columns:1fr}
+    nav.abas button{font-size:9px;flex-basis:30%}
+  }
+</style>
+</head>
+<body>
+<div class="aviso-teste" id="avisoTeste" hidden>MODO DE TESTE: os cadastros ficam só neste aparelho.</div>
+<main>
+  <header>
+    <img src="perfil.png" alt="">
+    <h1 class="pix">COLÔNIA</h1>
+    <p class="sub">A Terra caiu. As naves pousaram num planeta novo.<br>Aqui não tem oxigênio: todo mundo chega de capacete.<br>Cada pessoa que entra pelo link é um sobrevivente.</p>
+    <div class="contador pix">AGORA TEM <b id="total">0</b> SOBREVIVENTES</div>
+  </header>
+
+  <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas></div>
+  <p class="legenda">A colônia ao vivo. Cada bonequinho é alguém que entrou pelo link.</p>
+
+  <nav class="abas" role="tablist">
+    <button role="tab" aria-selected="true" data-aba="entrar">ENTRAR</button>
+    <button role="tab" aria-selected="false" data-aba="ideias">IDEIAS</button>
+    <button role="tab" aria-selected="false" data-aba="terrenos">BASES</button>
+  </nav>
+
+  <!-- ===================== ENTRAR ===================== -->
+  <section class="painel ativo" id="painel-entrar" role="tabpanel">
+    <div id="formCadastro">
+      <h2 class="pix">CRIE SEU SOBREVIVENTE</h2>
+      <div class="criador">
+        <div class="preview">
+          <canvas id="preview" width="10" height="14"></canvas>
+          <div class="nome" id="previewNome">???</div>
+        </div>
+        <div>
+          <label>Cor do traje</label>
+          <div class="cores" data-campo="traje"></div>
+          <label>Pele</label>
+          <div class="cores" data-campo="pele"></div>
+          <label>Cabelo</label>
+          <div class="opcoes" data-campo="cabelo"></div>
+          <div class="cores" data-campo="corCabelo" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+      <form id="cadastro" autocomplete="off">
+        <label for="nome">Nome do sobrevivente</label>
+        <input id="nome" maxlength="24" required placeholder="ex.: Mara">
+        <label for="instagram">Seu @ do Instagram <span class="dica">(opcional, para a gente te marcar)</span></label>
+        <input id="instagram" maxlength="31" placeholder="@seuperfil">
+        <label for="profissao">Profissão na colônia</label>
+        <select id="profissao" required>
+          <option value="">Escolha...</option>
+          <option>Engenheira(o)</option><option>Médica(o)</option><option>Agricultor(a)</option>
+          <option>Piloto</option><option>Cientista</option><option>Mecânica(o)</option>
+          <option>Cozinheira(o)</option><option>Explorador(a)</option><option>Guarda</option>
+          <option>Professor(a)</option><option>Comerciante</option><option>Artista</option>
+          <option value="__outra">Outra...</option>
+        </select>
+        <input id="profissaoOutra" maxlength="30" placeholder="Qual profissão?" hidden style="margin-top:8px">
+        <label for="historia">Sua história <span class="dica">(opcional)</span></label>
+        <textarea id="historia" maxlength="400" placeholder="Quem você era na Terra? Como entrou na nave? O que você quer fazer aqui?"></textarea>
+        <div class="dica"><span id="contaHist">0</span>/400</div>
+        <input name="site" id="site" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+        <button class="btn" type="submit" id="btnCadastro">ENTRAR NA COLÔNIA</button>
+        <div class="msg" id="msgCadastro" role="status"></div>
+      </form>
+    </div>
+
+    <div id="cartao" class="cartao" hidden>
+      <h2 class="pix">BEM-VINDO(A) À COLÔNIA</h2>
+      <canvas id="cartaoSprite" width="10" height="14"></canvas>
+      <div class="num" id="cartaoNum">SOBREVIVENTE #1</div>
+      <p id="cartaoTexto"></p>
+      <p class="dica">Tire um print e poste nos stories marcando a página. Seu bonequinho já está andando no mapa ali em cima.</p>
+      <button class="btn sec" type="button" data-ir="ideias">MANDAR UMA IDEIA PARA A HISTÓRIA</button>
+    </div>
+  </section>
+
+  <!-- ===================== IDEIAS ===================== -->
+  <section class="painel" id="painel-ideias" role="tabpanel">
+    <h2 class="pix">AJUDE A ESCREVER A HISTÓRIA</h2>
+    <p>O que deveria acontecer na colônia? Um perigo, uma descoberta, uma briga, um lugar novo? As melhores ideias entram nos próximos vídeos.</p>
+    <form id="formIdeia" autocomplete="off">
+      <label for="tipoIdeia">Sua ideia é sobre</label>
+      <select id="tipoIdeia">
+        <option value="historia">O que acontece na história</option>
+        <option value="lugar">Um lugar do planeta</option>
+        <option value="profissao">Uma profissão ou trabalho</option>
+        <option value="outro">Outra coisa</option>
+      </select>
+      <label for="textoIdeia">Escreva aqui</label>
+      <textarea id="textoIdeia" maxlength="500" required placeholder="ex.: Uma tempestade de areia derruba a antena e a colônia fica sem contato com as outras naves..."></textarea>
+      <label for="autorIdeia">Seu nome <span class="dica">(opcional)</span></label>
+      <input id="autorIdeia" maxlength="24" placeholder="Anônimo">
+      <button class="btn" type="submit" id="btnIdeia">ENVIAR IDEIA</button>
+      <div class="msg" id="msgIdeia" role="status"></div>
+    </form>
+    <h2 class="pix" style="margin-top:26px">ÚLTIMAS IDEIAS</h2>
+    <ul class="mural" id="mural"><li>Nenhuma ideia ainda. Seja o primeiro!</li></ul>
+  </section>
+
+  <!-- ===================== TERRENOS ===================== -->
+  <section class="painel" id="painel-terrenos" role="tabpanel">
+    <h2 class="pix">GARANTA SUA BASE DE OXIGÊNIO</h2>
+    <div id="lojaFechada" hidden><p>A venda de bases abre em breve. Fique de olho no Instagram!</p></div>
+    <div id="loja">
+      <p>Ninguém aguenta para sempre só com o oxigênio do traje. A equipe da colônia monta bases oxigenadas para os primeiros sobreviventes. Garanta a sua com o seu nome e ela aparece no mapa para sempre. O dinheiro ajuda a manter a história andando.</p>
+      <div class="planos" id="planos"></div>
+      <form id="formTerreno" autocomplete="off">
+        <label for="lugar">Nome da sua base</label>
+        <input id="lugar" maxlength="28" required placeholder="ex.: Base da Mara">
+        <label for="dono">Nome do dono</label>
+        <input id="dono" maxlength="24" required placeholder="O nome do seu sobrevivente">
+        <label for="instaTerreno">Seu @ do Instagram</label>
+        <input id="instaTerreno" maxlength="31" placeholder="@seuperfil">
+        <button class="btn" type="submit" id="btnTerreno">RESERVAR E PAGAR COM PIX</button>
+        <div class="msg" id="msgTerreno" role="status"></div>
+      </form>
+      <div class="pixbox" id="pixbox" hidden>
+        <h2 class="pix">PAGUE COM PIX</h2>
+        <p id="pixResumo"></p>
+        <div id="qr"></div>
+        <label for="pixCopia">Pix copia e cola</label>
+        <textarea id="pixCopia" readonly></textarea>
+        <button class="btn sec" type="button" id="btnCopiar">COPIAR CÓDIGO PIX</button>
+        <p class="dica" style="margin-top:14px">Depois de pagar, mande o comprovante por mensagem no Instagram com o código <b id="pixCodigo"></b>. Sua base aparece no mapa assim que o pagamento for confirmado.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer><span id="rodapeInsta"></span></footer>
+</main>
+
+<script src="config.js"></script>
+<script src="qrcode.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CFG = window.COLONIA || {};
+  var API = (CFG.API_URL || "").trim();
+  var TESTE = !API;
+
+  /* ---------------- paletas do bonequinho ---------------- */
+  var TRAJES = ["#E07A3A", "#3FA7A0", "#F3E9D6", "#B8472A", "#5b7fbf", "#8a6bbf", "#6f9a4a", "#d9b54a"];
+  var PELES = ["#f5d3b3", "#e3b48c", "#c68b5e", "#9a623c", "#6b4127"];
+  var CABELOS = ["#1f1712", "#5a3a22", "#a8692f", "#e0c070", "#c9442c", "#e8e4dc", "#3FA7A0"];
+  var ESTILOS = ["Curto", "Longo", "Moicano", "Careca"];
+  var CAPACETE = ["Sem", "Com"];
+
+  // Enquanto o planeta não tiver oxigênio, todo mundo usa capacete.
+  var SEM_OXIGENIO = !CFG.OXIGENIO_NO_PLANETA;
+  var visual = { traje: 0, pele: 1, cabelo: 0, corCabelo: 1, capacete: 1 };
+  function visualTexto(v) { return [v.traje, v.pele, v.cabelo, v.corCabelo, v.capacete].join(","); }
+  function lerVisual(s, semente) {
+    var p = String(s || "").split(",").map(Number);
+    if (p.length < 5 || p.some(isNaN)) {
+      var h = hash(semente || "x");
+      return { traje: h % TRAJES.length, pele: (h >> 3) % PELES.length, cabelo: (h >> 6) % 3, corCabelo: (h >> 9) % CABELOS.length, capacete: (h >> 12) % 2 };
+    }
+    return { traje: p[0] % TRAJES.length, pele: p[1] % PELES.length, cabelo: p[2] % ESTILOS.length, corCabelo: p[3] % CABELOS.length, capacete: p[4] % 2 };
+  }
+  function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  // 10x14. h=cabelo k=pele e=olho s=traje d=detalhe b=bota
+  var BASE = [
+    "...hhhh...",
+    "..hhhhhh..",
+    "..hkkkkh..",
+    "..kekkek..",
+    "..kkkkkk..",
+    "...kkkk...",
+    "..ssssss..",
+    ".ssdssdss.",
+    ".k.ssss.k.",
+    "...ssss...",
+    "...dddd...",
+    "...s..s...",
+    "...s..s...",
+    "..bb..bb.."
+  ];
+  function escurecer(hex, f) {
+    var n = parseInt(hex.slice(1), 16), r = (n >> 16) * f, g = ((n >> 8) & 255) * f, b = (n & 255) * f;
+    return "rgb(" + (r | 0) + "," + (g | 0) + "," + (b | 0) + ")";
+  }
+  function desenharSprite(ctx, v, ox, oy, passo) {
+    var linhas = BASE.slice();
+    if (v.cabelo === 1) { linhas[3] = "..hekkeh.."; linhas[4] = "..hkkkkh.."; linhas[5] = "..hkkkkh.."; }
+    if (v.cabelo === 2) { linhas[0] = "....hh...."; linhas[1] = "...khhk..."; linhas[2] = "..kkkkkk.."; }
+    if (v.cabelo === 3) { linhas[0] = ".........."; linhas[1] = "...kkkk..."; linhas[2] = "..kkkkkk.."; }
+    if (passo) { linhas[11] = "...s...s.."; linhas[12] = "..s....s.."; linhas[13] = "..bb...bb."; }
+    var cores = { h: CABELOS[v.corCabelo], k: PELES[v.pele], e: "#1a1a1a", s: TRAJES[v.traje], d: escurecer(TRAJES[v.traje], 0.6), b: "#2b2b2b" };
+    for (var y = 0; y < linhas.length; y++) for (var x = 0; x < 10; x++) {
+      var c = linhas[y][x]; if (c === ".") continue;
+      ctx.fillStyle = cores[c]; ctx.fillRect(ox + x, oy + y, 1, 1);
+    }
+    if (v.capacete || SEM_OXIGENIO) {
+      ctx.fillStyle = "rgba(127,214,200,0.28)"; ctx.fillRect(ox + 1, oy - 1, 8, 7);
+      ctx.fillStyle = "#7FD6C8";
+      ctx.fillRect(ox + 2, oy - 2, 6, 1); ctx.fillRect(ox + 1, oy - 1, 1, 6); ctx.fillRect(ox + 8, oy - 1, 1, 6);
+      ctx.fillStyle = "#F3E9D6"; ctx.fillRect(ox + 6, oy, 1, 1);
+    }
+  }
+  function spriteEm(canvas, v) {
+    var c = canvas.getContext("2d");
+    canvas.width = 12; canvas.height = 17;
+    c.clearRect(0, 0, 12, 17); desenharSprite(c, v, 1, 2, false);
+  }
+
+  /* ---------------- dados ---------------- */
+  var estado = { sobreviventes: [], ideias: [], terrenos: [], total: 0 };
+  function lerLocal(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function gravarLocal(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  function carregar() {
+    if (TESTE) {
+      var db = lerLocal("colonia_teste", { sobreviventes: [], ideias: [], terrenos: [] });
+      db.total = db.sobreviventes.length; db.ideias = db.ideias.slice().reverse();
+      aplicar(db); return Promise.resolve();
+    }
+    return fetch(API).then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) aplicar(d); }).catch(function () {});
+  }
+  function enviar(dados) {
+    if (TESTE) {
+      var db = lerLocal("colonia_teste", { sobreviventes: [], ideias: [], terrenos: [] });
+      if (dados.acao === "cadastrar") {
+        if (db.sobreviventes.some(function (s) { return s.nome.toLowerCase() === dados.nome.toLowerCase(); }))
+          return Promise.resolve({ ok: false, erro: "Já existe um sobrevivente chamado " + dados.nome + ". Tente outro nome." });
+        db.sobreviventes.push({ numero: db.sobreviventes.length + 1, nome: dados.nome, instagram: dados.instagram, profissao: dados.profissao, visual: dados.visual });
+        gravarLocal("colonia_teste", db); return Promise.resolve({ ok: true, numero: db.sobreviventes.length });
+      }
+      if (dados.acao === "ideia") { db.ideias.push({ autor: dados.autor || "Anônimo", tipo: dados.tipo, texto: dados.texto }); gravarLocal("colonia_teste", db); return Promise.resolve({ ok: true }); }
+      if (dados.acao === "terreno") return Promise.resolve({ ok: true, codigo: dados.codigo });
+    }
+    // text/plain evita a checagem extra do navegador e funciona com o Google Apps Script
+    return fetch(API, { method: "POST", body: JSON.stringify(dados) })
+      .then(function (r) { return r.json(); })
+      .catch(function () { return { ok: false, erro: "Sem conexão com a colônia. Tente de novo em instantes." }; });
+  }
+  function aplicar(d) {
+    estado.sobreviventes = d.sobreviventes || [];
+    estado.ideias = d.ideias || [];
+    estado.terrenos = d.terrenos || [];
+    estado.total = d.total || estado.sobreviventes.length;
+    document.getElementById("total").textContent = estado.total;
+    sincronizarCena(); desenharMural();
+  }
+
+  /* ---------------- cena ao vivo ---------------- */
+  var W = 240, H = 150;
+  var cena = document.getElementById("cena"), cctx = cena.getContext("2d");
+  var mundo = document.createElement("canvas"); mundo.width = W; mundo.height = H;
+  var mctx = mundo.getContext("2d");
+  var chao = document.createElement("canvas"); chao.width = W; chao.height = H;
+  var bonecos = {}, ordem = [];
+
+  function rnd(seed) { return function () { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
+  function pintarChao() {
+    var c = chao.getContext("2d"), r = rnd(42);
+    c.fillStyle = "#c4683a"; c.fillRect(0, 0, W, H);
+    for (var i = 0; i < 1400; i++) { c.fillStyle = r() < 0.5 ? "#b85d33" : "#d27645"; c.fillRect((r() * W) | 0, (r() * H) | 0, 1 + (r() * 2 | 0), 1); }
+    for (i = 0; i < 26; i++) { var x = r() * W | 0, y = r() * H | 0; c.fillStyle = "#7A2E22"; c.fillRect(x, y, 3, 2); c.fillStyle = "#9a3e2a"; c.fillRect(x, y, 2, 1); }
+    // trilhas
+    c.fillStyle = "#d8875a"; c.fillRect(0, 74, W, 4); c.fillRect(118, 0, 4, H);
+    // nave pousada
+    c.fillStyle = "#3a4a52"; c.fillRect(102, 48, 36, 22); c.fillStyle = "#F3E9D6"; c.fillRect(104, 46, 32, 20);
+    c.fillStyle = "#c9bfac"; c.fillRect(104, 60, 32, 6); c.fillStyle = "#3FA7A0"; c.fillRect(110, 50, 6, 4); c.fillRect(124, 50, 6, 4);
+    c.fillStyle = "#E07A3A"; c.fillRect(116, 42, 8, 4); c.fillStyle = "#7A2E22"; c.fillRect(117, 66, 6, 4);
+    // cúpulas
+    [[40, 30], [190, 34], [56, 112], [180, 110]].forEach(function (p) {
+      c.fillStyle = "#1f5c58"; c.fillRect(p[0] - 9, p[1] + 4, 18, 3);
+      c.fillStyle = "#7FD6C8"; c.fillRect(p[0] - 8, p[1] - 2, 16, 6); c.fillRect(p[0] - 6, p[1] - 4, 12, 2); c.fillRect(p[0] - 3, p[1] - 5, 6, 1);
+      c.fillStyle = "#c9f0e8"; c.fillRect(p[0] - 5, p[1] - 3, 2, 2);
+    });
+    // antena
+    c.fillStyle = "#F3E9D6"; c.fillRect(214, 70, 1, 12); c.fillStyle = "#E07A3A"; c.fillRect(213, 69, 3, 1);
+  }
+  function posTerreno(i) {
+    var spots = [[20, 60], [80, 20], [160, 18], [222, 50], [24, 96], [90, 128], [150, 132], [222, 96], [64, 64], [170, 64], [36, 136], [204, 132]];
+    if (i < spots.length) return spots[i];
+    var r = rnd(i * 97 + 3); return [10 + r() * (W - 20) | 0, 10 + r() * (H - 20) | 0];
+  }
+  function sincronizarCena() {
+    estado.sobreviventes.forEach(function (s) {
+      var id = String(s.nome);
+      if (bonecos[id]) return;
+      var r = rnd(hash(id));
+      bonecos[id] = { nome: s.nome, v: lerVisual(s.visual, s.nome), x: 20 + r() * (W - 40), y: 16 + r() * (H - 36), tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r };
+      ordem.push(id);
+    });
+  }
+  function quadro() {
+    mctx.drawImage(chao, 0, 0);
+    estado.terrenos.forEach(function (t, i) {
+      var p = posTerreno(i), grande = /grande|placa|casa/i.test(t.plano || ""), r = grande ? 8 : 5;
+      mctx.fillStyle = "#3a4a52"; mctx.fillRect(p[0] - r - 1, p[1] + 3, r * 2 + 2, 2);
+      mctx.fillStyle = "#F3E9D6"; mctx.fillRect(p[0] - r, p[1] - 2, r * 2, 5); mctx.fillRect(p[0] - r + 2, p[1] - 4, r * 2 - 4, 2);
+      mctx.fillStyle = "#7FD6C8"; mctx.fillRect(p[0] - r + 2, p[1] - 1, r * 2 - 4, 2);
+      mctx.fillStyle = "#3a4a52"; mctx.fillRect(p[0] - 1, p[1] + 1, 2, 2);
+      if (grande) { mctx.fillStyle = "#E07A3A"; mctx.fillRect(p[0] + r + 1, p[1] - 3, 4, 3); mctx.fillStyle = "#7A2E22"; mctx.fillRect(p[0] + r + 2, p[1], 1, 4); }
+    });
+    var vivos = ordem.map(function (id) { return bonecos[id]; });
+    vivos.forEach(function (b) {
+      b.t++;
+      if (b.espera > 0) { b.espera--; }
+      else {
+        if (!b.tx) { b.tx = 12 + b.r() * (W - 24); b.ty = 14 + b.r() * (H - 34); }
+        var dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy);
+        if (d < 1) { b.tx = 0; b.espera = 60 + b.r() * 240 | 0; }
+        else { b.x += dx / d * 0.25; b.y += dy / d * 0.25; }
+      }
+    });
+    vivos.sort(function (a, b) { return a.y - b.y; }).forEach(function (b) {
+      var andando = b.espera <= 0 && b.tx;
+      desenharSprite(mctx, b.v, Math.round(b.x) - 5, Math.round(b.y) - 14, andando && (b.t >> 3) % 2);
+    });
+    // escala para a tela
+    var esc = cena.width / W;
+    cctx.imageSmoothingEnabled = false;
+    cctx.drawImage(mundo, 0, 0, cena.width, cena.height);
+    var tela = (cena.clientWidth || cena.width) / cena.width;
+    cctx.textAlign = "center"; cctx.font = Math.round(Math.min(esc * 3, 7.5 / tela)) + "px 'Press Start 2P', monospace";
+    estado.terrenos.forEach(function (t, i) {
+      var p = posTerreno(i); rotulo(t.nome, p[0] * esc, (p[1] + 11) * esc, "#F3E9D6", "#7A2E22");
+    });
+    if (vivos.length <= 80) vivos.forEach(function (b) { rotulo(b.nome, b.x * esc, (b.y + 4) * esc, "#F3E9D6", "rgba(11,22,28,.75)"); });
+    if (!vivos.length) {
+      cctx.font = Math.round(Math.min(esc * 4, 9 / tela)) + "px 'Press Start 2P', monospace";
+      rotulo("A COLÔNIA ESPERA SEU PRIMEIRO MORADOR", cena.width / 2, cena.height * 0.9, "#F3E9D6", "rgba(11,22,28,.8)");
+    }
+    requestAnimationFrame(quadro);
+  }
+  function rotulo(txt, x, y, cor, fundo) {
+    var w = cctx.measureText(txt).width, h = parseInt(cctx.font, 10);
+    cctx.fillStyle = fundo; cctx.fillRect(x - w / 2 - 3, y - 1, w + 6, h + 5);
+    cctx.fillStyle = cor; cctx.fillText(txt, x, y + h + 1);
+  }
+
+  /* ---------------- criador de personagem ---------------- */
+  var prev = document.getElementById("preview");
+  function montarEscolhas() {
+    document.querySelectorAll("[data-campo]").forEach(function (box) {
+      var campo = box.dataset.campo;
+      var lista = campo === "traje" ? TRAJES : campo === "pele" ? PELES : campo === "corCabelo" ? CABELOS : campo === "cabelo" ? ESTILOS : CAPACETE;
+      lista.forEach(function (item, i) {
+        var b = document.createElement("button"); b.type = "button";
+        if (box.classList.contains("cores")) { b.style.background = item; b.setAttribute("aria-label", campo + " " + (i + 1)); }
+        else b.textContent = item;
+        b.setAttribute("aria-pressed", String(visual[campo] === i));
+        b.onclick = function () {
+          visual[campo] = i;
+          box.querySelectorAll("button").forEach(function (o, j) { o.setAttribute("aria-pressed", String(j === i)); });
+          spriteEm(prev, visual);
+        };
+        box.appendChild(b);
+      });
+    });
+    spriteEm(prev, visual);
+  }
+  var elNome = document.getElementById("nome");
+  elNome.addEventListener("input", function () { document.getElementById("previewNome").textContent = elNome.value.trim() || "???"; });
+  var elProf = document.getElementById("profissao"), elOutra = document.getElementById("profissaoOutra");
+  elProf.addEventListener("change", function () { elOutra.hidden = elProf.value !== "__outra"; if (!elOutra.hidden) elOutra.focus(); });
+  var elHist = document.getElementById("historia");
+  elHist.addEventListener("input", function () { document.getElementById("contaHist").textContent = elHist.value.length; });
+
+  function mensagem(id, txt, ok) { var m = document.getElementById(id); m.textContent = txt; m.className = "msg mostrar" + (ok ? " ok" : ""); }
+
+  function mostrarCartao(eu) {
+    document.getElementById("formCadastro").hidden = true;
+    document.getElementById("cartao").hidden = false;
+    spriteEm(document.getElementById("cartaoSprite"), lerVisual(eu.visual, eu.nome));
+    document.getElementById("cartaoNum").textContent = "SOBREVIVENTE #" + eu.numero;
+    document.getElementById("cartaoTexto").textContent = eu.nome + ", " + eu.profissao + ". Você chegou à colônia.";
+    document.getElementById("autorIdeia").value = eu.nome;
+    document.getElementById("dono").value = eu.nome;
+    if (eu.instagram) document.getElementById("instaTerreno").value = eu.instagram;
+  }
+
+  document.getElementById("cadastro").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var prof = elProf.value === "__outra" ? elOutra.value.trim() : elProf.value;
+    var dados = {
+      acao: "cadastrar", nome: elNome.value.trim(), instagram: document.getElementById("instagram").value.trim(),
+      profissao: prof, historia: elHist.value.trim(), visual: visualTexto(visual), site: document.getElementById("site").value
+    };
+    if (dados.nome.length < 2) return mensagem("msgCadastro", "Escolha um nome com pelo menos 2 letras.");
+    if (!prof) return mensagem("msgCadastro", "Escolha uma profissão.");
+    var btn = document.getElementById("btnCadastro"); btn.disabled = true; btn.textContent = "POUSANDO...";
+    enviar(dados).then(function (r) {
+      btn.disabled = false; btn.textContent = "ENTRAR NA COLÔNIA";
+      if (!r.ok) return mensagem("msgCadastro", r.erro || "Algo deu errado. Tente de novo.");
+      var eu = { numero: r.numero, nome: dados.nome, profissao: dados.profissao, visual: dados.visual, instagram: dados.instagram };
+      gravarLocal("colonia_eu", eu);
+      estado.sobreviventes.push(eu); estado.total++; document.getElementById("total").textContent = estado.total;
+      sincronizarCena(); mostrarCartao(eu);
+      setTimeout(carregar, 1500);
+    });
+  });
+
+  /* ---------------- ideias ---------------- */
+  var NOMES_TIPO = { historia: "HISTÓRIA", lugar: "LUGAR", profissao: "PROFISSÃO", outro: "IDEIA" };
+  function desenharMural() {
+    var ul = document.getElementById("mural");
+    if (!estado.ideias.length) return;
+    ul.innerHTML = "";
+    estado.ideias.slice(0, 30).forEach(function (i) {
+      var li = document.createElement("li"), tag = document.createElement("span"), txt = document.createElement("span"), au = document.createElement("div");
+      tag.className = "tag"; tag.textContent = NOMES_TIPO[i.tipo] || "IDEIA";
+      txt.textContent = i.texto; au.className = "autor"; au.textContent = "por " + (i.autor || "Anônimo");
+      li.appendChild(tag); li.appendChild(txt); li.appendChild(au); ul.appendChild(li);
+    });
+  }
+  document.getElementById("formIdeia").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var dados = { acao: "ideia", tipo: document.getElementById("tipoIdeia").value, texto: document.getElementById("textoIdeia").value.trim(), autor: document.getElementById("autorIdeia").value.trim() };
+    if (dados.texto.length < 3) return mensagem("msgIdeia", "Escreva sua ideia antes de enviar.");
+    var btn = document.getElementById("btnIdeia"); btn.disabled = true;
+    enviar(dados).then(function (r) {
+      btn.disabled = false;
+      if (!r.ok) return mensagem("msgIdeia", r.erro || "Algo deu errado. Tente de novo.");
+      document.getElementById("textoIdeia").value = "";
+      estado.ideias.unshift({ tipo: dados.tipo, texto: dados.texto, autor: dados.autor || "Anônimo" }); desenharMural();
+      mensagem("msgIdeia", "Ideia recebida! Se ela for uma das mais pedidas, entra no próximo vídeo.", true);
+    });
+  });
+
+  /* ---------------- terrenos + Pix ---------------- */
+  var planoSel = 0;
+  function montarLoja() {
+    if (!CFG.PIX_CHAVE) { document.getElementById("loja").hidden = true; document.getElementById("lojaFechada").hidden = false; return; }
+    var box = document.getElementById("planos");
+    (CFG.PLANOS || []).forEach(function (p, i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "plano";
+      b.setAttribute("aria-pressed", String(i === 0));
+      var n = document.createElement("b"); n.textContent = p.nome;
+      var pr = document.createElement("div"); pr.className = "preco"; pr.textContent = "R$ " + p.valor.toFixed(2).replace(".", ",");
+      var d = document.createElement("small"); d.textContent = p.descricao;
+      b.appendChild(n); b.appendChild(pr); b.appendChild(d);
+      b.onclick = function () { planoSel = i; box.querySelectorAll(".plano").forEach(function (o, j) { o.setAttribute("aria-pressed", String(j === i)); }); };
+      box.appendChild(b);
+    });
+  }
+  function campo(id, v) { return id + String(v.length).padStart(2, "0") + v; }
+  function crc16(s) {
+    var crc = 0xFFFF;
+    for (var i = 0; i < s.length; i++) { crc ^= s.charCodeAt(i) << 8; for (var j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF; }
+    return crc.toString(16).toUpperCase().padStart(4, "0");
+  }
+  function semAcento(s, max) { return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9 ]/g, "").toUpperCase().slice(0, max); }
+  function codigoPix(valor, txid) {
+    var conta = campo("00", "br.gov.bcb.pix") + campo("01", CFG.PIX_CHAVE.trim());
+    var p = campo("00", "01") + campo("26", conta) + campo("52", "0000") + campo("53", "986") +
+      campo("54", valor.toFixed(2)) + campo("58", "BR") + campo("59", semAcento(CFG.PIX_NOME, 25) || "COLONIA") +
+      campo("60", semAcento(CFG.PIX_CIDADE, 15) || "BRASIL") + campo("62", campo("05", txid)) + "6304";
+    return p + crc16(p);
+  }
+  document.getElementById("formTerreno").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var plano = CFG.PLANOS[planoSel];
+    var codigo = "COL" + Math.random().toString(36).slice(2, 8).toUpperCase().replace(/[^A-Z0-9]/g, "X");
+    var dados = { acao: "terreno", lugar: document.getElementById("lugar").value.trim(), dono: document.getElementById("dono").value.trim(),
+      instagram: document.getElementById("instaTerreno").value.trim(), plano: plano.nome, valor: plano.valor, codigo: codigo };
+    if (dados.lugar.length < 2) return mensagem("msgTerreno", "Dê um nome para o seu lugar.");
+    if (dados.dono.length < 2) return mensagem("msgTerreno", "Diga o nome do dono.");
+    var btn = document.getElementById("btnTerreno"); btn.disabled = true;
+    enviar(dados).then(function (r) {
+      btn.disabled = false;
+      if (!r.ok) return mensagem("msgTerreno", r.erro || "Algo deu errado. Tente de novo.");
+      var pix = codigoPix(plano.valor, codigo);
+      document.getElementById("formTerreno").hidden = true; document.getElementById("planos").hidden = true;
+      document.getElementById("pixbox").hidden = false;
+      document.getElementById("pixResumo").textContent = plano.nome + " \"" + dados.lugar + "\" por R$ " + plano.valor.toFixed(2).replace(".", ",");
+      document.getElementById("pixCopia").value = pix;
+      document.getElementById("pixCodigo").textContent = codigo;
+      var qr = document.getElementById("qr"); qr.innerHTML = "";
+      try { var q = qrcode(0, "M"); q.addData(pix); q.make(); qr.innerHTML = q.createSvgTag({ cellSize: 5, margin: 0, scalable: true }); }
+      catch (e) { qr.hidden = true; }
+    });
+  });
+  document.getElementById("btnCopiar").addEventListener("click", function () {
+    var t = document.getElementById("pixCopia"); t.select();
+    var feito = function () { document.getElementById("btnCopiar").textContent = "COPIADO!"; };
+    if (navigator.clipboard) navigator.clipboard.writeText(t.value).then(feito, function () { document.execCommand("copy"); feito(); });
+    else { document.execCommand("copy"); feito(); }
+  });
+
+  /* ---------------- abas ---------------- */
+  function irPara(nome) {
+    document.querySelectorAll("nav.abas button").forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.aba === nome)); });
+    document.querySelectorAll("section.painel").forEach(function (s) { s.classList.toggle("ativo", s.id === "painel-" + nome); });
+  }
+  document.querySelectorAll("[data-aba]").forEach(function (b) { b.onclick = function () { irPara(b.dataset.aba); }; });
+  document.querySelectorAll("[data-ir]").forEach(function (b) { b.onclick = function () { irPara(b.dataset.ir); }; });
+  if (/ideia/.test(location.hash)) irPara("ideias");
+  if (/terreno/.test(location.hash)) irPara("terrenos");
+
+  /* ---------------- início ---------------- */
+  if (TESTE) document.getElementById("avisoTeste").hidden = false;
+  if (CFG.INSTAGRAM) {
+    var a = document.createElement("a"); a.href = "https://instagram.com/" + CFG.INSTAGRAM; a.textContent = "@" + CFG.INSTAGRAM;
+    var f = document.getElementById("rodapeInsta"); f.textContent = "Acompanhe a história em "; f.appendChild(a);
+  }
+  montarEscolhas(); montarLoja(); pintarChao();
+  var eu = lerLocal("colonia_eu", null); if (eu) mostrarCartao(eu);
+  carregar().then(function () { if (eu && !estado.sobreviventes.some(function (s) { return s.nome === eu.nome; })) { estado.sobreviventes.push(eu); sincronizarCena(); } });
+  setInterval(carregar, 30000);
+  requestAnimationFrame(quadro);
+})();
+</script>
+</body>
+</html>

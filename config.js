@@ -1,0 +1,26 @@
+// ============================================================
+//  CONFIGURAÇÃO DA COLÔNIA — só mexa aqui
+// ============================================================
+window.COLONIA = {
+  // Link do "cérebro" (Google Apps Script). Vazio = modo de teste
+  // (os cadastros ficam só no seu navegador, ninguém mais vê).
+  API_URL: "",
+
+  // Instagram do projeto (sem @)
+  INSTAGRAM: "",
+
+  // ---- PIX (para venda de terrenos) ----
+  // Deixe PIX_CHAVE vazio para mostrar "em breve" no lugar da loja.
+  PIX_CHAVE: "",          // ex.: seu e-mail, celular (+5511999999999) ou chave aleatória
+  PIX_NOME: "",           // seu nome como está no banco (até 25 letras, sem acento)
+  PIX_CIDADE: "",         // sua cidade (até 15 letras, sem acento)
+
+  // Quando a colônia conseguir produzir oxigênio, mude para true:
+  // os capacetes saem (só fica de capacete quem quiser).
+  OXIGENIO_NO_PLANETA: false,
+
+  PLANOS: [
+    { id: "base",   nome: "Base oxigenada",        valor: 5,  descricao: "Uma base com oxigênio só sua no mapa, com o nome que você escolher." },
+    { id: "grande", nome: "Base grande com placa", valor: 15, descricao: "Base maior com seu nome na placa e citação no próximo vídeo." },
+  ],
+};
