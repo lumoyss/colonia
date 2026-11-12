@@ -72,7 +72,7 @@ Custo: o Mercado Pago cobra uma taxa pequena por Pix recebido (cerca de 1%, uns 
 1. Crie ou entre na sua conta em https://www.mercadopago.com.br
 2. Cadastre uma chave Pix **dentro do Mercado Pago** (app do Mercado Pago → Pix → Minhas chaves). Sem isso ele não recebe Pix pelo site.
 3. Abra https://www.mercadopago.com.br/developers/panel/app e clique em **Criar aplicação**.
-   - Nome: `Colonia`. Tipo: pagamentos online / Checkout Transparente (ou "Checkout API"). Confirme.
+   - Nome: `Colonia`. Tipo: pagamentos online / Checkout Transparente. Quando perguntar o tipo de API, escolha **API de Orders**.
 4. Dentro da aplicação, abra **Credenciais de produção**. Se pedir para ativar, preencha o ramo (entretenimento) e o site `https://lumoyss.github.io/colonia`.
 5. Copie o **Access Token** (começa com `APP_USR-`). **Não mande esse código para ninguém, nem no chat.**
 

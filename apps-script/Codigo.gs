@@ -128,19 +128,23 @@ function terreno_(ss, d) {
   if (!codigo) return { ok: false, erro: 'Código inválido.' };
   if (!valor) return { ok: false, erro: 'Plano inválido.' };
 
-  // Com Mercado Pago ligado, cria um Pix que se confirma sozinho
+  // Com Mercado Pago ligado, cria um Pix que se confirma sozinho (API de Orders).
+  // Se o Mercado Pago falhar, o site usa o Pix da sua chave e você confirma à mão.
   let pix = null, mpId = '';
   if (tokenMP_()) {
-    const pg = mp_('post', '/v1/payments', {
-      transaction_amount: valor,
-      description: 'Colonia - ' + plano + ' - ' + lugar,
-      payment_method_id: 'pix',
+    const v = valor.toFixed(2);
+    const pedido = mp_('post', '/v1/orders', {
+      type: 'online',
+      processing_mode: 'automatic',
+      total_amount: v,
       external_reference: codigo,
-      payer: { email: 'sobrevivente.' + codigo.toLowerCase() + '@colonia.app' }
+      payer: { email: 'sobrevivente.' + codigo.toLowerCase() + '@gmail.com' },
+      transactions: { payments: [{ amount: v, payment_method: { id: 'pix', type: 'bank_transfer' } }] }
     }, codigo);
-    if (!pg || !pg.id || !pg.point_of_interaction) return { ok: false, erro: 'Não consegui gerar o Pix agora. Tente de novo em instantes.' };
-    mpId = String(pg.id);
-    pix = pg.point_of_interaction.transaction_data.qr_code;
+    try {
+      pix = pedido.transactions.payments[0].payment_method.qr_code || null;
+      mpId = pix ? String(pedido.id) : '';
+    } catch (err) { pix = null; }
   }
 
   ss.getSheetByName(ABA_TERRENOS).appendRow([codigo, new Date(), texto_(lugar), texto_(dono), instagram ? texto_('@' + instagram) : '', texto_(plano), valor, 'aguardando Pix', mpId]);
@@ -155,8 +159,8 @@ function verificar_(ss, codigo) {
     if (String(ls[i][0]) !== codigo) continue;
     if (String(ls[i][7]).toLowerCase() === 'pago') return { ok: true, pago: true };
     if (!ls[i][8] || !tokenMP_()) return { ok: true, pago: false };
-    const pg = mp_('get', '/v1/payments/' + ls[i][8]);
-    if (pg && pg.status === 'approved') {
+    const pedido = mp_('get', '/v1/orders/' + ls[i][8]);
+    if (pedido && pedido.status === 'processed') {
       aba.getRange(i + 2, 8).setValue('pago');
       CacheService.getScriptCache().remove('lista');
       return { ok: true, pago: true };
