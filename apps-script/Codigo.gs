@@ -315,3 +315,12 @@ function texto_(v) {
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+
+/* ---------- Teste: rode para ver se a InfinitePay está aceitando ---------- */
+function testarInfinitePay() {
+  const r = UrlFetchApp.fetch('https://api.checkout.infinitepay.io/links', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    payload: JSON.stringify({ handle: INFINITE_TAG, order_nsu: 'TESTE' + Date.now(), items: [{ quantity: 1, price: 500, description: 'Teste da colonia' }] })
+  });
+  Logger.log('Resposta da InfinitePay (' + r.getResponseCode() + '): ' + r.getContentText());
+}
