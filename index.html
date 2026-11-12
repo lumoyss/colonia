@@ -308,7 +308,7 @@
       db.total = db.sobreviventes.length; db.ideias = db.ideias.slice().reverse();
       aplicar(db); return Promise.resolve();
     }
-    return fetch(API).then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) aplicar(d); }).catch(function () {});
+    return fetch(API).then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) aplicar(d); else throw 0; }).catch(function () { eu = null; });
   }
   function enviar(dados) {
     if (TESTE) {
@@ -626,7 +626,13 @@
   }
   montarEscolhas(); montarLoja(); pintarChao();
   var eu = lerLocal("colonia_eu", null); if (eu) mostrarCartao(eu);
-  carregar().then(function () { if (eu && !estado.sobreviventes.some(function (s) { return s.nome === eu.nome; })) { estado.sobreviventes.push(eu); sincronizarCena(); } });
+  carregar().then(function () {
+    if (!eu || estado.sobreviventes.some(function (s) { return s.nome === eu.nome; })) return;
+    if (TESTE) { estado.sobreviventes.push(eu); sincronizarCena(); return; }
+    // A colônia foi zerada ou esse cadastro não existe mais: libera um novo cadastro neste aparelho
+    try { localStorage.removeItem("colonia_eu"); } catch (e) {}
+    document.getElementById("cartao").hidden = true; document.getElementById("formCadastro").hidden = false;
+  });
   setInterval(carregar, 30000);
   requestAnimationFrame(quadro);
 })();
