@@ -952,8 +952,9 @@
     document.querySelectorAll("[data-pacote] button").forEach(function (b) { b.disabled = !on; });
     document.querySelectorAll("[data-item]").forEach(function (el) {
       var ja = meus.indexOf(el.dataset.item) >= 0, b = el.querySelector("button"), i = el.querySelector("input");
-      b.disabled = ja || !on; b.textContent = ja ? "JÁ É SEU" : "TROCAR"; delete b.dataset.confirmar;
-      if (i) i.hidden = ja;
+      var semTerreno = !!i && lotesCfg() && !meus.some(function (x) { return /^lote_/.test(x); });
+      b.disabled = ja || !on || semTerreno; b.textContent = ja ? "JÁ É SEU" : semTerreno && on ? "PRECISA DE UM TERRENO" : "TROCAR"; delete b.dataset.confirmar;
+      if (i) i.hidden = ja || semTerreno;
     });
   }
   function adquirirMoedas(p, btn) {

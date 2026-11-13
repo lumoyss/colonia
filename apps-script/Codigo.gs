@@ -68,9 +68,9 @@ const TERRENOS_POR_PESSOA = 1;       // quantos terrenos cada um pode registrar 
 
 const ITENS = [
   { id: 'base', cat: 'Residência', nome: 'Base oxigenada', preco: 500, base: true,
-    desc: 'Sua base no mapa, com o nome que você escolher. Você vira cidadão da colônia e ganha voto (peso 1).' },
+    desc: 'Sua base, construída dentro do seu terreno, com o nome que você escolher. Precisa ter um terreno. Você vira cidadão da colônia e ganha voto (peso 1).' },
   { id: 'base_grande', cat: 'Residência', nome: 'Base grande', preco: 1500, base: true,
-    desc: 'Uma base maior no mapa, com placa. Voto com peso 2.' },
+    desc: 'Uma base maior, com placa, dentro do seu terreno. Voto com peso 2.' },
   { id: 'traje_dourado', cat: 'Roupas', nome: 'Traje dourado', preco: 300,
     desc: 'Seu bonequinho passa a andar de traje dourado no mapa.' },
   { id: 'capacete_dourado', cat: 'Acessórios', nome: 'Capacete dourado', preco: 200,
@@ -300,6 +300,8 @@ function comprar_(ss, d) {
   if (p.moedas < item.preco) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + item.preco + '.' };
 
   let lugar = '';
+  if (item.base && !meus.some(function (i) { return /^lote_/.test(i); }))
+    return { ok: false, erro: 'Para ter uma base você precisa de um terreno. Explore o mapa e registre um terreno primeiro.' };
   if (item.base) {
     lugar = limpar_(d.lugar, 28);
     if (lugar.length < 2) return { ok: false, erro: 'Dê um nome para a sua base.' };
@@ -457,6 +459,8 @@ function vender_(ss, d) {
   if (minhas >= 10) return { ok: false, erro: 'Você já tem 10 itens à venda. Cancele algum primeiro.' };
   const p = perfilDe_(s), lista = p.itens ? p.itens.split(',') : [];
   if (!tirarItem_(lista, item)) return { ok: false, erro: 'Você não tem esse item.' };
+  if (/^lote_/.test(item) && !lista.some(function (i) { return /^lote_/.test(i); }) && lista.some(function (i) { return ITENS.some(function (x) { return x.id === i && x.base; }); }))
+    return { ok: false, erro: 'Sua base está nesse terreno. Você não pode vender o único terreno onde está a sua base.' };
   p.itens = lista.join(',');
   salvarPerfil_(s, p);
   const id = 'O' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
