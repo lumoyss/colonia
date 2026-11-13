@@ -56,7 +56,7 @@
   .btn.sec{background:var(--verde);box-shadow:0 4px 0 #1f5c58}
   .criador{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:start}
   .preview{background:var(--fundo);border:3px solid var(--fundo2);padding:10px;text-align:center}
-  .preview canvas{width:100px;height:140px;image-rendering:pixelated}
+  .preview canvas{width:96px;height:136px;image-rendering:pixelated}
   .preview .nome{font-family:"Press Start 2P",monospace;font-size:9px;margin-top:6px;word-break:break-word;color:var(--creme)}
   .cores{display:flex;gap:6px;flex-wrap:wrap}
   .cores button{width:34px;height:34px;border:3px solid var(--fundo);cursor:pointer;padding:0}
@@ -68,7 +68,30 @@
   .msg.ok{border-color:var(--verde);background:#0f2a28}
   .msg.mostrar{display:block}
   .cartao{text-align:center;padding:8px 0}
-  .cartao canvas{width:120px;height:168px;image-rendering:pixelated}
+  .cartao canvas{width:120px;height:170px;image-rendering:pixelated}
+  .extra{text-align:left;margin-top:14px;border-top:3px solid var(--fundo2);padding-top:10px}
+  .extra p{margin:6px 0}
+  .alerta{color:#ffb4a0}
+  .linha{display:flex;gap:8px;align-items:stretch}
+  .linha input{flex:1;min-width:0}
+  .btn.mini{width:auto;margin-top:0;padding:10px 12px;font-size:10px}
+  .guarda{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .guarda button{font-family:"Press Start 2P",monospace;font-size:9px;padding:8px;border:2px solid var(--fundo2);background:var(--fundo);color:var(--creme);cursor:pointer}
+  .guarda button[aria-pressed=true]{border-color:var(--verde);background:#0f2a28;color:var(--verde2)}
+  .gostei{font-family:"Press Start 2P",monospace;font-size:9px;margin-top:6px;padding:6px 8px;border:2px solid var(--fundo2);background:var(--fundo2);color:var(--creme);cursor:pointer}
+  .gostei[aria-pressed=true]{border-color:var(--laranja);color:var(--laranja)}
+  .gostei:disabled{opacity:.7;cursor:default}
+  .ordem{display:flex;gap:6px;margin-top:10px}
+  .ordem button{flex:1;font-family:"Press Start 2P",monospace;font-size:9px;padding:8px;border:2px solid var(--fundo2);background:var(--fundo);color:var(--apagado);cursor:pointer}
+  .ordem button[aria-pressed=true]{color:var(--creme);border-color:var(--verde)}
+  .nomeclick{cursor:pointer;text-decoration:underline dotted}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modal .caixa{background:var(--fundo2);border:4px solid var(--verde);max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:16px;position:relative}
+  .modal canvas{width:96px;height:136px;image-rendering:pixelated;display:block;margin:0 auto 8px}
+  .modal .fechar{position:absolute;top:6px;right:6px;width:34px;height:34px;border:2px solid var(--fundo3);background:var(--fundo);color:var(--creme);font-family:"Press Start 2P",monospace;cursor:pointer}
+  .modal dl{margin:8px 0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:14px}
+  .modal dt{color:var(--apagado)}
+  .modal dd{margin:0;word-break:break-word}
   .cartao .num{font-family:"Press Start 2P",monospace;color:var(--laranja);font-size:14px;margin:10px 0}
   .mural{list-style:none;padding:0;margin:18px 0 0}
   .mural li{background:var(--fundo);border-left:4px solid var(--verde);padding:10px 12px;margin-bottom:8px}
@@ -124,6 +147,7 @@
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
     <div class="zoom"><button type="button" id="zoomMais" aria-label="Aproximar">+</button><button type="button" id="zoomMenos" aria-label="Afastar">−</button><button type="button" id="zoomCentro" aria-label="Voltar para o meu bonequinho" style="font-size:12px">◎</button></div></div>
   <button class="btn" type="button" id="btnBau" hidden style="margin:0 0 8px">ABRIR O BAÚ!</button>
+  <button class="btn sec" type="button" id="btnMinerar" hidden style="margin:0 0 8px">MINERAR AQUI</button>
   <div id="terrenoBox" hidden style="text-align:center;margin:0 0 8px"><p class="legenda" id="terrenoInfo" style="margin:0 0 6px;color:var(--creme)"></p><button class="btn" type="button" id="btnTerreno" hidden style="margin:0">REGISTRAR TERRENO</button></div>
   <p class="legenda" id="bauInfo">A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação.</p>
   <p class="legenda" style="margin-top:-6px">Toque no mapa para explorar com o seu bonequinho. Arraste para olhar em volta e use + e − (ou dois dedos) para dar zoom.</p>
@@ -141,10 +165,12 @@
       <h2 class="pix">ACORDE SEU SOBREVIVENTE</h2>
       <div class="criador">
         <div class="preview">
-          <canvas id="preview" width="10" height="14"></canvas>
+          <canvas id="preview" width="24" height="34"></canvas>
           <div class="nome" id="previewNome">???</div>
         </div>
         <div>
+          <label>Corpo</label>
+          <div class="opcoes" data-campo="corpo"></div>
           <label>Cor do traje</label>
           <div class="cores" data-campo="traje"></div>
           <label>Pele</label>
@@ -170,6 +196,8 @@
           <option value="__outra">Outra...</option>
         </select>
         <input id="profissaoOutra" maxlength="30" placeholder="Qual profissão?" hidden style="margin-top:8px">
+        <label for="objetivo">Seu objetivo na colônia <span class="dica">(opcional)</span></label>
+        <input id="objetivo" maxlength="120" placeholder="ex.: ser líder, ter o maior prédio, achar o fóssil raro...">
         <label for="historia">Sua história <span class="dica">(opcional)</span></label>
         <textarea id="historia" maxlength="400" placeholder="Quem você era na Terra? Como entrou na nave? O que você quer fazer aqui?"></textarea>
         <div class="dica"><span id="contaHist">0</span>/400</div>
@@ -181,11 +209,20 @@
 
     <div id="cartao" class="cartao" hidden>
       <h2 class="pix">BEM-VINDO(A) À COLÔNIA</h2>
-      <canvas id="cartaoSprite" width="10" height="14"></canvas>
+      <canvas id="cartaoSprite" width="24" height="34"></canvas>
       <div class="num" id="cartaoNum">SOBREVIVENTE #1</div>
       <p id="cartaoTexto"></p>
       <p class="dica">Tire um print e poste nos stories marcando a página. Seu bonequinho já está andando no mapa ali em cima.</p>
       <div id="cartaoChave" hidden><p class="dica" style="margin-bottom:6px">Seu código de acesso (guarde! serve para entrar em outro celular):</p><span class="chave" id="cartaoChaveTxt"></span></div>
+      <div class="extra" id="cartaoExtra" hidden>
+        <p id="cartaoGas"></p>
+        <p id="cartaoMora"></p>
+        <div id="roupasBox"><h3 class="pix cat">SUAS ROUPAS</h3><p class="dica" style="margin:0">Toque para vestir ou tirar.</p><div class="guarda" id="guardaRoupa"></div></div>
+        <label for="objetivoEu">Seu objetivo</label>
+        <div class="linha"><input id="objetivoEu" maxlength="120" placeholder="Qual é o seu objetivo na colônia?"><button class="btn sec mini" type="button" id="btnObjetivo">SALVAR</button></div>
+        <h3 class="pix cat">AMIGOS</h3>
+        <p class="dica" id="amigosLista" style="margin:0">Você ainda não adicionou amigos. Toque no nome de alguém no Rádio para ver o perfil.</p>
+      </div>
       <div class="missao" id="missao" hidden>
         <h2 class="pix">MISSÃO: CONSERTAR A NAVE</h2>
         <p class="dica" id="missaoRegra"></p>
@@ -203,6 +240,7 @@
   <section class="painel" id="painel-ideias" role="tabpanel">
     <h2 class="pix">AJUDE A ESCREVER A HISTÓRIA</h2>
     <p>O que deveria acontecer na colônia? Um perigo, uma descoberta, uma briga, um lugar novo? As melhores ideias entram nos próximos vídeos.</p>
+    <p class="dica" id="ideiaAviso" hidden></p>
     <form id="formIdeia" autocomplete="off">
       <label for="tipoIdeia">Sua ideia é sobre</label>
       <select id="tipoIdeia">
@@ -213,12 +251,12 @@
       </select>
       <label for="textoIdeia">Escreva aqui</label>
       <textarea id="textoIdeia" maxlength="500" required placeholder="ex.: Uma tempestade de areia derruba a antena e a colônia fica sem contato com as outras naves..."></textarea>
-      <label for="autorIdeia">Seu nome <span class="dica">(opcional)</span></label>
-      <input id="autorIdeia" maxlength="24" placeholder="Anônimo">
       <button class="btn" type="submit" id="btnIdeia">ENVIAR IDEIA</button>
       <div class="msg" id="msgIdeia" role="status"></div>
     </form>
-    <h2 class="pix" style="margin-top:26px">ÚLTIMAS IDEIAS</h2>
+    <h2 class="pix" style="margin-top:26px">IDEIAS DOS SOBREVIVENTES</h2>
+    <p class="dica" style="margin:4px 0 0">Dê "gostei" nas ideias que você quer ver na história.</p>
+    <div class="ordem"><button type="button" data-ordem="curtidas" aria-pressed="true">MAIS CURTIDAS</button><button type="button" data-ordem="recentes" aria-pressed="false">RECENTES</button></div>
     <ul class="mural" id="mural"><li>Nenhuma ideia ainda. Seja o primeiro!</li></ul>
   </section>
 
@@ -242,10 +280,21 @@
         <button class="btn sec" type="submit" id="btnLogin">ENTRAR</button>
       </form>
       <div class="msg" id="msgMercado" role="status"></div>
+      <h3 class="pix cat" style="margin-top:20px">TERRENO</h3>
+      <div class="loja" id="registroTerreno"></div>
       <h3 class="pix cat" style="margin-top:20px">MOEDAS</h3>
       <div class="loja" id="pacotes"></div>
       <p class="dica" style="margin-top:8px">As moedas só valem dentro da Nave Orion e não podem ser trocadas de volta por dinheiro.</p>
       <div class="loja" id="itens"></div>
+      <h3 class="pix cat" style="margin-top:26px">ANUNCIE NUM OUTDOOR</h3>
+      <p class="dica">Pague ao dono de um outdoor para a sua mensagem aparecer no mapa. A colônia fica com uma pequena taxa.</p>
+      <div class="msg" id="msgAnuncio" role="status"></div>
+      <div class="loja" id="anuncios"></div>
+      <h3 class="pix cat" style="margin-top:26px">ALUGUÉIS</h3>
+      <p class="dica">Sem casa? Alugue uma casa ou um apartamento de outro sobrevivente. Quem mora de aluguel descansa como quem tem casa.</p>
+      <div class="msg" id="msgAluguel" role="status"></div>
+      <div class="loja" id="alugueis"></div>
+      <div id="meusImoveis"></div>
       <h3 class="pix cat" style="margin-top:26px">MERCADO DOS SOBREVIVENTES</h3>
       <p class="dica">Compre e venda recursos e itens com outros sobreviventes, em moedas. Terrenos também podem ser vendidos aqui. Bases não.</p>
       <div class="msg" id="msgVenda" role="status"></div>
@@ -263,6 +312,15 @@
       </form>
     </div>
   </section>
+
+  <div class="modal" id="perfilModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="perfilNome">
+    <button type="button" class="fechar" id="perfilFechar" aria-label="Fechar">X</button>
+    <canvas id="perfilSprite" width="24" height="34"></canvas>
+    <h2 class="pix" id="perfilNome" style="text-align:center;margin:0"></h2>
+    <dl id="perfilDados"></dl>
+    <button class="btn sec" type="button" id="perfilAmigo" hidden>ADICIONAR AMIGO</button>
+    <div class="msg" id="msgPerfil" role="status"></div>
+  </div></div>
 
   <!-- ===================== RÁDIO ===================== -->
   <section class="painel" id="painel-radio" role="tabpanel">
@@ -292,20 +350,21 @@
   var TRAJES = ["#E07A3A", "#3FA7A0", "#F3E9D6", "#B8472A", "#5b7fbf", "#8a6bbf", "#6f9a4a", "#d9b54a"];
   var PELES = ["#f5d3b3", "#e3b48c", "#c68b5e", "#9a623c", "#6b4127"];
   var CABELOS = ["#1f1712", "#5a3a22", "#a8692f", "#e0c070", "#c9442c", "#e8e4dc", "#3FA7A0"];
-  var ESTILOS = ["Curto", "Longo", "Moicano", "Careca"];
+  var ESTILOS = ["Curto", "Longo", "Moicano", "Careca", "Rabo de cavalo", "Coque", "Cacheado"];
+  var CORPOS = ["Masculino", "Feminino"];
   var CAPACETE = ["Sem", "Com"];
 
   // Enquanto o planeta não tiver oxigênio, todo mundo usa capacete.
   var SEM_OXIGENIO = !CFG.OXIGENIO_NO_PLANETA;
-  var visual = { traje: 0, pele: 1, cabelo: 0, corCabelo: 1, capacete: 1 };
-  function visualTexto(v) { return [v.traje, v.pele, v.cabelo, v.corCabelo, v.capacete].join(","); }
+  var visual = { traje: 0, pele: 1, cabelo: 0, corCabelo: 1, capacete: 1, corpo: 0 };
+  function visualTexto(v) { return [v.traje, v.pele, v.cabelo, v.corCabelo, v.capacete, v.corpo].join(","); }
   function lerVisual(s, semente) {
     var p = String(s || "").split(",").map(Number);
     if (p.length < 5 || p.some(isNaN)) {
       var h = hash(semente || "x");
-      return { traje: h % TRAJES.length, pele: (h >> 3) % PELES.length, cabelo: (h >> 6) % 3, corCabelo: (h >> 9) % CABELOS.length, capacete: (h >> 12) % 2 };
+      return { traje: h % TRAJES.length, pele: (h >> 3) % PELES.length, cabelo: (h >> 6) % 3, corCabelo: (h >> 9) % CABELOS.length, capacete: (h >> 12) % 2, corpo: (h >> 14) % 2 };
     }
-    return { traje: p[0] % TRAJES.length, pele: p[1] % PELES.length, cabelo: p[2] % ESTILOS.length, corCabelo: p[3] % CABELOS.length, capacete: p[4] % 2 };
+    return { traje: p[0] % TRAJES.length, pele: p[1] % PELES.length, cabelo: p[2] % ESTILOS.length, corCabelo: p[3] % CABELOS.length, capacete: p[4] % 2, corpo: (p[5] || 0) % 2 };
   }
   function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 
@@ -322,8 +381,8 @@
     ".k.ssss.k.",
     "...ssss...",
     "...dddd...",
-    "...s..s...",
-    "...s..s...",
+    "...p..p...",
+    "...p..p...",
     "..bb..bb.."
   ];
   function escurecer(hex, f) {
@@ -337,9 +396,17 @@
     if (v.cabelo === 1) { linhas[3] = "..hekkeh.."; linhas[4] = "..hkkkkh.."; linhas[5] = "..hkkkkh.."; }
     if (v.cabelo === 2) { linhas[0] = "....hh...."; linhas[1] = "...khhk..."; linhas[2] = "..kkkkkk.."; }
     if (v.cabelo === 3) { linhas[0] = ".........."; linhas[1] = "...kkkk..."; linhas[2] = "..kkkkkk.."; }
-    if (passo) { linhas[11] = "...s...s.."; linhas[12] = "..s....s.."; linhas[13] = "..bb...bb."; }
-    var traje = tem(itens, "traje_dourado") ? OURO : TRAJES[v.traje];
-    var cores = { h: CABELOS[v.corCabelo], k: PELES[v.pele], e: "#1a1a1a", s: traje, d: escurecer(traje, 0.6), b: "#2b2b2b" };
+    if (v.cabelo === 4) { linhas[3] = "..kekkekh."; linhas[4] = "..kkkkkkh."; linhas[5] = "...kkkk.h."; }
+    if (v.cabelo === 5) { linhas[0] = "....hh...."; linhas[1] = "..hhhhhh.."; }
+    if (v.cabelo === 6) { linhas[0] = "..hhhhhh.."; linhas[1] = ".hhhhhhhh."; linhas[2] = ".hhkkkkhh."; linhas[3] = ".hkekkekh."; }
+    if (passo) { linhas[11] = "...p...p.."; linhas[12] = "..p....p.."; linhas[13] = "..bb...bb."; }
+    var dour = tem(itens, "traje_dourado"), traje = dour || tem(itens, "blusa_dourada") ? OURO : TRAJES[v.traje];
+    var perna = dour || tem(itens, "calca_dourada") ? OURO : tem(itens, "calca") ? "#3b5a8a" : TRAJES[v.traje];
+    if (tem(itens, "vestido")) { traje = "#c9442c"; linhas[10] = "..ssssss.."; linhas[11] = "..ssssss.."; linhas[12] = passo ? "..k....k.." : "...k..k..."; }
+    if (tem(itens, "chapeu")) { linhas[0] = "...cccc..."; linhas[1] = ".cccccccc."; }
+    else if (tem(itens, "bone")) { linhas[0] = "..rrrrrr.."; linhas[1] = "..rrrrrrrr"; }
+    var cores = { h: CABELOS[v.corCabelo], k: PELES[v.pele], e: "#1a1a1a", s: traje, d: escurecer(traje, 0.6), p: perna, b: tem(itens, "bota_dourada") ? OURO : "#2b2b2b", c: "#8f5a32", r: "#c9442c", v: "#7a4a2a" };
+    if (tem(itens, "colete")) { linhas[6] = "..vssssv.."; linhas[7] = ".svdssdvs."; }
     if (tem(itens, "mochila")) { ctx.fillStyle = "#9fb3b8"; ctx.fillRect(ox + 9, oy + 6, 1, 4); ctx.fillStyle = "#3FA7A0"; ctx.fillRect(ox + 9, oy + 6, 1, 1); }
     for (var y = 0; y < linhas.length; y++) for (var x = 0; x < 10; x++) {
       var c = linhas[y][x]; if (c === ".") continue;
@@ -353,6 +420,100 @@
       ctx.fillStyle = "#F3E9D6"; ctx.fillRect(ox + 6, oy, 1, 1);
     }
   }
+  /* ---------------- retrato em alta (24x34) ---------------- */
+  var RW = 24, RH = 34;
+  function desenharRetrato(ctx, v, itens, veste) {
+    var vs = function (id) { return tem(veste == null ? itens : veste, id); };
+    var fem = v.corpo === 1;
+    var pele = PELES[v.pele], peleS = escurecer(pele, 0.82), cab = CABELOS[v.corCabelo], cabS = escurecer(cab, 0.7), cabL = clarear(cab, 0.25);
+    var traje = TRAJES[v.traje], trajeS = escurecer(traje, 0.72), trajeL = clarear(traje, 0.2);
+    var px = function (c, x, y, w, h) { ctx.fillStyle = c; ctx.fillRect(x, y, w || 1, h || 1); };
+    var dourado = vs("blusa_dourada") || vs("traje_dourado"), calcaD = vs("calca_dourada") || vs("traje_dourado");
+    var vestido = vs("vestido"), calca = vs("calca"), colete = vs("colete"), botaD = vs("bota_dourada");
+    var tronco = dourado ? OURO : traje, troncoS = dourado ? "#b38a2a" : trajeS, troncoL = dourado ? "#f6dc8c" : trajeL;
+    var perna = calcaD ? OURO : calca ? "#3b5a8a" : traje, pernaS = calcaD ? "#b38a2a" : calca ? "#2a4268" : trajeS;
+    var est = v.cabelo;
+    // cabelo de trás (longo / rabo)
+    if (est === 1) { px(cab, 5, 8, 2, 12); px(cab, 17, 8, 2, 12); px(cabS, 5, 19, 2, 1); px(cabS, 17, 19, 2, 1); }
+    if (est === 4) { px(cab, 18, 8, 2, 3); px(cab, 19, 10, 2, 8); px(cabS, 20, 12, 1, 6); px("#E07A3A", 18, 9, 1, 1); }
+    if (est === 6) { px(cab, 4, 3, 16, 10); px(cabS, 4, 12, 16, 1); }
+    // mochila de oxigênio
+    if (vs("mochila")) { px("#9fb3b8", 19, 17, 3, 9); px("#6f8287", 21, 17, 1, 9); px("#3FA7A0", 19, 16, 3, 1); }
+    // pescoço
+    px(peleS, 10, 16, 4, 2);
+    // tronco
+    var o = fem ? 1 : 0;
+    px(tronco, 5 + o, 18, 14 - 2 * o, 8);
+    px(troncoS, 17 - o, 18, 2, 8);
+    px(troncoL, 6 + o, 18, 2, 1);
+    if (fem) { px(tronco, 7, 23, 10, 3); px("rgba(0,0,0,0)", 0, 0); }
+    px(troncoS, 11, 19, 1, 7); // zíper
+    px(dourado ? "#fff3c4" : "#F3E9D6", 13, 20, 3, 2); px(dourado ? "#b38a2a" : "#3FA7A0", 14, 20, 1, 1); // emblema
+    px(troncoS, 9, 18, 6, 1); // gola
+    if (colete) { px("#7a4a2a", 5 + o, 18, 4, 8); px("#7a4a2a", 15 - o, 18, 4, 8); px("#5a341c", 8 + o, 19, 1, 7); px("#5a341c", 15 - o, 19, 1, 7); px("#c9a26a", 6 + o, 21, 2, 1); }
+    // braços
+    px(tronco, 3 + o, 18, 2, 8); px(tronco, 19 - o, 18, 2, 8); px(troncoS, 20 - o, 18, 1, 8);
+    px(pele, 3 + o, 26, 2, 2); px(pele, 19 - o, 26, 2, 2);
+    // cinto
+    if (!vestido) { px("#2b2b2b", 6, 26, 12, 1); px(OURO, 11, 26, 2, 1); }
+    // pernas
+    if (vestido) {
+      var cv = "#c9442c", cvs = "#8f2c1c";
+      px(cv, 6 + o, 18, 12 - 2 * o, 8); px(cvs, 16 - o, 18, 2, 8); px("#f3a08a", 9, 18, 6, 1);
+      px(cv, 6, 26, 12, 2); px(cv, 5, 28, 14, 2); px(cvs, 5, 29, 14, 1); px(cvs, 16, 26, 2, 3);
+      px(pele, 8, 30, 3, 2); px(pele, 13, 30, 3, 2);
+    } else {
+      px(perna, 7, 27, 4, 5); px(perna, 13, 27, 4, 5); px(pernaS, 10, 27, 1, 5); px(pernaS, 16, 27, 1, 5);
+    }
+    // botas
+    var bota = botaD ? OURO : "#2b2b2b", botaS = botaD ? "#b38a2a" : "#161616";
+    px(bota, 6, 32, 5, 2); px(bota, 13, 32, 5, 2); px(botaS, 6, 33, 5, 1); px(botaS, 13, 33, 5, 1);
+    // cabeça
+    px(pele, 7, 6, 10, 10); px(pele, 8, 5, 8, 1); px(pele, 8, 16, 8, 0);
+    px("rgba(0,0,0,0)", 0, 0);
+    px(peleS, 16, 7, 1, 8); px(peleS, 8, 15, 8, 1);
+    px(pele, 6, 10, 1, 2); px(pele, 17, 10, 1, 2); // orelhas
+    // olhos
+    px("#ffffff", 9, 10, 2, 2); px("#ffffff", 13, 10, 2, 2);
+    px("#1a1a1a", 10, 10, 1, 2); px("#1a1a1a", 13, 10, 1, 2);
+    if (fem) { px("#1a1a1a", 8, 9, 1, 1); px("#1a1a1a", 15, 9, 1, 1); }
+    px(cabS, 9, 8, 2, 1); px(cabS, 13, 8, 2, 1); // sobrancelhas
+    px(peleS, 11, 12, 2, 1); // nariz
+    px(fem ? "#c25a5a" : escurecer(pele, 0.6), 10, 14, 4, 1); // boca
+    if (fem) px("#e89a8a", 8, 13, 1, 1), px("#e89a8a", 15, 13, 1, 1);
+    // cabelo da frente
+    if (est === 0) { px(cab, 7, 4, 10, 3); px(cab, 6, 5, 1, 4); px(cab, 17, 5, 1, 4); px(cabL, 9, 4, 4, 1); px(cab, 7, 7, 3, 1); px(cab, 14, 7, 2, 1); }
+    if (est === 1) { px(cab, 7, 3, 10, 3); px(cab, 6, 4, 2, 6); px(cab, 16, 4, 2, 6); px(cabL, 9, 3, 4, 1); px(cab, 8, 6, 4, 1); px(cab, 12, 6, 1, 1); }
+    if (est === 2) { px(cab, 10, 0, 4, 7); px(cabL, 11, 0, 1, 6); px(cabS, 13, 1, 1, 6); px(cabS, 7, 6, 1, 3); px(cabS, 16, 6, 1, 3); }
+    if (est === 3) { px(clarear(pele, 0.25), 9, 6, 3, 1); }
+    if (est === 4) { px(cab, 7, 4, 10, 3); px(cab, 6, 5, 1, 4); px(cab, 17, 5, 1, 4); px(cabL, 8, 4, 5, 1); px(cab, 7, 7, 2, 1); }
+    if (est === 5) { px(cab, 9, 0, 6, 3); px(cabL, 10, 0, 2, 1); px(cab, 7, 3, 10, 3); px(cab, 6, 5, 1, 3); px(cab, 17, 5, 1, 3); px(cabS, 9, 3, 6, 1); }
+    if (est === 6) { for (var i = 0; i < 16; i += 2) { px(cabL, 4 + i, 3 + (i % 4 ? 1 : 0), 1, 1); } px(cab, 7, 6, 10, 1); px(cab, 5, 6, 2, 6); px(cab, 17, 6, 2, 6); }
+    // chapéu / boné
+    if (vs("chapeu")) { px("#7a4a2a", 3, 5, 18, 1); px("#5a341c", 3, 6, 18, 1); px("#8f5a32", 7, 1, 10, 4); px("#2b2b2b", 7, 4, 10, 1); }
+    else if (vs("bone")) { px("#c9442c", 7, 3, 10, 3); px("#8f2c1c", 7, 5, 10, 1); px("#c9442c", 14, 6, 6, 1); px("#F3E9D6", 11, 3, 2, 1); }
+    // capacete (bolha de vidro)
+    if (v.capacete || SEM_OXIGENIO) {
+      var ouro = vs("capacete_dourado"), aro = ouro ? OURO : "#7FD6C8";
+      ctx.fillStyle = ouro ? "rgba(232,194,90,0.22)" : "rgba(127,214,200,0.22)";
+      ctx.fillRect(4, 1, 16, 16); ctx.fillRect(3, 3, 1, 12); ctx.fillRect(20, 3, 1, 12); ctx.fillRect(6, 0, 12, 1);
+      px(aro, 6, -1 + 1, 12, 0);
+      px(aro, 7, 0, 10, 1); px(aro, 5, 1, 2, 1); px(aro, 17, 1, 2, 1); px(aro, 4, 2, 1, 2); px(aro, 19, 2, 1, 2);
+      px(aro, 3, 4, 1, 10); px(aro, 20, 4, 1, 10); px(aro, 4, 14, 1, 2); px(aro, 19, 14, 1, 2);
+      px(ouro ? "#b38a2a" : "#3FA7A0", 5, 16, 14, 2); // colar do capacete
+      px("#ffffff", 16, 3, 2, 1); px("#ffffff", 18, 4, 1, 2);
+    }
+  }
+  function clarear(hex, f) {
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    return "rgb(" + ((r + (255 - r) * f) | 0) + "," + ((g + (255 - g) * f) | 0) + "," + ((b + (255 - b) * f) | 0) + ")";
+  }
+  function retratoEm(canvas, v, itens, veste) {
+    var c = canvas.getContext("2d");
+    canvas.width = RW; canvas.height = RH;
+    c.clearRect(0, 0, RW, RH); desenharRetrato(c, v, itens, veste);
+  }
+
   function spriteEm(canvas, v, itens) {
     var c = canvas.getContext("2d");
     canvas.width = 12; canvas.height = 17;
@@ -397,7 +558,9 @@
     if (d.mercado) { estado.mercado = d.mercado; montarMercado(); }
     if (d.chat) document.getElementById("abaRadio").hidden = false;
     estado.ofertas = d.ofertas || [];
-    calcularDonos();
+    estado.alugueis = d.alugueis || [];
+    estado.outdoorsLista = d.outdoors || [];
+    calcularDonos(); desenharAlugueis(); desenharAnuncios(); if (logado()) desenharExtras();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
     desenharOfertas();
     document.getElementById("total").textContent = estado.total;
@@ -405,17 +568,17 @@
   }
 
   /* ---------------- cena ao vivo (mapa grande com câmera) ---------------- */
-  var W = 480, H = 300, VW = 240, VH = 150;
-  var NAVE = { x: 240, y: 136 }, PONTO_CONSERTO = [240, 158];
+  var W = 640, H = 400, VW = 240, VH = 150, OFX = 80, OFY = 50; // a zona dos terrenos começa em (80,50); em volta, zona de mineração
+  var NAVE = { x: 320, y: 186 }, PONTO_CONSERTO = [320, 208];
   var cena = document.getElementById("cena"), cctx = cena.getContext("2d");
   var mundo = document.createElement("canvas"); mundo.width = W; mundo.height = H;
   var mctx = mundo.getContext("2d");
   var chao = document.createElement("canvas"); chao.width = W; chao.height = H;
   var bonecos = {}, ordem = [], cam = { x: (W - VW) / 2, y: (H - VH) / 2, livre: false };
-  var ZOOM = 2;
+  var ZOOM = W / VW;
   function prenderCam() { cam.x = Math.max(0, Math.min(W - VW, cam.x)); cam.y = Math.max(0, Math.min(H - VH, cam.y)); }
   function mudarZoom(z, px, py) { // px,py = ponto da tela (0..1) que fica parado
-    var nz = Math.max(1, Math.min(4, z)); if (nz === ZOOM) return;
+    var nz = Math.max(1, Math.min(5, z)); if (nz === ZOOM) return;
     if (px == null) { px = 0.5; py = 0.5; }
     var mx = cam.x + px * VW, my = cam.y + py * VH;
     ZOOM = nz; VW = W / ZOOM; VH = H / ZOOM;
@@ -426,6 +589,13 @@
   function pintarChao() {
     var c = chao.getContext("2d"), r = rnd(42), i, x, y;
     c.fillStyle = "#c4683a"; c.fillRect(0, 0, W, H);
+    // zona de mineração (borda pedregosa, fora dos terrenos)
+    var ZX = OFX, ZY = OFY, ZW = 480, ZH = 300, fora = function (x, y) { return x < ZX || y < ZY || x >= ZX + ZW || y >= ZY + ZH; };
+    c.fillStyle = "#93472a"; c.fillRect(0, 0, W, ZY); c.fillRect(0, ZY + ZH, W, H - ZY - ZH); c.fillRect(0, ZY, ZX, ZH); c.fillRect(ZX + ZW, ZY, W - ZX - ZW, ZH);
+    for (i = 0; i < 2600; i++) { x = (r() * W) | 0; y = (r() * H) | 0; if (!fora(x, y)) continue; c.fillStyle = r() < 0.5 ? "#7d3b22" : "#a5532f"; c.fillRect(x, y, 1 + (r() * 3 | 0), 1 + (r() * 2 | 0)); }
+    for (i = 0; i < 160; i++) { x = (r() * W) | 0; y = (r() * H) | 0; if (!fora(x, y)) continue; c.fillStyle = "#5e2a18"; c.fillRect(x, y, 4 + (r() * 4 | 0), 3); c.fillStyle = "#b8653a"; c.fillRect(x, y, 2, 1); }
+    for (i = 0; i < 26; i++) { x = (r() * W) | 0; y = (r() * H) | 0; if (!fora(x, y)) continue; c.fillStyle = "#c9f0e8"; c.fillRect(x, y, 1, 1); c.fillStyle = "#3FA7A0"; c.fillRect(x + 1, y, 1, 2); }
+    c.fillStyle = "rgba(243,233,214,.35)"; for (x = ZX; x < ZX + ZW; x += 6) { c.fillRect(x, ZY - 1, 3, 1); c.fillRect(x, ZY + ZH, 3, 1); } for (y = ZY; y < ZY + ZH; y += 6) { c.fillRect(ZX - 1, y, 1, 3); c.fillRect(ZX + ZW, y, 1, 3); }
     for (i = 0; i < 5600; i++) { c.fillStyle = r() < 0.5 ? "#b85d33" : "#d27645"; c.fillRect((r() * W) | 0, (r() * H) | 0, 1 + (r() * 2 | 0), 1); }
     // dunas escuras
     for (i = 0; i < 14; i++) { x = r() * W | 0; y = r() * H | 0; c.fillStyle = "#b35a31"; c.fillRect(x, y, 20 + r() * 30 | 0, 3); c.fillRect(x + 4, y - 2, 14, 2); }
@@ -439,42 +609,43 @@
     // cristais
     for (i = 0; i < 16; i++) { x = r() * W | 0; y = r() * H | 0; c.fillStyle = "#3FA7A0"; c.fillRect(x, y, 1, 3); c.fillRect(x - 1, y + 1, 3, 1); c.fillStyle = "#c9f0e8"; c.fillRect(x, y, 1, 1); }
     // trilhas
-    c.fillStyle = "#d8875a"; c.fillRect(0, 154, W, 4); c.fillRect(238, 0, 4, H);
+    c.fillStyle = "#d8875a"; c.fillRect(OFX, OFY + 154, 480, 4); c.fillRect(OFX + 238, OFY, 4, 300);
     // nave pousada (no meio do mapa)
     var nx = NAVE.x - 18, ny = NAVE.y - 14;
     c.fillStyle = "#3a4a52"; c.fillRect(nx, ny + 6, 36, 22); c.fillStyle = "#F3E9D6"; c.fillRect(nx + 2, ny + 4, 32, 20);
     c.fillStyle = "#c9bfac"; c.fillRect(nx + 2, ny + 18, 32, 6); c.fillStyle = "#3FA7A0"; c.fillRect(nx + 8, ny + 8, 6, 4); c.fillRect(nx + 22, ny + 8, 6, 4);
     c.fillStyle = "#E07A3A"; c.fillRect(nx + 14, ny, 8, 4); c.fillStyle = "#7A2E22"; c.fillRect(nx + 15, ny + 24, 6, 4);
     // cúpulas antigas espalhadas
-    [[80, 60], [400, 70], [110, 240], [370, 230], [190, 40], [300, 270]].forEach(function (p) {
+    [[80, 60], [400, 70], [110, 240], [370, 230], [190, 40], [300, 270]].map(function (p) { return [p[0] + OFX, p[1] + OFY]; }).forEach(function (p) {
       c.fillStyle = "#1f5c58"; c.fillRect(p[0] - 9, p[1] + 4, 18, 3);
       c.fillStyle = "#7FD6C8"; c.fillRect(p[0] - 8, p[1] - 2, 16, 6); c.fillRect(p[0] - 6, p[1] - 4, 12, 2); c.fillRect(p[0] - 3, p[1] - 5, 6, 1);
       c.fillStyle = "#c9f0e8"; c.fillRect(p[0] - 5, p[1] - 3, 2, 2);
     });
     // antena
-    c.fillStyle = "#F3E9D6"; c.fillRect(300, 150, 1, 12); c.fillStyle = "#E07A3A"; c.fillRect(299, 149, 3, 1);
+    c.fillStyle = "#F3E9D6"; c.fillRect(OFX + 300, OFY + 150, 1, 12); c.fillStyle = "#E07A3A"; c.fillRect(OFX + 299, OFY + 149, 3, 1);
   }
   function posTerreno(i) {
     var spots = [[200, 120], [280, 120], [200, 190], [280, 190], [160, 150], [320, 150], [240, 90], [240, 215], [150, 100], [330, 100], [150, 205], [330, 205]];
-    if (i < spots.length) return spots[i];
-    var r = rnd(i * 97 + 3); return [14 + r() * (W - 28) | 0, 14 + r() * (H - 28) | 0];
+    if (i < spots.length) return [spots[i][0] + OFX, spots[i][1] + OFY];
+    var r = rnd(i * 97 + 3); return [OFX + 14 + r() * 452 | 0, OFY + 14 + r() * 272 | 0];
   }
   /* ---------- terrenos (lotes) ---------- */
   estado.donos = {}; estado.aVenda = {}; estado.meusLotes = [];
   function lotesCfg() { return estado.mercado && estado.mercado.terrenos; }
   function loteEm(x, y) {
     var T = lotesCfg(); if (!T) return 0;
-    var c = Math.floor(x / T.l), l = Math.floor(y / T.a);
+    var c = Math.floor((x - (T.x0 || 0)) / T.l), l = Math.floor((y - (T.y0 || 0)) / T.a);
     if (c < 0 || l < 0 || c >= T.colunas || l >= T.linhas) return 0;
     var n = l * T.colunas + c + 1; return T.nave.indexOf(n) >= 0 ? 0 : n;
   }
-  function centroLote(n) { var T = lotesCfg(); return [((n - 1) % T.colunas) * T.l + T.l / 2, Math.floor((n - 1) / T.colunas) * T.a + T.a / 2]; }
+  function centroLote(n) { var T = lotesCfg(); return [(T.x0 || 0) + ((n - 1) % T.colunas) * T.l + T.l / 2, (T.y0 || 0) + Math.floor((n - 1) / T.colunas) * T.a + T.a / 2]; }
+  function naZonaDeMineracao(x, y) { var T = lotesCfg(); if (!T) return false; var x0 = T.x0 || 0, y0 = T.y0 || 0; return x < x0 || y < y0 || x >= x0 + T.colunas * T.l || y >= y0 + T.linhas * T.a; }
   function calcularDonos() {
     var d = {}, v = {}, porNome = {};
     estado.sobreviventes.forEach(function (s) { String(s.itens || "").split(",").forEach(function (i) { var m = /^lote_(\d+)$/.exec(i); if (m) { d[m[1]] = s.nome; if (!porNome[s.nome]) porNome[s.nome] = +m[1]; } }); });
     (estado.ofertas || []).forEach(function (o) { var m = /^lote_(\d+)$/.exec(o.item); if (m) { d[m[1]] = o.vendedor; v[m[1]] = 1; } });
     var od = {};
-    estado.sobreviventes.forEach(function (s) { if (s.outdoor && porNome[s.nome] && String(s.itens || "").split(",").indexOf("outdoor") >= 0) od[porNome[s.nome]] = s.outdoor; });
+    (estado.outdoorsLista || []).forEach(function (o) { var n = porNome[o.dono]; if (!n) return; var t = o.anuncio ? o.anuncio.texto + " · " + o.anuncio.autor : o.texto; if (t) od[n] = t; });
     estado.donos = d; estado.aVenda = v; estado.lotePorNome = porNome; estado.outdoors = od;
   }
   function posBase(t, i) {
@@ -487,7 +658,7 @@
     var meu = meuBoneco(), aqui = meu ? loteEm(meu.x, meu.y) : 0;
     for (var n = 1; n <= T.colunas * T.linhas; n++) {
       if (T.nave.indexOf(n) >= 0) continue;
-      var x0 = ((n - 1) % T.colunas) * T.l, y0 = Math.floor((n - 1) / T.colunas) * T.a, dono = estado.donos[n];
+      var x0 = (T.x0 || 0) + ((n - 1) % T.colunas) * T.l, y0 = (T.y0 || 0) + Math.floor((n - 1) / T.colunas) * T.a, dono = estado.donos[n];
       if (dono && estado.outdoors && estado.outdoors[n]) {
         var ox = x0 + T.l / 2, oy = y0 + T.a - 6;
         mctx.fillStyle = "#3a2a1c"; mctx.fillRect(ox - 12, oy - 6, 2, 7); mctx.fillRect(ox + 10, oy - 6, 2, 7);
@@ -510,33 +681,31 @@
   var recon = null, avisoAte = 0; // recon = { lote, inicio, pronto }
   function avisoTerreno(t) { document.getElementById("terrenoInfo").textContent = t; avisoAte = Date.now() + 5000; }
   function meusLotes() { return logado() && eu.itens ? String(eu.itens).split(",").filter(function (i) { return /^lote_/.test(i); }) : []; }
+  function naNave() { var meu = meuBoneco(); return !!meu && Math.hypot(meu.x - NAVE.x, meu.y - NAVE.y) < 40; }
   function verTerreno() {
     var T = lotesCfg(), box = document.getElementById("terrenoBox"), info = document.getElementById("terrenoInfo"), bt = document.getElementById("btnTerreno");
     var meu = meuBoneco();
+    desenharRegistro();
     if (!T || !meu) { box.hidden = true; return; }
     box.hidden = false;
     if (Date.now() < avisoAte) return;
-    bt.hidden = true;
-    var n = loteEm(meu.x, meu.y), parado = !meu.tx, limite = meusLotes().length >= T.porPessoa;
-    var perto = Math.hypot(meu.x - NAVE.x, meu.y - NAVE.y) < 40;
+    bt.hidden = true; bt.dataset.acao = "";
+    var n = loteEm(meu.x, meu.y), parado = !meu.tx, limite = meusLotes().length >= T.porPessoa, perto = naNave();
     if (recon && recon.pronto) {
       if (estado.donos[recon.lote]) { info.textContent = estado.donos[recon.lote] + " registrou o Terreno " + recon.lote + " antes de você. Procure outro terreno livre."; recon = null; return; }
-      if (perto) { info.textContent = "Você está na nave. Registre o Terreno " + recon.lote + " agora:"; bt.hidden = false; bt.textContent = "REGISTRAR TERRENO " + recon.lote + " (" + T.preco + " MOEDAS)"; }
-      else info.textContent = "Reconhecimento do Terreno " + recon.lote + " feito! Volte para a nave para registrar o terreno.";
+      if (perto) { info.textContent = "Você está na nave. Registre o Terreno " + recon.lote + " no Mercado:"; bt.hidden = false; bt.textContent = "IR AO MERCADO REGISTRAR"; bt.dataset.acao = "mercado"; }
+      else info.textContent = "Reconhecimento do Terreno " + recon.lote + " feito! Volte para a nave e registre o terreno no Mercado.";
       return;
     }
+    if (naZonaDeMineracao(meu.x, meu.y)) { info.textContent = "Zona de mineração: aqui não tem terrenos." + (tem(eu.itens, "picareta") ? "" : " Com uma picareta dá para minerar."); recon = null; return; }
     if (n && estado.donos[n]) { info.textContent = "Terreno " + n + (estado.aVenda[n] ? ": à venda no mercado dos sobreviventes." : ": de " + estado.donos[n] + "."); recon = null; return; }
-    if (recon && recon.lote !== n) { info.textContent = "Você saiu do Terreno " + recon.lote + " e o reconhecimento parou. Volte e fique lá dentro para recomeçar."; recon = null; return; }
-    if (!n) { info.textContent = perto ? "Você está na nave. Explore o mapa: os terrenos livres têm estacas nos cantos." : "Explore o mapa: fique parado num terreno livre (estacas nos cantos) para reconhecê-lo."; return; }
+    if (recon && recon.lote !== n) { info.textContent = "Você saiu do Terreno " + recon.lote + " e o reconhecimento parou. Volte e reivindique de novo."; recon = null; return; }
+    if (!n) { info.textContent = perto ? "Você está na nave. Explore o mapa: os terrenos livres têm estacas nos cantos." : "Explore o mapa: os terrenos livres têm estacas nos cantos."; return; }
     if (limite) { info.textContent = "Terreno " + n + " está livre. Você já tem o seu terreno; outros só no mercado dos sobreviventes."; return; }
     if (!recon) {
-      if (!parado) { info.textContent = "Terreno " + n + " está livre! Pare aqui dentro para fazer o reconhecimento."; return; }
-      recon = { lote: n, inicio: Date.now(), pronto: false, enviando: true };
-      enviar(credenciais({ acao: "reconhecer", lote: n })).then(function (r) {
-        if (!recon || recon.lote !== n) return;
-        recon.enviando = false;
-        if (!r.ok) { recon = null; avisoTerreno(r.erro || "Não deu para reconhecer esse terreno."); carregar(); }
-      });
+      info.textContent = "Terreno " + n + " está livre!" + (parado ? "" : " Pare aqui dentro para reivindicar.");
+      if (parado) { bt.hidden = false; bt.textContent = "REIVINDICAR O TERRENO " + n; bt.dataset.acao = "reivindicar"; bt.dataset.lote = n; }
+      return;
     }
     var falta = Math.max(0, T.minutos * 60000 - (Date.now() - recon.inicio));
     if (falta <= 0 && !recon.enviando) { recon.pronto = true; verTerreno(); return; }
@@ -545,24 +714,58 @@
   }
   setInterval(verTerreno, 1000);
   document.getElementById("btnTerreno").addEventListener("click", function () {
-    var bt = this, T = lotesCfg();
-    if (!recon) return;
-    bt.disabled = true;
+    var bt = this;
+    if (bt.dataset.acao === "mercado") { irPara("mercado"); document.getElementById("registroTerreno").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    if (bt.dataset.acao !== "reivindicar") return;
+    var n = Number(bt.dataset.lote);
+    recon = { lote: n, inicio: Date.now(), pronto: false, enviando: true }; bt.hidden = true;
+    enviar(credenciais({ acao: "reconhecer", lote: n })).then(function (r) {
+      if (!recon || recon.lote !== n) return;
+      recon.enviando = false;
+      if (!r.ok) { recon = null; avisoTerreno(r.erro || "Não deu para reivindicar esse terreno."); carregar(); }
+    });
+    verTerreno();
+  });
+  // cartão "Registrar terreno" no Mercado
+  function desenharRegistro() {
+    var box = document.getElementById("registroTerreno"), T = lotesCfg();
+    if (!box || !T) { if (box) box.innerHTML = ""; return; }
+    if (!box.firstChild) {
+      var c = cartaoLoja("Registrar terreno", T.preco.toLocaleString("pt-BR") + " moedas", "", "REGISTRAR");
+      c.el.id = "cartaoRegistro"; c.botao.onclick = registrarTerreno; box.appendChild(c.el);
+    }
+    var el = document.getElementById("cartaoRegistro"), d = el.querySelector("small"), b = el.querySelector("button"), meus = meusLotes();
+    var txt, pode = false;
+    if (!logado()) txt = "Acorde seu sobrevivente para conseguir um terreno.";
+    else if (meus.length >= T.porPessoa) txt = "Você já tem o " + nomeItem(meus[0]) + ". Outros terrenos só no mercado dos sobreviventes.";
+    else if (recon && recon.pronto && naNave()) { txt = "Terreno " + recon.lote + " reconhecido! Registre agora para ele ser seu."; pode = true; }
+    else if (recon && recon.pronto) txt = "Terreno " + recon.lote + " reconhecido. Leve seu bonequinho de volta para a nave para registrar.";
+    else if (recon) txt = "Reconhecendo o Terreno " + recon.lote + "... fique dentro dele até terminar.";
+    else txt = "Como conseguir: 1) explore o mapa e pare num terreno livre (estacas nos cantos); 2) toque em REIVINDICAR e fique lá " + T.minutos + " minutos; 3) volte para a nave e registre aqui.";
+    if (d.textContent !== txt) d.textContent = txt;
+    if (!b.dataset.confirmar) { b.disabled = !pode; b.textContent = meus.length >= T.porPessoa ? "JÁ TEM TERRENO" : "REGISTRAR"; }
+  }
+  function registrarTerreno() {
+    var b = this;
+    if (!recon || !recon.pronto) return;
+    if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + lotesCfg().preco + ")"; return; }
+    delete b.dataset.confirmar; b.disabled = true;
     enviar(credenciais({ acao: "registrar_terreno" })).then(function (r) {
-      bt.disabled = false;
-      if (!r.ok) { avisoTerreno((r.erro || "Não deu certo.") + (/custa/.test(r.erro || "") ? " Consiga moedas no Mercado ou consertando a nave." : "")); if (/antes de você|reconhecimento/i.test(r.erro || "")) recon = null; carregar(); return; }
-      eu.moedas = r.moedas; eu.itens = r.itens; salvarEu(); mostrarCartao(eu); recon = null;
-      avisoTerreno("O Terreno " + r.lote + " agora é seu! Se você tiver uma base, ela é montada dentro dele.");
+      if (!r.ok) { mensagem("msgMercado", (r.erro || "Não deu certo.") + (/custa/.test(r.erro || "") ? " Adquira moedas abaixo ou conserte a nave." : "")); if (/antes de você|reconhecimento/i.test(r.erro || "")) recon = null; carregar(); return; }
+      aplicarPerfil(r); salvarEu(); mostrarCartao(eu); recon = null;
+      mensagem("msgMercado", "O Terreno " + r.lote + " agora é seu! Agora você pode construir sua casa nele.", true);
       carregar();
     });
-  });
+  }
 
   function sincronizarCena() {
     estado.sobreviventes.forEach(function (s) {
       var id = String(s.nome);
-      if (bonecos[id]) { bonecos[id].itens = s.itens || ""; return; }
+      var roupa = s.veste != null ? s.veste : (s.itens || "");
+      if (eu && logado() && s.nome === eu.nome && eu.veste != null) roupa = eu.veste;
+      if (bonecos[id]) { bonecos[id].itens = roupa; return; }
       var r = rnd(hash(id));
-      bonecos[id] = { nome: s.nome, itens: s.itens || "", v: lerVisual(s.visual, s.nome), x: 190 + r() * 100, y: 150 + r() * 30, tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r };
+      bonecos[id] = { nome: s.nome, itens: roupa, v: lerVisual(s.visual, s.nome), x: OFX + 190 + r() * 100, y: OFY + 150 + r() * 30, tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r };
       ordem.push(id);
     });
   }
@@ -593,7 +796,8 @@
     if (meu && (missao.modo === "consertando" || missao.modo === "descansando")) {
       var alvo = PONTO_CONSERTO;
       if (missao.modo === "descansando") {
-        var ib = -1; estado.terrenos.forEach(function (t, i) { if (ib < 0 && t.dono === eu.nome) ib = i; });
+        var casaDe = eu.nome; if (eu.mora) (estado.alugueis || []).forEach(function (a) { if (a.codigo === eu.mora) casaDe = a.dono; });
+        var ib = -1; estado.terrenos.forEach(function (t, i) { if (ib < 0 && t.dono === casaDe) ib = i; });
         if (ib >= 0) { var pb = posBase(estado.terrenos[ib], ib); alvo = [pb[0], pb[1] + 8]; } else alvo = [NAVE.x - 10, NAVE.y + 22];
       }
       meu.explorando = false;
@@ -604,7 +808,7 @@
       if (b.explorando) { b.tx = b.ax; b.ty = b.ay; b.espera = 0; }
       if (b.espera > 0) { b.espera--; }
       else {
-        if (!b.tx) { b.tx = 150 + b.r() * 180; b.ty = 110 + b.r() * 90; }
+        if (!b.tx) { b.tx = OFX + 150 + b.r() * 180; b.ty = OFY + 110 + b.r() * 90; }
         var dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy), vel = b === meu ? 0.6 : 0.25;
         if (d < 1) { b.tx = 0; b.espera = b === meu ? 100000 : 60 + b.r() * 240 | 0; b.explorando = false; }
         else { b.x += dx / d * Math.min(vel, d); b.y += dy / d * Math.min(vel, d); }
@@ -656,6 +860,8 @@
     // perto do baú?
     var perto = meu && bauVisivel() && Math.hypot(meu.x - estado.bau.x, meu.y - estado.bau.y) < 14;
     var bb = document.getElementById("btnBau"); if (bb.hidden === !!perto) bb.hidden = !perto;
+    var pode = meu && !meu.tx && tem(eu.itens, "picareta") && naZonaDeMineracao(meu.x, meu.y);
+    var bm = document.getElementById("btnMinerar"); if (bm.hidden === !!pode) bm.hidden = !pode;
     requestAnimationFrame(quadro);
   }
   function rotulo(txt, x, y, cor, fundo) {
@@ -728,10 +934,24 @@
     enviar(credenciais({ acao: "bau" })).then(function (r) {
       bt.disabled = false;
       if (!r.ok) { mensagemMapa(r.erro || "Não deu para abrir."); carregar(); return; }
-      eu.moedas = r.moedas; eu.itens = r.itens; salvarEu();
+      aplicarPerfil(r); salvarEu();
       estado.bau.abertoPor = eu.nome;
       mensagemMapa("Você abriu o baú e encontrou: " + r.ganhou.map(nomeItem).join(", ") + "!");
       carregar();
+    });
+  });
+
+  var mineraAte = 0;
+  document.getElementById("btnMinerar").addEventListener("click", function () {
+    var bt = this, meu = meuBoneco(); if (!meu) return;
+    if (Date.now() < mineraAte) { mensagemMapa("Sua picareta está esfriando. Espere " + Math.ceil((mineraAte - Date.now()) / 1000) + " segundos."); return; }
+    bt.disabled = true; bt.textContent = "MINERANDO...";
+    enviar(credenciais({ acao: "minerar", x: Math.round(meu.x), y: Math.round(meu.y) })).then(function (r) {
+      bt.disabled = false; bt.textContent = "MINERAR AQUI";
+      if (!r.ok) { if (r.espera) mineraAte = Date.now() + r.espera * 1000; mensagemMapa(r.erro || "Não deu para minerar."); return; }
+      mineraAte = Date.now() + (r.espera || 120) * 1000;
+      aplicarPerfil(r); salvarEu();
+      mensagemMapa(r.achou ? "Você minerou e achou: " + (nomeItem(r.achou) || r.achou) + "!" : "Só pedra dessa vez... tente de novo daqui a pouco.");
     });
   });
 
@@ -740,7 +960,7 @@
   function montarEscolhas() {
     document.querySelectorAll("[data-campo]").forEach(function (box) {
       var campo = box.dataset.campo;
-      var lista = campo === "traje" ? TRAJES : campo === "pele" ? PELES : campo === "corCabelo" ? CABELOS : campo === "cabelo" ? ESTILOS : CAPACETE;
+      var lista = campo === "traje" ? TRAJES : campo === "pele" ? PELES : campo === "corCabelo" ? CABELOS : campo === "cabelo" ? ESTILOS : campo === "corpo" ? CORPOS : CAPACETE;
       lista.forEach(function (item, i) {
         var b = document.createElement("button"); b.type = "button";
         if (box.classList.contains("cores")) { b.style.background = item; b.setAttribute("aria-label", campo + " " + (i + 1)); }
@@ -749,12 +969,12 @@
         b.onclick = function () {
           visual[campo] = i;
           box.querySelectorAll("button").forEach(function (o, j) { o.setAttribute("aria-pressed", String(j === i)); });
-          spriteEm(prev, visual);
+          retratoEm(prev, visual, "");
         };
         box.appendChild(b);
       });
     });
-    spriteEm(prev, visual);
+    retratoEm(prev, visual, "");
   }
   var elNome = document.getElementById("nome");
   elNome.addEventListener("input", function () { document.getElementById("previewNome").textContent = elNome.value.trim() || "???"; });
@@ -768,12 +988,12 @@
   function mostrarCartao(eu) {
     document.getElementById("formCadastro").hidden = true;
     document.getElementById("cartao").hidden = false;
-    spriteEm(document.getElementById("cartaoSprite"), lerVisual(eu.visual, eu.nome), eu.itens);
+    retratoEm(document.getElementById("cartaoSprite"), lerVisual(eu.visual, eu.nome), eu.veste != null ? eu.veste : eu.itens);
     document.getElementById("cartaoChave").hidden = !eu.chave;
     document.getElementById("cartaoChaveTxt").textContent = eu.chave || "";
     document.getElementById("cartaoNum").textContent = "SOBREVIVENTE #" + eu.numero;
     document.getElementById("cartaoTexto").textContent = eu.nome + ", " + eu.profissao + ". Você acordou da hibernação. Agora é garantir seu oxigênio.";
-    document.getElementById("autorIdeia").value = eu.nome;
+    desenharExtras();
   }
 
   document.getElementById("cadastro").addEventListener("submit", function (ev) {
@@ -781,7 +1001,8 @@
     var prof = elProf.value === "__outra" ? elOutra.value.trim() : elProf.value;
     var dados = {
       acao: "cadastrar", nome: elNome.value.trim(), instagram: document.getElementById("instagram").value.trim(),
-      profissao: prof, historia: elHist.value.trim(), visual: visualTexto(visual), site: document.getElementById("site").value
+      profissao: prof, historia: elHist.value.trim(), visual: visualTexto(visual), site: document.getElementById("site").value,
+      objetivo: document.getElementById("objetivo").value.trim()
     };
     if (dados.nome.length < 2) return mensagem("msgCadastro", "Escolha um nome com pelo menos 2 letras.");
     if (!prof) return mensagem("msgCadastro", "Escolha uma profissão.");
@@ -789,7 +1010,7 @@
     enviar(dados).then(function (r) {
       btn.disabled = false; btn.textContent = "ACORDAR DA HIBERNAÇÃO";
       if (!r.ok) return mensagem("msgCadastro", r.erro || "Algo deu errado. Tente de novo.");
-      eu = { numero: r.numero, nome: dados.nome, profissao: dados.profissao, visual: dados.visual, instagram: dados.instagram, chave: r.chave || "", moedas: 0, itens: "" };
+      eu = { numero: r.numero, nome: dados.nome, profissao: dados.profissao, visual: dados.visual, instagram: dados.instagram, chave: r.chave || "", moedas: 0, itens: "", veste: "", gas: !!r.gas, objetivo: dados.objetivo, amigos: "" };
       salvarEu();
       estado.sobreviventes.push(eu); estado.total++; document.getElementById("total").textContent = estado.total;
       sincronizarCena(); mostrarCartao(eu);
@@ -799,27 +1020,58 @@
 
   /* ---------------- ideias ---------------- */
   var NOMES_TIPO = { historia: "HISTÓRIA", lugar: "LUGAR", profissao: "PROFISSÃO", outro: "IDEIA" };
+  var ordemIdeias = "curtidas";
+  document.querySelectorAll("[data-ordem]").forEach(function (b) { b.onclick = function () {
+    ordemIdeias = b.dataset.ordem; document.querySelectorAll("[data-ordem]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); }); desenharMural();
+  }; });
+  function temCasa() { return logado() && (tem(eu.itens, "base") || tem(eu.itens, "base_grande")); }
+  function desenharFormIdeia() {
+    var precisa = !estado.mercado || estado.mercado.ideiaPrecisaBase !== false, aviso = document.getElementById("ideiaAviso"), form = document.getElementById("formIdeia");
+    var pode = TESTE || (logado() && (!precisa || temCasa()));
+    form.hidden = !pode; aviso.hidden = pode;
+    aviso.textContent = !logado() ? "Para mandar ideias, acorde seu sobrevivente (aba Entrar) e construa sua casa. Quem já acordou pode dar gostei nas ideias abaixo." :
+      "Só quem tem casa construída pode mandar ideias. Registre um terreno e construa sua casa no Mercado. Enquanto isso, dê gostei nas ideias que você quer ver na história!";
+  }
   function desenharMural() {
     var ul = document.getElementById("mural");
+    desenharFormIdeia();
     if (!estado.ideias.length) return;
     ul.innerHTML = "";
-    estado.ideias.slice(0, 30).forEach(function (i) {
+    var lista = estado.ideias.slice();
+    if (ordemIdeias === "curtidas") lista.sort(function (a, b) { return (b.gostei || 0) - (a.gostei || 0); });
+    lista.slice(0, 40).forEach(function (i) {
       var li = document.createElement("li"), tag = document.createElement("span"), txt = document.createElement("span"), au = document.createElement("div");
       tag.className = "tag"; tag.textContent = NOMES_TIPO[i.tipo] || "IDEIA";
       txt.textContent = i.texto; au.className = "autor"; au.textContent = "por " + (i.autor || "Anônimo");
-      li.appendChild(tag); li.appendChild(txt); li.appendChild(au); ul.appendChild(li);
+      li.appendChild(tag); li.appendChild(txt); li.appendChild(au);
+      var curti = logado() && (i.quem || []).indexOf(Number(eu.numero)) >= 0, minha = logado() && i.autor === eu.nome;
+      var g = document.createElement("button"); g.type = "button"; g.className = "gostei";
+      g.textContent = "♥ GOSTEI " + (i.gostei || 0); g.setAttribute("aria-pressed", String(curti));
+      g.disabled = !logado() || minha || !i.id || TESTE;
+      g.title = !logado() ? "Acorde seu sobrevivente para dar gostei" : minha ? "Essa ideia é sua" : "";
+      g.onclick = function () {
+        g.disabled = true;
+        enviar(credenciais({ acao: "curtir", id: i.id })).then(function (r) {
+          g.disabled = false;
+          if (!r.ok) return mensagem("msgIdeia", r.erro || "Não deu certo.");
+          i.gostei = r.gostei; i.quem = (i.quem || []).filter(function (q) { return q !== Number(eu.numero); }); if (r.curti) i.quem.push(Number(eu.numero));
+          g.textContent = "♥ GOSTEI " + r.gostei; g.setAttribute("aria-pressed", String(r.curti));
+        });
+      };
+      li.appendChild(g); ul.appendChild(li);
     });
   }
   document.getElementById("formIdeia").addEventListener("submit", function (ev) {
     ev.preventDefault();
-    var dados = { acao: "ideia", tipo: document.getElementById("tipoIdeia").value, texto: document.getElementById("textoIdeia").value.trim(), autor: document.getElementById("autorIdeia").value.trim() };
+    if (!logado()) return mensagem("msgIdeia", "Entre com o seu sobrevivente primeiro.");
+    var dados = credenciais({ acao: "ideia", tipo: document.getElementById("tipoIdeia").value, texto: document.getElementById("textoIdeia").value.trim() });
     if (dados.texto.length < 3) return mensagem("msgIdeia", "Escreva sua ideia antes de enviar.");
     var btn = document.getElementById("btnIdeia"); btn.disabled = true;
     enviar(dados).then(function (r) {
       btn.disabled = false;
       if (!r.ok) return mensagem("msgIdeia", r.erro || "Algo deu errado. Tente de novo.");
       document.getElementById("textoIdeia").value = "";
-      estado.ideias.unshift({ tipo: dados.tipo, texto: dados.texto, autor: dados.autor || "Anônimo" }); desenharMural();
+      estado.ideias.unshift({ id: "", tipo: dados.tipo, texto: dados.texto, autor: eu.nome, gostei: 0, quem: [], data: new Date().toISOString() }); desenharMural(); setTimeout(carregar, 1500);
       mensagem("msgIdeia", "Ideia recebida! Se ela for uma das mais pedidas, entra no próximo vídeo.", true);
     });
   });
@@ -829,10 +1081,13 @@
   function logado() { return !!(eu && eu.chave); }
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
+  function aplicarPerfil(r) {
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+  }
   function atualizarPerfil() {
     if (!logado() || TESTE) return Promise.resolve();
     return enviar(credenciais({ acao: "perfil" })).then(function (r) {
-      if (r.ok) { eu.moedas = r.moedas; eu.itens = r.itens; eu.numero = r.numero; eu.outdoor = r.outdoor; salvarEu(); mostrarCartao(eu); }
+      if (r.ok) { aplicarPerfil(r); salvarEu(); mostrarCartao(eu); }
       else if (/código de acesso errado/.test(r.erro || "")) { eu.chave = ""; salvarEu(); }
     });
   }
@@ -848,7 +1103,7 @@
     }
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
-    desenharItens(); mostrarMissao(); desenharOfertas();
+    desenharItens(); mostrarMissao(); desenharOfertas(); desenharAlugueis(); desenharFormIdeia(); desenharExtras();
   }
   document.getElementById("formLogin").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -858,7 +1113,7 @@
     enviar({ acao: "entrar", nome: nome, chave: chave }).then(function (r) {
       btn.disabled = false;
       if (!r.ok) return mensagem("msgMercado", r.erro || "Não consegui entrar.");
-      eu = { numero: r.numero, nome: r.nome, profissao: r.profissao, visual: r.visual, instagram: r.instagram, chave: r.chave, moedas: r.moedas, itens: r.itens };
+      eu = { numero: r.numero, nome: r.nome, profissao: r.profissao, visual: r.visual, instagram: r.instagram, chave: r.chave }; aplicarPerfil(r);
       salvarEu(); mostrarCartao(eu); mensagem("msgMercado", "Bem-vindo(a) de volta, " + r.nome + "!", true);
     });
   });
@@ -870,8 +1125,9 @@
     var R = regras(), box = document.getElementById("missao");
     box.hidden = !(R && logado() && !TESTE);
     if (box.hidden) return;
-    document.getElementById("missaoRegra").textContent = "Fique com o site aberto consertando a nave: " + (R.porMoeda == 1 ? "a cada minuto" : "a cada " + R.porMoeda + " minutos") + " de conserto você ganha 1 moeda. Depois de " + R.turno +
-      " minutos você cansa e precisa descansar: quem tem base descansa " + R.descansoBase + " minuto; quem não tem base fica " + R.descansoSemBase + " minutos sem consertar.";
+    var tempo = function (m) { return m >= 60 ? (m / 60) + (m === 60 ? " hora" : " horas") : m + (m === 1 ? " minuto" : " minutos"); };
+    document.getElementById("missaoRegra").textContent = "Fique com o site aberto consertando a nave: " + (R.porMoeda == 1 ? "a cada minuto" : "a cada " + R.porMoeda + " minutos") + " de conserto você ganha 1 moeda. Depois de " + tempo(R.turno) +
+      " você cansa e precisa descansar: quem mora numa casa (sua ou alugada) descansa " + tempo(R.descansoBase) + "; quem não tem casa descansa " + tempo(R.descansoSemBase) + ". Para trabalhar você precisa de gás de oxigênio.";
     desenharMissao();
   }
   function desenharMissao() {
@@ -884,10 +1140,11 @@
     bt.hidden = missao.modo === "consertando" || missao.modo === "descansando";
     if (missao.modo === "consertando") st.textContent = document.hidden ? "Pausado: volte para o site para continuar consertando." : (R.porMoeda == 1 ? "Consertando a nave... você ganha 1 moeda a cada minuto." : "Consertando a nave... (" + (missao.progresso) + " de " + R.porMoeda + " min para a próxima moeda)");
     else if (missao.modo === "descansando") {
-      var m = Math.floor(missao.descanso / 60), ss = ("0" + (missao.descanso % 60)).slice(-2);
-      st.textContent = (missao.temBase ? "Cansado! Descansando na sua base: " : "Cansado e sem base! Descansando na nave: ") + m + ":" + ss;
+      var hh = Math.floor(missao.descanso / 3600), m = Math.floor(missao.descanso % 3600 / 60), ss = ("0" + (missao.descanso % 60)).slice(-2);
+      st.textContent = (missao.temBase ? "Cansado! Descansando em casa: " : "Cansado e sem casa! Descansando na nave: ") + (hh ? hh + ":" + ("0" + m).slice(-2) : m) + ":" + ss;
     }
     else if (missao.modo === "limite") { st.textContent = "Você já consertou o máximo por hoje. Volte amanhã!"; bt.hidden = true; }
+    else if (missao.modo === "doente" || (logado() && eu.gas === false)) { st.textContent = "Sem gás de oxigênio! Você ficou doente e não pode trabalhar. Adquira gás no Mercado."; bt.hidden = false; bt.textContent = "ADQUIRIR GÁS NO MERCADO"; }
     else { st.textContent = "Seu sobrevivente está parado."; bt.textContent = missao.turno || missao.progresso ? "VOLTAR A CONSERTAR" : "CONSERTAR A NAVE"; }
   }
   function aplicarMissao(r) {
@@ -897,6 +1154,7 @@
     if (r.ganhou) mensagem("msgMercado", "+" + r.ganhou + " moeda por consertar a nave!", true);
     if (r.estado === "cansado" || r.estado === "descansando") { missao.modo = "descansando"; missao.descanso = r.descansoSeg; }
     else if (r.estado === "limite") { pararMissao(); missao.modo = "limite"; }
+    else if (r.estado === "doente") { pararMissao(); missao.modo = "doente"; eu.gas = false; salvarEu(); }
     desenharMissao();
   }
   function pingMissao() {
@@ -905,6 +1163,7 @@
   }
   function pararMissao() { clearInterval(missao.timer); missao.timer = null; }
   document.getElementById("btnConsertar").addEventListener("click", function () {
+    if (missao.modo === "doente" || eu.gas === false) { irPara("mercado"); var g = document.querySelector('[data-item="gas"]'); if (g) g.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     missao.modo = "consertando"; missao.seg = 0; pararMissao();
     missao.timer = setInterval(pingMissao, 60000);
     desenharMissao();
@@ -942,7 +1201,7 @@
         c.botao.disabled = true;
         enviar(credenciais({ acao: minha ? "cancelar" : "comprar_oferta", id: o.id })).then(function (r) {
           if (!r.ok) { mensagem("msgVenda", r.erro || "Não deu certo."); carregar(); return; }
-          eu.moedas = r.moedas; eu.itens = r.itens; salvarEu(); mostrarCartao(eu);
+          aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
           mensagem("msgVenda", minha ? "Oferta cancelada. O item voltou para você." : "Comprado! " + nomeItem(o.item) + " agora é seu.", true);
           carregar();
         });
@@ -970,7 +1229,7 @@
     enviar(credenciais({ acao: "vender", item: item, preco: preco })).then(function (r) {
       bt.disabled = false;
       if (!r.ok) return mensagem("msgVenda", r.erro || "Não deu certo.");
-      eu.moedas = r.moedas; eu.itens = r.itens; salvarEu(); mostrarCartao(eu);
+      aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
       document.getElementById("venderPreco").value = "";
       mensagem("msgVenda", nomeItem(item) + " está à venda por " + preco + " moedas.", true);
       carregar();
@@ -1013,6 +1272,7 @@
       c.el.dataset.item = it.id;
       if (it.base || it.terreno) { var inp = document.createElement("input"); inp.maxLength = it.base ? 28 : 40; inp.placeholder = it.base ? "Nome da sua base" : "Frase do outdoor (até 40 letras)"; c.el.insertBefore(inp, c.botao); }
       c.botao.onclick = function () { trocar(it, c.el, c.botao); };
+      if (it.id === "outdoor") c.el.appendChild(controlesOutdoor());
       lista.appendChild(c.el);
     });
     desenharConta();
@@ -1023,11 +1283,20 @@
     document.querySelectorAll("[data-pacote] button").forEach(function (b) { b.disabled = !on; });
     document.querySelectorAll("[data-item]").forEach(function (el) {
       var ja = meus.indexOf(el.dataset.item) >= 0, b = el.querySelector("button"), i = el.querySelector("input");
+      if (el.dataset.item === "gas") { var tg = on && eu.gas; b.disabled = !on || tg; b.textContent = tg ? "VOCÊ TEM GÁS HOJE" : "ADQUIRIR GÁS"; delete b.dataset.confirmar; return; }
       var semTerreno = !!i && lotesCfg() && !meus.some(function (x) { return /^lote_/.test(x); });
+      var dono = el.querySelector(".outdoor-dono"); if (dono) dono.hidden = !ja;
       if (ja && el.dataset.item === "outdoor") {
         b.disabled = false; b.textContent = "TROCAR A FRASE"; delete b.dataset.confirmar; i.hidden = false;
-        if (document.activeElement !== i) i.value = eu.outdoor || ""; return;
+        if (document.activeElement !== i) i.value = eu.outdoor || "";
+        var meu = (estado.outdoorsLista || []).filter(function (o) { return o.dono === eu.nome; })[0], pi = el.querySelector(".outdoor-dono input");
+        if (meu && document.activeElement !== pi) pi.value = meu.preco || 0;
+        el.querySelector(".outdoor-dono .dica").textContent = meu && meu.anuncio ? "Anúncio pago de " + meu.anuncio.autor + " até " + new Date(meu.anuncio.ate).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + ": “" + meu.anuncio.texto + "”" : "Preço para outros anunciarem no seu outdoor (moedas por " + ((estado.mercado && estado.mercado.anuncioHoras) || 24) + "h; 0 = não aceitar):";
+        return;
       }
+      var casa = meus.indexOf("base") >= 0 || meus.indexOf("base_grande") >= 0;
+      if (!ja && on && !semTerreno && el.dataset.item === "outdoor" && casa) { b.disabled = true; b.textContent = "SEU TERRENO JÁ TEM CASA"; i.hidden = true; delete b.dataset.confirmar; return; }
+      if (!ja && on && !semTerreno && (el.dataset.item === "base" || el.dataset.item === "base_grande") && meus.indexOf("outdoor") >= 0) { b.disabled = true; b.textContent = "TIRE O OUTDOOR PRIMEIRO"; i.hidden = true; delete b.dataset.confirmar; return; }
       b.disabled = ja || !on || semTerreno; b.textContent = ja ? "JÁ É SEU" : semTerreno && on ? "PRECISA DE UM TERRENO" : "TROCAR"; delete b.dataset.confirmar;
       if (i) i.hidden = ja || semTerreno;
     });
@@ -1043,6 +1312,7 @@
   function trocar(it, el, btn) {
     var inp = el.querySelector("input"), lugar = inp ? inp.value.trim() : "";
     var meus = eu.itens ? String(eu.itens).split(",") : [];
+    if (it.gas && eu.gas) return mensagem("msgMercado", "Você já tem gás de oxigênio para hoje.");
     if (it.id === "outdoor" && !lugar) { inp.focus(); return mensagem("msgMercado", "Escreva a frase do seu outdoor."); }
     if (it.id === "outdoor" && meus.indexOf("outdoor") >= 0) {
       btn.disabled = true;
@@ -1059,11 +1329,210 @@
     btn.disabled = true; btn.textContent = "TROCANDO...";
     enviar(credenciais({ acao: "comprar", item: it.id, lugar: lugar })).then(function (r) {
       if (!r.ok) { desenharItens(); return mensagem("msgMercado", r.erro || "Não deu certo. Tente de novo."); }
-      eu.moedas = r.moedas; eu.itens = r.itens; eu.outdoor = r.outdoor; salvarEu(); mostrarCartao(eu);
-      mensagem("msgMercado", "Agora é seu: " + it.nome + "!" + (it.base ? " Sua base já aparece no mapa." : ""), true);
+      aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
+      if (it.gas) { eu.gas = true; salvarEu(); if (missao.modo === "doente") missao.modo = "parado"; }
+      mensagem("msgMercado", it.gas ? "Gás de oxigênio garantido até meia-noite. Pode voltar a trabalhar!" : "Agora é seu: " + it.nome + "!" + (it.base ? " Sua casa já aparece no seu terreno." : it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
       carregar();
     });
   }
+
+  /* ---------------- outdoors: dono e anúncios ---------------- */
+  function controlesOutdoor() {
+    var w = document.createElement("div"); w.className = "outdoor-dono"; w.hidden = true; w.style.marginTop = "12px";
+    var d = document.createElement("p"); d.className = "dica"; d.style.margin = "0 0 6px";
+    var linha = document.createElement("div"); linha.className = "linha";
+    var inp = document.createElement("input"); inp.type = "number"; inp.min = 0; inp.max = 100000;
+    var bt = document.createElement("button"); bt.type = "button"; bt.className = "btn sec mini"; bt.textContent = "SALVAR";
+    bt.onclick = function () {
+      bt.disabled = true;
+      enviar(credenciais({ acao: "outdoor_preco", preco: Math.floor(Number(inp.value) || 0) })).then(function (r) {
+        bt.disabled = false;
+        if (!r.ok) return mensagem("msgMercado", r.erro || "Não deu certo.");
+        mensagem("msgMercado", r.preco ? "Seu outdoor aceita anúncios por " + r.preco + " moedas." : "Seu outdoor não aceita mais anúncios.", true); carregar();
+      });
+    };
+    var tirar = document.createElement("button"); tirar.type = "button"; tirar.className = "btn sec"; tirar.textContent = "TIRAR O OUTDOOR (PARA CONSTRUIR)"; tirar.style.marginTop = "10px";
+    tirar.onclick = function () {
+      if (!tirar.dataset.confirmar) { tirar.dataset.confirmar = "1"; tirar.textContent = "CONFIRMAR: TIRAR (SEM REEMBOLSO)"; return; }
+      delete tirar.dataset.confirmar; tirar.disabled = true;
+      enviar(credenciais({ acao: "tirar_outdoor" })).then(function (r) {
+        tirar.disabled = false; tirar.textContent = "TIRAR O OUTDOOR (PARA CONSTRUIR)";
+        if (!r.ok) return mensagem("msgMercado", r.erro || "Não deu certo.");
+        aplicarPerfil(r); salvarEu(); mensagem("msgMercado", "Outdoor retirado. Seu terreno está livre para construir.", true); carregar();
+      });
+    };
+    linha.appendChild(inp); linha.appendChild(bt); w.appendChild(d); w.appendChild(linha); w.appendChild(tirar);
+    return w;
+  }
+  function desenharAnuncios() {
+    var box = document.getElementById("anuncios"); if (!box || !estado.mercado) return;
+    box.innerHTML = "";
+    var horas = estado.mercado.anuncioHoras || 24, lista = (estado.outdoorsLista || []).filter(function (o) { return o.preco > 0; });
+    if (!lista.length) { var v = document.createElement("p"); v.className = "dica"; v.textContent = "Nenhum outdoor aceitando anúncios agora."; box.appendChild(v); }
+    lista.forEach(function (o) {
+      var meu = logado() && o.dono === eu.nome, n = estado.lotePorNome && estado.lotePorNome[o.dono];
+      var desc = o.anuncio ? "Ocupado até " + new Date(o.anuncio.ate).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + " com “" + o.anuncio.texto + "” (de " + o.anuncio.autor + ")." : "Livre! Sua mensagem fica no mapa por " + horas + " horas.";
+      var c = cartaoLoja("Outdoor de " + o.dono + (n ? " (Terreno " + n + ")" : ""), o.preco.toLocaleString("pt-BR") + " moedas / " + horas + "h", desc, meu ? "É SEU" : "ANUNCIAR");
+      var inp = document.createElement("input"); inp.maxLength = 40; inp.placeholder = "Sua mensagem (até 40 letras)"; inp.hidden = !!o.anuncio || meu;
+      c.el.insertBefore(inp, c.botao);
+      c.botao.disabled = !logado() || meu || !!o.anuncio;
+      c.botao.onclick = function () {
+        var t = inp.value.trim(); if (!t) { inp.focus(); return mensagem("msgAnuncio", "Escreva a mensagem do anúncio."); }
+        if ((Number(eu.moedas) || 0) < o.preco) return mensagem("msgAnuncio", "Moedas insuficientes para esse anúncio.");
+        if (!c.botao.dataset.confirmar) { c.botao.dataset.confirmar = "1"; c.botao.textContent = "CONFIRMAR (" + o.preco + ")"; return; }
+        c.botao.disabled = true;
+        enviar(credenciais({ acao: "anunciar", numero: o.numero, texto: t })).then(function (r) {
+          if (!r.ok) { mensagem("msgAnuncio", r.erro || "Não deu certo."); carregar(); return; }
+          aplicarPerfil(r); salvarEu(); mensagem("msgAnuncio", "Seu anúncio está no outdoor de " + o.dono + "!", true); carregar();
+        });
+      };
+      box.appendChild(c.el);
+    });
+  }
+
+  /* ---------------- aluguéis ---------------- */
+  function desenharAlugueis() {
+    var box = document.getElementById("alugueis"); if (!box || !estado.mercado) return;
+    box.innerHTML = "";
+    var lista = estado.alugueis || [], dias = estado.mercado.aluguelDias || 7;
+    if (!lista.length) { var v = document.createElement("p"); v.className = "dica"; v.textContent = "Ninguém está alugando nada agora."; box.appendChild(v); }
+    lista.forEach(function (a) {
+      var meu = logado() && a.dono === eu.nome, moro = logado() && eu.mora === a.codigo, livres = a.vagas - a.ocupadas;
+      var tipo = a.item === "base_grande" ? "Apartamento no prédio " : "Casa ";
+      var desc = "De " + a.dono + ". " + (a.vagas > 1 ? livres + " de " + a.vagas + " apartamentos livres." : livres ? "Livre." : "Ocupada.") + (a.inquilinos.length ? " Moradores: " + a.inquilinos.map(function (q) { return q.nome; }).join(", ") + "." : "");
+      if (moro) desc += " Você mora aqui até " + new Date(eu.moraAte).toLocaleDateString("pt-BR") + ".";
+      var c = cartaoLoja(tipo + "“" + a.nome + "”", a.preco.toLocaleString("pt-BR") + " moedas / " + dias + " dias", desc, moro ? "RENOVAR (+" + dias + " DIAS)" : "ALUGAR");
+      c.botao.disabled = !logado() || meu || (!moro && livres <= 0) || (!moro && !!eu.mora);
+      if (meu) c.botao.textContent = "É SEU";
+      else if (!moro && eu && eu.mora) c.botao.textContent = "VOCÊ JÁ ALUGA OUTRO";
+      c.botao.onclick = function () {
+        if ((Number(eu.moedas) || 0) < a.preco) return mensagem("msgAluguel", "Moedas insuficientes para esse aluguel.");
+        if (!c.botao.dataset.confirmar) { c.botao.dataset.confirmar = "1"; c.botao.textContent = "CONFIRMAR (" + a.preco + ")"; return; }
+        c.botao.disabled = true;
+        enviar(credenciais({ acao: "alugar", codigo: a.codigo })).then(function (r) {
+          if (!r.ok) { mensagem("msgAluguel", r.erro || "Não deu certo."); carregar(); return; }
+          aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
+          mensagem("msgAluguel", "Pronto! Você mora em “" + a.nome + "” até " + new Date(r.moraAte).toLocaleDateString("pt-BR") + ". Agora você descansa como quem tem casa.", true);
+          carregar();
+        });
+      };
+      box.appendChild(c.el);
+    });
+    // meus imóveis: escolher o preço do aluguel
+    var mi = document.getElementById("meusImoveis"); mi.innerHTML = "";
+    if (!logado()) return;
+    ["base", "base_grande"].filter(function (id) { return tem(eu.itens, id); }).forEach(function (id) {
+      var atual = lista.filter(function (a) { return a.dono === eu.nome && a.item === id; })[0];
+      var w = document.createElement("div"); w.style.marginTop = "14px";
+      var l = document.createElement("label"); l.textContent = (id === "base_grande" ? "Aluguel de cada apartamento do seu prédio" : "Aluguel da sua casa") + " (moedas por " + dias + " dias; 0 = não alugar)";
+      var linha = document.createElement("div"); linha.className = "linha";
+      var inp = document.createElement("input"); inp.type = "number"; inp.min = 0; inp.max = 100000; inp.value = atual ? atual.preco : 0;
+      var bt = document.createElement("button"); bt.type = "button"; bt.className = "btn sec mini"; bt.textContent = "SALVAR";
+      bt.onclick = function () {
+        bt.disabled = true;
+        enviar(credenciais({ acao: "aluguel_preco", item: id, preco: Math.floor(Number(inp.value) || 0) })).then(function (r) {
+          bt.disabled = false;
+          if (!r.ok) return mensagem("msgAluguel", r.erro || "Não deu certo.");
+          mensagem("msgAluguel", r.preco ? "Seu imóvel está para alugar por " + r.preco + " moedas." : "Seu imóvel não está mais para alugar.", true); carregar();
+        });
+      };
+      linha.appendChild(inp); linha.appendChild(bt); w.appendChild(l); w.appendChild(linha); mi.appendChild(w);
+    });
+  }
+
+  /* ---------------- cartão: gás, casa, roupas, objetivo, amigos ---------------- */
+  function desenharExtras() {
+    var box = document.getElementById("cartaoExtra"); if (!box) return;
+    box.hidden = !logado() || TESTE; if (box.hidden) return;
+    var gas = document.getElementById("cartaoGas");
+    gas.textContent = eu.gas ? "Gás de oxigênio: garantido até meia-noite." : "SEM GÁS DE OXIGÊNIO: você está doente e não pode trabalhar nem minerar. Adquira gás no Mercado.";
+    gas.className = eu.gas ? "" : "alerta";
+    var casa = tem(eu.itens, "base") || tem(eu.itens, "base_grande"), alug = (estado.alugueis || []).filter(function (a) { return a.codigo === eu.mora; })[0];
+    document.getElementById("cartaoMora").textContent = casa ? "Você mora na sua casa." : eu.mora ? "Você mora de aluguel" + (alug ? " em “" + alug.nome + "” (de " + alug.dono + ")" : "") + " até " + new Date(eu.moraAte).toLocaleDateString("pt-BR") + "." : "Você ainda dorme na nave (sem casa). Registre um terreno ou alugue um lugar no Mercado.";
+    var roupas = (estado.mercado ? estado.mercado.itens : []).filter(function (i) { return i.slot && tem(eu.itens, i.id); });
+    if (tem(eu.itens, "traje_dourado")) roupas.push({ id: "traje_dourado", nome: "Traje dourado" });
+    document.getElementById("roupasBox").hidden = !roupas.length;
+    var gr = document.getElementById("guardaRoupa"); gr.innerHTML = "";
+    roupas.forEach(function (it) {
+      var b = document.createElement("button"), vestindo = tem(eu.veste, it.id); b.type = "button";
+      b.textContent = it.nome + (vestindo ? " ✓" : ""); b.setAttribute("aria-pressed", String(vestindo));
+      b.onclick = function () {
+        b.disabled = true;
+        enviar(credenciais({ acao: "vestir", item: it.id, ligar: !vestindo })).then(function (r) {
+          b.disabled = false; if (!r.ok) return;
+          aplicarPerfil(r); salvarEu(); mostrarCartao(eu); if (bonecos[eu.nome]) bonecos[eu.nome].itens = eu.veste;
+        });
+      };
+      gr.appendChild(b);
+    });
+    var ob = document.getElementById("objetivoEu"); if (document.activeElement !== ob) ob.value = eu.objetivo || "";
+    var al = document.getElementById("amigosLista"), ids = String(eu.amigos || "").split(",").filter(String);
+    if (ids.length) {
+      al.innerHTML = "";
+      ids.forEach(function (n, k) {
+        var s2 = estado.sobreviventes.filter(function (x) { return String(x.numero) === n; })[0]; if (!s2) return;
+        var a = document.createElement("span"); a.className = "nomeclick"; a.textContent = s2.nome; a.onclick = function () { abrirPerfil(n); };
+        if (al.childNodes.length) al.appendChild(document.createTextNode(", "));
+        al.appendChild(a);
+      });
+    }
+  }
+  document.getElementById("btnObjetivo").addEventListener("click", function () {
+    var bt = this; bt.disabled = true;
+    enviar(credenciais({ acao: "objetivo", texto: document.getElementById("objetivoEu").value.trim() })).then(function (r) {
+      bt.disabled = false; if (!r.ok) return;
+      aplicarPerfil(r); salvarEu(); bt.textContent = "SALVO!"; setTimeout(function () { bt.textContent = "SALVAR"; }, 1500);
+    });
+  });
+
+  /* ---------------- perfil de outro jogador ---------------- */
+  var perfilAberto = null;
+  function abrirPerfil(numero) {
+    if (TESTE) return;
+    var md = document.getElementById("perfilModal"), dl = document.getElementById("perfilDados");
+    document.getElementById("perfilNome").textContent = "...";
+    dl.innerHTML = ""; document.getElementById("perfilAmigo").hidden = true; document.getElementById("msgPerfil").className = "msg";
+    md.hidden = false;
+    fetch(API + "?perfil=" + encodeURIComponent(numero)).then(function (r) { return r.json(); }).then(function (p) {
+      if (!p || !p.ok) { document.getElementById("perfilNome").textContent = "NÃO ENCONTRADO"; return; }
+      perfilAberto = p;
+      retratoEm(document.getElementById("perfilSprite"), lerVisual(p.visual, p.nome), p.veste);
+      document.getElementById("perfilNome").textContent = String(p.nome).toUpperCase();
+      var dias = Math.max(0, Math.floor((Date.now() - p.desde) / 86400000));
+      var linhas = [["Sobrevivente", "#" + p.numero], ["Instagram", p.instagram || "—"], ["Profissão", p.profissao || "—"],
+        ["No jogo há", dias === 0 ? "menos de 1 dia" : dias + (dias === 1 ? " dia" : " dias")], ["Moedas", Number(p.moedas).toLocaleString("pt-BR")],
+        ["Mora", p.casa ? "Na própria casa" : p.aluga ? "De aluguel" : "Na nave"], ["Objetivo", p.objetivo || "—"], ["História", p.historia || "—"],
+        ["Amigos", p.amigos.length ? p.amigos.map(function (a) { return a.nome; }).join(", ") : "—"]];
+      linhas.forEach(function (l) {
+        var dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = l[0];
+        if (l[0] === "Instagram" && p.instagram) { var a = document.createElement("a"); a.href = "https://instagram.com/" + String(p.instagram).replace(/^@/, ""); a.target = "_blank"; a.rel = "noopener"; a.textContent = p.instagram; a.style.color = "var(--verde2)"; dd.appendChild(a); }
+        else dd.textContent = l[1];
+        dl.appendChild(dt); dl.appendChild(dd);
+      });
+      desenharBotaoAmigo();
+    }).catch(function () { document.getElementById("perfilNome").textContent = "SEM CONEXÃO"; });
+  }
+  function desenharBotaoAmigo() {
+    var b = document.getElementById("perfilAmigo"), p = perfilAberto;
+    b.hidden = !p || !logado() || String(p.numero) === String(eu.numero);
+    if (b.hidden) return;
+    var ja = String(eu.amigos || "").split(",").indexOf(String(p.numero)) >= 0;
+    b.textContent = ja ? "REMOVER DOS AMIGOS" : "ADICIONAR COMO AMIGO"; b.dataset.ja = ja ? "1" : "";
+  }
+  document.getElementById("perfilAmigo").addEventListener("click", function () {
+    var b = this, p = perfilAberto; if (!p) return;
+    b.disabled = true;
+    enviar(credenciais({ acao: "amigo", numero: p.numero, ligar: !b.dataset.ja })).then(function (r) {
+      b.disabled = false;
+      if (!r.ok) return mensagem("msgPerfil", r.erro || "Não deu certo.");
+      aplicarPerfil(r); salvarEu(); desenharBotaoAmigo();
+      mensagem("msgPerfil", b.dataset.ja ? p.nome + " agora é seu amigo!" : "Removido dos seus amigos.", true);
+    });
+  });
+  function fecharPerfil() { document.getElementById("perfilModal").hidden = true; perfilAberto = null; }
+  document.getElementById("perfilFechar").onclick = fecharPerfil;
+  document.getElementById("perfilModal").addEventListener("click", function (ev) { if (ev.target === this) fecharPerfil(); });
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") fecharPerfil(); });
 
   /* ---------------- rádio da nave (chat) ---------------- */
   var radioTimer = null, ultimoChat = "";
@@ -1079,7 +1548,8 @@
       if (!d.mensagens.length) { var v = document.createElement("li"); v.textContent = "Silêncio no rádio... seja o primeiro a falar."; ul.appendChild(v); }
       d.mensagens.forEach(function (m) {
         var li = document.createElement("li"), q = document.createElement("span"), t = document.createElement("span"), h = document.createElement("small");
-        q.className = "quem"; q.textContent = m.nome + " #" + m.numero + ":"; t.textContent = m.texto; h.textContent = hora(m.t);
+        q.className = "quem nomeclick"; q.textContent = m.nome + " #" + m.numero + ":"; t.textContent = m.texto; h.textContent = hora(m.t);
+        q.title = "Ver perfil"; q.onclick = function () { abrirPerfil(m.numero); };
         li.appendChild(q); li.appendChild(t); li.appendChild(h); ul.appendChild(li);
       });
       if (noFim || ul.dataset.primeira !== "1") { ul.scrollTop = ul.scrollHeight; ul.dataset.primeira = "1"; }
