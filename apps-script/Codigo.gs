@@ -1,5 +1,5 @@
 /**
- * COLÔNIA ZERO — "cérebro" do site.
+ * NAVE ORION — "cérebro" do site.
  * Guarda tudo numa planilha do Google (sua, grátis): sobreviventes, ideias,
  * moedas, compras do mercado e o chat. Manda um resumo diário para o seu e-mail.
  *
@@ -200,7 +200,7 @@ function pedirMoedas_(ss, d) {
       order_nsu: codigo,
       redirect_url: SITE_URL,
       webhook_url: ScriptApp.getService().getUrl(),
-      items: [{ quantity: 1, price: Math.round(pac.reais * 100), description: pac.nome + ' - Colonia Zero' }]
+      items: [{ quantity: 1, price: Math.round(pac.reais * 100), description: pac.nome + ' - Nave Orion' }]
     })
   });
   let link = null;

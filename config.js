@@ -7,7 +7,7 @@ window.COLONIA = {
   API_URL: "https://script.google.com/macros/s/AKfycbwxbLAOoQFzxEyoqHgM4LFplAV7sxuUsRxlOZCv9nHAPO0xTcodDeGYsEeoHIukaKau/exec",
 
   // Instagram do projeto (sem @)
-  INSTAGRAM: "zerocolonia",
+  INSTAGRAM: "",
 
   // ---- PIX (para venda de terrenos) ----
   // Deixe PIX_CHAVE vazio para mostrar "em breve" no lugar da loja.
