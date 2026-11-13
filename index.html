@@ -133,6 +133,18 @@
   .ranking li:nth-child(1){border-left-color:#E8C25A}
   .trab{display:flex;flex-direction:column;gap:0}
   .lista-mini{list-style:none;padding:0;margin:8px 0}
+  .torre-box{background:var(--fundo2);border:2px solid #6b4fa0;padding:10px;margin:0 0 8px;text-align:left}
+  .torre-box h3{margin:0 0 6px;color:#c9b6ff;font-size:11px}
+  .torre-box p{margin:4px 0;font-size:14px}
+  .torre-box .btn{margin:6px 0 0}
+  .barra.torre span{background:#8f6fd6}
+  details.como{background:var(--fundo2);border:2px solid var(--fundo3);padding:8px 12px;margin:0 0 12px}
+  details.como summary{cursor:pointer;font-family:'Press Start 2P',monospace;font-size:11px;color:var(--verde2);padding:4px 0}
+  details.como h4{margin:12px 0 4px;color:var(--laranja,#E07A3A);font-size:15px}
+  details.como p,details.como li{font-size:14px;margin:4px 0}
+  details.como ul{padding-left:18px;margin:4px 0}
+  .silenciar{background:none;border:0;cursor:pointer;font-size:13px;padding:0 4px;opacity:.7}
+  .mudo-box{background:var(--fundo2);border:2px solid #b8472a;padding:10px;margin:8px 0}
   .lista-mini li{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--fundo2);padding:8px;margin-bottom:6px}
   .lista-mini .btn{width:auto;margin:0;padding:8px 10px;font-size:9px}
   .loja-item b.pix{font-size:13px;line-height:1.6}
@@ -165,11 +177,42 @@
     </div>
   </header>
 
+  <details class="como" id="comoJogar">
+    <summary>COMO JOGAR (LEIA PRIMEIRO)</summary>
+    <h4>A história</h4>
+    <p>A Terra caiu. A Nave Orion pousou num planeta com pouquíssimo oxigênio e o ar da nave está acabando. Você é um sobrevivente que acabou de acordar da hibernação.</p>
+    <h4>O objetivo de todos</h4>
+    <p>Consertar a nave antes que o ar acabe. Cada minuto consertando dá pontos para a barra da nave lá em cima (meta de 1 milhão, em etapas de 50 mil). Os que mais consertam aparecem no RANKING.</p>
+    <h4>Como ganhar moedas</h4>
+    <ul>
+      <li>Trabalhe com o site aberto: a barrinha de 4 partes em cima do seu bonequinho enche a cada 15 segundos; cheia, você ganha moeda e ponto.</li>
+      <li>Cada profissão ganha de um jeito (veja no painel TRABALHO do seu cartão). Dá para trocar 1 vez por semana.</li>
+      <li>Venda o que você produz ou acha no mercado dos sobreviventes. Também dá para adquirir pacotes de moedas no MERCADO.</li>
+    </ul>
+    <h4>Sobreviver</h4>
+    <ul>
+      <li>Para consertar, precisa do kit de ferramentas (quem acorda ganha 1 dia grátis).</li>
+      <li>Coma a cada 4 horas de trabalho e mantenha ar no tanque. Sem comida ou ar você fica doente por 1 hora (ou chama um médico).</li>
+      <li>Depois de 4 horas trabalhando você cansa: com casa descansa 10 minutos, sem casa espera 1 hora na nave.</li>
+    </ul>
+    <h4>Explorar e construir</h4>
+    <ul>
+      <li>Toque no mapa para andar. Todo dia um baú aparece em algum lugar: quem chegar primeiro leva moedas e itens (às vezes uma ficha para criar um item ou uma empresa).</li>
+      <li>Pare num terreno livre (estacas nos cantos), reivindique, volte para a nave e registre no Mercado. No terreno você constrói sua casa (um engenheiro faz a obra).</li>
+      <li>Com picareta, minere na borda pedregosa do mapa.</li>
+    </ul>
+    <h4>As torres misteriosas</h4>
+    <p>Existem torres escondidas no planeta que não foram feitas por humanos. Quem chega perto descobre. Os sobreviventes podem trabalhar perto dela para desbloquear (explorador desbloqueia mais rápido). Quem mais ajudou ganha a chance de virar dono do clã. Mas cuidado: tempo na torre é tempo longe do conserto da nave...</p>
+    <h4>Rádio e regras</h4>
+    <p>Converse no RÁDIO com respeito. Guardas podem silenciar quem desrespeita (5 minutos). Se foi injusto, dá para reclamar e a colônia analisa. Quem tem casa (própria ou alugada) pode mandar ideias para a história.</p>
+  </details>
+
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
     <div class="zoom"><button type="button" id="zoomMais" aria-label="Aproximar">+</button><button type="button" id="zoomMenos" aria-label="Afastar">−</button><button type="button" id="zoomCentro" aria-label="Voltar para o meu bonequinho" style="font-size:12px">◎</button></div></div>
   <button class="btn" type="button" id="btnBau" hidden style="margin:0 0 8px">ABRIR O BAÚ!</button>
   <button class="btn sec" type="button" id="btnMinerar" hidden style="margin:0 0 8px">MINERAR AQUI</button>
   <div id="terrenoBox" hidden style="text-align:center;margin:0 0 8px"><p class="legenda" id="terrenoInfo" style="margin:0 0 6px;color:var(--creme)"></p><button class="btn" type="button" id="btnTerreno" hidden style="margin:0">REGISTRAR TERRENO</button></div>
+  <div class="torre-box" id="torreBox" hidden></div>
   <p class="legenda" id="bauInfo">A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação.</p>
   <p class="legenda" style="margin-top:-6px">Toque no mapa para explorar com o seu bonequinho. Arraste para olhar em volta e use + e − (ou dois dedos) para dar zoom.</p>
 
@@ -247,6 +290,8 @@
         <div id="roupasBox"><h3 class="pix cat">SUAS ROUPAS</h3><p class="dica" style="margin:0">Toque para vestir ou tirar.</p><div class="guarda" id="guardaRoupa"></div></div>
         <label for="objetivoEu">Seu objetivo</label>
         <div class="linha"><input id="objetivoEu" maxlength="120" placeholder="Qual é o seu objetivo na colônia?"><button class="btn sec mini" type="button" id="btnObjetivo">SALVAR</button></div>
+        <p id="cartaoCla" hidden></p>
+        <div id="criarBox" hidden></div>
         <h3 class="pix cat">AMIGOS</h3>
         <p class="dica" id="amigosLista" style="margin:0">Você ainda não adicionou amigos. Toque no nome de alguém no Rádio para ver o perfil.</p>
       </div>
@@ -384,6 +429,7 @@
     </form>
     <p id="radioAviso">Para falar no rádio, <a href="#" data-ir="entrar" style="color:var(--verde2)">acorde seu sobrevivente</a> ou entre pelo Mercado com o seu código.</p>
     <div class="msg" id="msgRadio" role="status"></div>
+    <div class="mudo-box" id="mudoBox" hidden></div>
   </section>
 
   <footer><span id="rodapeInsta"></span></footer>
@@ -412,7 +458,7 @@
   function lerVisual(s, semente) {
     var p = String(s || "").split(",").map(Number);
     if (p.length < 5 || p.some(isNaN)) {
-      var h = hash(semente || "x");
+      var h = hash(semente || "x") >>> 1;
       return { traje: h % TRAJES.length, pele: (h >> 3) % PELES.length, cabelo: (h >> 6) % 3, corCabelo: (h >> 9) % CABELOS.length, capacete: (h >> 12) % 2, corpo: (h >> 14) % 2 };
     }
     return { traje: p[0] % TRAJES.length, pele: p[1] % PELES.length, cabelo: p[2] % ESTILOS.length, corCabelo: p[3] % CABELOS.length, capacete: p[4] % 2, corpo: (p[5] || 0) % 2 };
@@ -611,7 +657,7 @@
     estado.ofertas = d.ofertas || [];
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
-    estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.funcoes = d.funcoes || [];
+    estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
     calcularDonos(); desenharAlugueis(); desenharAnuncios(); if (logado()) desenharExtras();
@@ -622,8 +668,8 @@
   }
 
   /* ---------------- cena ao vivo (mapa grande com câmera) ---------------- */
-  var W = 640, H = 400, VW = 240, VH = 150, OFX = 80, OFY = 50; // a zona dos terrenos começa em (80,50); em volta, zona de mineração
-  var NAVE = { x: 320, y: 186 }, PONTO_CONSERTO = [320, 208];
+  var W = 880, H = 560, VW = 240, VH = 150, OFX = 200, OFY = 130; // a zona dos terrenos começa em (200,130); em volta, zona de mineração e torres
+  var NAVE = { x: OFX + 240, y: OFY + 136 }, PONTO_CONSERTO = [OFX + 240, OFY + 158];
   var cena = document.getElementById("cena"), cctx = cena.getContext("2d");
   var mundo = document.createElement("canvas"); mundo.width = W; mundo.height = H;
   var mctx = mundo.getContext("2d");
@@ -646,11 +692,11 @@
     // zona de mineração (borda pedregosa, fora dos terrenos)
     var ZX = OFX, ZY = OFY, ZW = 480, ZH = 300, fora = function (x, y) { return x < ZX || y < ZY || x >= ZX + ZW || y >= ZY + ZH; };
     c.fillStyle = "#93472a"; c.fillRect(0, 0, W, ZY); c.fillRect(0, ZY + ZH, W, H - ZY - ZH); c.fillRect(0, ZY, ZX, ZH); c.fillRect(ZX + ZW, ZY, W - ZX - ZW, ZH);
-    for (i = 0; i < 2600; i++) { x = (r() * W) | 0; y = (r() * H) | 0; if (!fora(x, y)) continue; c.fillStyle = r() < 0.5 ? "#7d3b22" : "#a5532f"; c.fillRect(x, y, 1 + (r() * 3 | 0), 1 + (r() * 2 | 0)); }
+    for (i = 0; i < 4800; i++) { x = (r() * W) | 0; y = (r() * H) | 0; if (!fora(x, y)) continue; c.fillStyle = r() < 0.5 ? "#7d3b22" : "#a5532f"; c.fillRect(x, y, 1 + (r() * 3 | 0), 1 + (r() * 2 | 0)); }
     for (i = 0; i < 160; i++) { x = (r() * W) | 0; y = (r() * H) | 0; if (!fora(x, y)) continue; c.fillStyle = "#5e2a18"; c.fillRect(x, y, 4 + (r() * 4 | 0), 3); c.fillStyle = "#b8653a"; c.fillRect(x, y, 2, 1); }
     for (i = 0; i < 26; i++) { x = (r() * W) | 0; y = (r() * H) | 0; if (!fora(x, y)) continue; c.fillStyle = "#c9f0e8"; c.fillRect(x, y, 1, 1); c.fillStyle = "#3FA7A0"; c.fillRect(x + 1, y, 1, 2); }
     c.fillStyle = "rgba(243,233,214,.35)"; for (x = ZX; x < ZX + ZW; x += 6) { c.fillRect(x, ZY - 1, 3, 1); c.fillRect(x, ZY + ZH, 3, 1); } for (y = ZY; y < ZY + ZH; y += 6) { c.fillRect(ZX - 1, y, 1, 3); c.fillRect(ZX + ZW, y, 1, 3); }
-    for (i = 0; i < 5600; i++) { c.fillStyle = r() < 0.5 ? "#b85d33" : "#d27645"; c.fillRect((r() * W) | 0, (r() * H) | 0, 1 + (r() * 2 | 0), 1); }
+    for (i = 0; i < 9600; i++) { c.fillStyle = r() < 0.5 ? "#b85d33" : "#d27645"; c.fillRect((r() * W) | 0, (r() * H) | 0, 1 + (r() * 2 | 0), 1); }
     // dunas escuras
     for (i = 0; i < 14; i++) { x = r() * W | 0; y = r() * H | 0; c.fillStyle = "#b35a31"; c.fillRect(x, y, 20 + r() * 30 | 0, 3); c.fillRect(x + 4, y - 2, 14, 2); }
     // crateras
@@ -845,6 +891,7 @@
       if (grande) { mctx.fillStyle = "#E07A3A"; mctx.fillRect(p[0] + r + 1, p[1] - 3, 4, 3); mctx.fillStyle = "#7A2E22"; mctx.fillRect(p[0] + r + 2, p[1], 1, 4); }
     });
     if (bauVisivel()) desenharBau(estado.bau.x, estado.bau.y, tempo);
+    desenharTorresMapa(tempo);
 
     var vivos = ordem.map(function (id) { return bonecos[id]; }), meu = meuBoneco();
     if (meu && ((missao.modo === "consertando" && missao.trabalho === "consertar") || missao.modo === "descansando")) {
@@ -873,6 +920,12 @@
       desenharSprite(mctx, b.v, Math.round(b.x) - 5, Math.round(b.y) - 14, andando && (b.t >> 3) % 2, b.itens);
     });
 
+    // barrinha de trabalho (4 partes de 15 segundos) em cima do seu bonequinho
+    if (meu && missao.modo === "consertando") {
+      var cheias = Math.min(4, Math.floor((missao.seg + 1) / 15)), bx0 = Math.round(meu.x) - 9, by0 = Math.round(meu.y) - 21;
+      mctx.fillStyle = "#0B161C"; mctx.fillRect(bx0 - 1, by0 - 1, 20, 5);
+      for (var q = 0; q < 4; q++) { mctx.fillStyle = q < cheias ? (missao.trabalho === "torre" ? "#b79cff" : "#E8C25A") : "#2a3a42"; mctx.fillRect(bx0 + q * 5, by0, 4, 3); }
+    }
     // câmera segue o seu bonequinho (ou fica na nave)
     var fx = meu ? meu.x : NAVE.x, fy = meu ? meu.y : NAVE.y + 10;
     if (!cam.livre) {
@@ -911,6 +964,14 @@
       cctx.font = Math.round(Math.min(esc * 4, 9 / tela)) + "px 'Press Start 2P', monospace";
       rotulo("TODOS AINDA ESTÃO EM HIBERNAÇÃO", cena.width / 2, cena.height * 0.9, "#F3E9D6", "rgba(11,22,28,.8)");
     }
+    (estado.torres || []).forEach(function (t) {
+      if (t.descoberta && dentro(t.x, t.y)) rotulo(t.nomeCla ? t.nomeCla : t.nome, (t.x - cx) * esc, (t.y + 6 - cy) * esc, "#F3E9D6", t.status === "dono" ? "rgba(224,122,58,.85)" : "rgba(107,79,160,.85)");
+    });
+    if (meu && missao.flash && tempo - missao.flash.t < 90) {
+      var fa = (tempo - missao.flash.t) / 90; cctx.save(); cctx.globalAlpha = 1 - fa;
+      rotulo(missao.flash.txt, (meu.x - cx) * esc, (meu.y - 34 - fa * 10 - cy) * esc, "#0B161C", "#E8C25A"); cctx.restore();
+    }
+    verTorresPerto(meu);
     // perto do baú?
     var perto = meu && bauVisivel() && Math.hypot(meu.x - estado.bau.x, meu.y - estado.bau.y) < 14;
     var bb = document.getElementById("btnBau"); if (bb.hidden === !!perto) bb.hidden = !perto;
@@ -918,6 +979,99 @@
     var bm = document.getElementById("btnMinerar"); if (bm.hidden === !!pode) bm.hidden = !pode;
     requestAnimationFrame(quadro);
   }
+  /* ---------- torres de clã ---------- */
+  var descobrindo = {};
+  function souExplorador() { return logado() && eu.funcao === "explorador"; }
+  function desenharTorresMapa(t) {
+    (estado.torres || []).forEach(function (to) {
+      var x = to.x, y = to.y;
+      if (!to.descoberta) {
+        if (souExplorador() && (t >> 5) % 2) { mctx.fillStyle = "rgba(183,156,255,.8)"; mctx.fillRect(x - 1, y - 8, 3, 5); mctx.fillRect(x - 1, y - 1, 3, 2); }
+        return;
+      }
+      mctx.fillStyle = "rgba(0,0,0,.35)"; mctx.fillRect(x - 9, y + 2, 20, 3);
+      mctx.fillStyle = "#2b2140"; mctx.fillRect(x - 7, y - 30, 14, 32);
+      mctx.fillStyle = "#3d2f5c"; mctx.fillRect(x - 6, y - 30, 5, 32); mctx.fillRect(x - 9, y - 4, 18, 6);
+      mctx.fillStyle = "#1a1428"; mctx.fillRect(x - 5, y - 38, 10, 8); mctx.fillRect(x - 2, y - 44, 4, 6);
+      var brilho = to.status === "dono" ? "#E07A3A" : (t >> 4) % 2 ? "#b79cff" : "#7FD6C8";
+      mctx.fillStyle = brilho; mctx.fillRect(x - 1, y - 42, 2, 2); mctx.fillRect(x - 2, y - 22, 4, 2); mctx.fillRect(x - 2, y - 12, 4, 2);
+      if (to.status === "dono") { mctx.fillStyle = "#F3E9D6"; mctx.fillRect(x + 4, y - 50, 1, 12); mctx.fillStyle = "#E07A3A"; mctx.fillRect(x + 5, y - 50, 6, 4); }
+      if (to.status === "bloqueada") { mctx.fillStyle = "#6b5a3a"; mctx.fillRect(x - 7, y - 26, 14, 1); mctx.fillRect(x - 7, y - 16, 14, 1); mctx.fillRect(x - 7, y - 6, 14, 1); }
+    });
+  }
+  function torrePerto(meu) {
+    if (!meu || !estado.mercado || !estado.mercado.torre) return null;
+    var raio = estado.mercado.torre.raio || 40, achou = null;
+    (estado.torres || []).forEach(function (t) { if (!achou && Math.hypot(meu.x - t.x, meu.y - t.y) <= raio) achou = t; });
+    return achou;
+  }
+  var torreAtual = "";
+  function verTorresPerto(meu) {
+    var t = torrePerto(meu);
+    if (t && !t.descoberta && !descobrindo[t.id]) {
+      descobrindo[t.id] = 1;
+      enviar(credenciais({ acao: "descobrir_torre", id: t.id, x: Math.round(meu.x), y: Math.round(meu.y) })).then(function (r) {
+        if (!r.ok) { delete descobrindo[t.id]; return; }
+        t.descoberta = true; t.status = t.status === "escondida" ? "bloqueada" : t.status;
+        if (r.nova) { t.descobridor = eu.nome; mensagemMapa("Você descobriu a " + t.nome + "! Ela não foi feita por humanos..."); }
+        torreAtual = ""; desenharTorre(true); carregar();
+      });
+    }
+    var id = t && t.descoberta ? t.id : "";
+    if (id !== torreAtual) { torreAtual = id; desenharTorre(true); }
+  }
+  function desenharTorre(forcar) {
+    var box = document.getElementById("torreBox");
+    var t = (estado.torres || []).filter(function (x) { return x.id === torreAtual; })[0];
+    if (!t || !logado()) { box.hidden = true; box.innerHTML = ""; return; }
+    var T = estado.mercado.torre, trabalhandoAqui = missao.modo === "consertando" && missao.trabalho === "torre" && missao.torre === t.id;
+    var assin = JSON.stringify(t) + trabalhandoAqui + (eu.cla || "") + (eu.moedas || 0);
+    if (!forcar && box.dataset.assin === assin) return; box.dataset.assin = assin;
+    box.hidden = false; box.innerHTML = "";
+    var add = function (tag, txt, cls) { var e = document.createElement(tag); if (txt != null) e.textContent = txt; if (cls) e.className = cls; box.appendChild(e); return e; };
+    var botao = function (txt, cls, fn) { var b = add("button", txt, "btn" + (cls ? " " + cls : "")); b.type = "button"; b.onclick = fn; return b; };
+    add("h3", (t.nomeCla ? t.nomeCla.toUpperCase() + " · " : "") + t.nome.toUpperCase(), "pix");
+    add("p", "Uma torre antiga, coberta de poeira, que não foi construída por humanos. Existem outros seres neste planeta. Quem limpar e desbloquear a torre pode fundar o primeiro clã." + (t.descobridor ? " Descoberta por " + t.descobridor + "." : ""), "dica");
+    if (t.status === "bloqueada") {
+      add("p", "Desbloqueio: " + t.pontos.toLocaleString("pt-BR") + " de " + t.meta.toLocaleString("pt-BR") + " pontos. Cada minuto trabalhando aqui vale 1 ponto (explorador vale 2). Tempo aqui não conserta a nave nem dá moedas.");
+      var br = add("div", null, "barra torre"), sp = document.createElement("span"); sp.style.width = Math.min(100, t.pontos / t.meta * 100) + "%"; br.appendChild(sp);
+      if (t.top && t.top.length) add("p", "Quem mais ajudou: " + t.top.map(function (x) { return x.nome + " (" + x.pontos + ")" + (x.recusou ? " recusou" : ""); }).join(", "), "dica");
+      add("p", "Quem mais somou pontos ganha a chance de ser dono por " + t.preco + " moedas.", "dica");
+      if (trabalhandoAqui) botao("PARAR", "sec", pararTudo);
+      else if (missao.modo !== "descansando" && !doente()) botao("DESBLOQUEAR A TORRE (FICAR AQUI)", "", function () { missao.torre = t.id; comecar("torre"); desenharTorre(true); });
+    } else if (t.status === "oferta") {
+      var minha = t.oferta && t.oferta.nome === eu.nome, ate = t.oferta ? new Date(t.oferta.ate).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+      if (minha) {
+        add("p", "CLÃ DESBLOQUEADO! Você foi quem mais ajudou. Para ser dono, pague " + t.preco + " moedas (até " + ate + ").");
+        var inp = add("input"); inp.maxLength = 30; inp.placeholder = "Nome do seu clã";
+        botao("PAGAR " + t.preco + " E SER DONO", "", function () {
+          var b = this; b.disabled = true;
+          enviar(credenciais({ acao: "torre_responder", id: t.id, aceitar: true, nomeCla: inp.value.trim() })).then(function (r) {
+            b.disabled = false; if (!r.ok) return mensagemMapa(r.erro);
+            aplicarPerfil(r); salvarEu(); mostrarCartao(eu); mensagemMapa("Agora você é dono do clã!"); carregar();
+          });
+        });
+        botao("NÃO QUERO", "sec", function () {
+          var b = this; if (!b.dataset.c) { b.dataset.c = 1; b.textContent = "CONFIRMAR: NÃO QUERO"; return; }
+          enviar(credenciais({ acao: "torre_responder", id: t.id, aceitar: false })).then(function () { carregar(); });
+        });
+      } else add("p", "Torre desbloqueada! " + (t.oferta ? t.oferta.nome : "Quem mais ajudou") + " tem até " + ate + " para pagar " + t.preco + " moedas e virar dono. Se recusar, a torre pede mais " + T.extra + " pontos e a chance passa para o próximo da lista.");
+    } else if (t.status === "dono") {
+      add("p", "Clã “" + t.nomeCla + "” · dono: " + t.dono + " · " + t.membros + " membro" + (t.membros === 1 ? "" : "s") + " · entrada: " + t.precoEntrada + " moedas.");
+      var souDono = t.dono === eu.nome;
+      if (souDono) {
+        add("p", "Preço para entrar no seu clã (você recebe, a colônia fica com " + Math.round(estado.mercado.taxas.cla * 100) + "%):", "dica");
+        var linha = add("div", null, "linha"), pi = document.createElement("input"); pi.type = "number"; pi.min = 0; pi.value = t.precoEntrada; linha.appendChild(pi);
+        var sb = document.createElement("button"); sb.type = "button"; sb.className = "btn sec mini"; sb.textContent = "SALVAR"; linha.appendChild(sb);
+        sb.onclick = function () { enviar(credenciais({ acao: "cla_preco", preco: Math.floor(Number(pi.value) || 0) })).then(function (r) { if (!r.ok) return mensagemMapa(r.erro); t.precoEntrada = r.preco; sb.textContent = "SALVO!"; carregar(); }); };
+      } else if (eu.cla === t.id) botao("SAIR DO CLÃ", "sec", function () { enviar(credenciais({ acao: "sair_cla" })).then(function (r) { if (!r.ok) return mensagemMapa(r.erro); aplicarPerfil(r); salvarEu(); mostrarCartao(eu); carregar(); }); });
+      else botao("ENTRAR NO CLÃ (" + t.precoEntrada + " MOEDAS)", "", function () {
+        var b = this; if (!b.dataset.c) { b.dataset.c = 1; b.textContent = "CONFIRMAR (" + t.precoEntrada + ")"; return; }
+        enviar(credenciais({ acao: "entrar_cla", id: t.id })).then(function (r) { if (!r.ok) { delete b.dataset.c; b.textContent = "ENTRAR NO CLÃ"; return mensagemMapa(r.erro); } aplicarPerfil(r); salvarEu(); mostrarCartao(eu); mensagemMapa("Você entrou no clã " + t.nomeCla + "!"); carregar(); });
+      });
+    }
+  }
+  setInterval(function () { desenharTorre(false); }, 1000);
   function rotulo(txt, x, y, cor, fundo) {
     var w = cctx.measureText(txt).width, h = parseInt(cctx.font, 10);
     cctx.fillStyle = fundo; cctx.fillRect(x - w / 2 - 3, y - 1, w + 6, h + 5);
@@ -969,7 +1123,7 @@
     var meu = meuBoneco();
     if (!meu) { mensagemMapa("Acorde seu sobrevivente (ou entre com o seu código no Mercado) para explorar o mapa."); return; }
     if (missao.modo === "descansando") { mensagemMapa("Seu sobrevivente está cansado. Espere o descanso terminar."); return; }
-    if (missao.modo === "consertando" && missao.trabalho === "consertar") { missao.modo = "parado"; pararMissao(); desenharMissao(); }
+    if (missao.modo === "consertando" && (missao.trabalho === "consertar" || missao.trabalho === "torre")) { missao.modo = "parado"; pararMissao(); desenharMissao(); }
     var r = cena.getBoundingClientRect();
     meu.ax = cam.x + (ev.clientX - r.left) / r.width * VW;
     meu.ay = cam.y + (ev.clientY - r.top) / r.height * VH + 7;
@@ -990,7 +1144,7 @@
       if (!r.ok) { mensagemMapa(r.erro || "Não deu para abrir."); carregar(); return; }
       aplicarPerfil(r); salvarEu();
       estado.bau.abertoPor = eu.nome;
-      mensagemMapa("Você abriu o baú e encontrou: " + r.ganhou.map(nomeItem).join(", ") + "!");
+      mensagemMapa("Você abriu o baú e encontrou: " + (r.moedasBau ? r.moedasBau + " moedas, " : "") + r.ganhou.map(nomeItem).join(", ") + "!" + (r.ganhou.some(function (g) { return /^ficha_/.test(g); }) ? " Veja a ficha no seu cartão." : ""));
       carregar();
     });
   });
@@ -1144,7 +1298,7 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
   }
   function atualizarPerfil() {
     if (!logado() || TESTE) return Promise.resolve();
@@ -1203,8 +1357,8 @@
   var missao = { modo: "parado", trabalho: "consertar", turno: 0, progresso: 0, descanso: 0, temBase: false, timer: null, seg: 0, aviso: "", obra: null, obras: [], plantao: false, plantaoTimer: null };
   function regras() { return estado.mercado && estado.mercado.missao; }
   function vida() { return estado.mercado && estado.mercado.vida; }
-  var BOTAO_TRAB = { consertar: "CONSERTAR A NAVE", vigiar: "VIGIAR A COLÔNIA", cultivar: "CULTIVAR COMIDA", cozinhar: "COZINHAR", construir: "CONSTRUIR" };
-  var VERBO_TRAB = { consertar: "Consertando a nave", vigiar: "Vigiando a colônia", cultivar: "Cultivando comida", cozinhar: "Cozinhando", construir: "Construindo" };
+  var BOTAO_TRAB = { consertar: "CONSERTAR A NAVE", vigiar: "VIGIAR A COLÔNIA", cultivar: "CULTIVAR COMIDA", cozinhar: "COZINHAR", construir: "CONSTRUIR", torre: "DESBLOQUEAR A TORRE" };
+  var VERBO_TRAB = { consertar: "Consertando a nave", vigiar: "Vigiando a colônia", cultivar: "Cultivando comida", cozinhar: "Cozinhando", construir: "Construindo", torre: "Desbloqueando a torre" };
   var COMIDAS = { comida: "Comida", refeicao: "Refeição", racao: "Ração da nave" };
   function funcaoInfo(f) { return (estado.funcoes || []).filter(function (x) { return x.id === f; })[0]; }
   function minhaFuncao() { return eu && eu.funcao || "livre"; }
@@ -1290,6 +1444,8 @@
     eu.gas = r.gas; salvarEu();
     missao.turno = r.turno; missao.progresso = r.progresso; missao.temBase = r.temBase; missao.seg = 0;
     if (r.ganhou) mensagem("msgMercado", "+" + r.ganhou + " moeda" + (r.ganhou > 1 ? "s" : "") + " pelo trabalho!", true);
+    if (r.ganhou || r.pontos) missao.flash = { txt: (r.ganhou ? "+" + r.ganhou + " moeda" + (r.ganhou > 1 ? "s" : "") : "") + (r.ganhou && r.pontos ? " " : "") + (r.pontos ? "+" + r.pontos + " pt" : ""), t: tempo };
+    if (r.torre) { (estado.torres || []).forEach(function (t) { if (t.id === r.torre.id) { t.pontos = r.torre.pontos; t.meta = r.torre.meta; if (r.torre.status !== t.status) { t.status = r.torre.status; pararMissao(); missao.modo = "parado"; carregar(); } } }); desenharTorre(true); }
     if (r.produziu) mensagemMapa("Você produziu: " + (COMIDAS[r.produziu] || r.produziu) + "!");
     if (missao.trabalho === "construir" && missao.obra && r.estado !== "doente") {
       missao.obra.progresso = (missao.obra.progresso || 0) + 1;
@@ -1301,7 +1457,9 @@
   }
   function pingMissao() {
     if (missao.modo !== "consertando" || document.hidden) return;
-    enviar(credenciais({ acao: "trabalhar", modo: missao.trabalho })).then(aplicarMissao);
+    var extra = { acao: "trabalhar", modo: missao.trabalho };
+    if (missao.trabalho === "torre") { var mb = meuBoneco(); extra.torre = missao.torre; extra.x = mb ? Math.round(mb.x) : 0; extra.y = mb ? Math.round(mb.y) : 0; }
+    enviar(credenciais(extra)).then(aplicarMissao);
   }
   function pararMissao() { clearInterval(missao.timer); missao.timer = null; }
   // compatibilidade: botão antigo
@@ -1479,6 +1637,7 @@
   var mercadoPronto = false;
   function nomeItem(id) {
     var lt = /^lote_(\d+)$/.exec(id); if (lt) return "Terreno " + lt[1];
+    if (estado.criados && estado.criados[id]) return (estado.criados[id].tipo === "empresa" ? "Empresa: " : "") + estado.criados[id].nome;
     var m = estado.mercado; if (!m) return null;
     var i = m.itens.concat(m.recursos || []).filter(function (x) { return x.id === id; })[0]; return i ? i.nome : null;
   }
@@ -1506,6 +1665,7 @@
     });
     var lista = document.getElementById("itens"), cat = "";
     estado.mercado.itens.forEach(function (it) {
+      if (it.oculto) return;
       if (it.cat !== cat) { cat = it.cat; var h = document.createElement("h3"); h.className = "pix cat"; h.textContent = cat.toUpperCase(); lista.appendChild(h); }
       var c = cartaoLoja(it.nome, it.preco.toLocaleString("pt-BR") + " moedas" + (it.maoDeObra ? " + " + it.maoDeObra + " de mão de obra" : ""), it.desc + (it.maoDeObra ? " Um engenheiro online constrói a sua casa; se nenhum aceitar a obra em 24 horas, a nave constrói sozinha." : ""), "TROCAR");
       c.el.dataset.item = it.id;
@@ -1712,6 +1872,9 @@
       };
       gr.appendChild(b);
     });
+    var cc = document.getElementById("cartaoCla"), meuCla = (estado.torres || []).filter(function (t) { return t.id === eu.cla; })[0];
+    cc.hidden = !meuCla; if (meuCla) cc.textContent = "Seu clã: “" + meuCla.nomeCla + "” (" + meuCla.nome + ")" + (meuCla.dono === eu.nome ? ", você é o dono." : ", dono: " + meuCla.dono + ".");
+    desenharCriar();
     var ob = document.getElementById("objetivoEu"); if (document.activeElement !== ob) ob.value = eu.objetivo || "";
     var al = document.getElementById("amigosLista"), ids = String(eu.amigos || "").split(",").filter(String);
     if (ids.length) {
@@ -1722,6 +1885,37 @@
         if (al.childNodes.length) al.appendChild(document.createTextNode(", "));
         al.appendChild(a);
       });
+    }
+  }
+  function desenharCriar() {
+    var box = document.getElementById("criarBox"), C = estado.mercado && estado.mercado.criar, lista = eu.criacoes || [];
+    var fichas = ["item", "empresa"].filter(function (t) { return tem(eu.itens, "ficha_" + t); });
+    box.hidden = !C || (!fichas.length && !lista.length); if (box.hidden) return;
+    var assin = fichas.join() + JSON.stringify(lista); if (box.dataset.assin === assin) return; box.dataset.assin = assin; box.innerHTML = "";
+    var h = document.createElement("h3"); h.className = "pix cat"; h.textContent = "CRIAR"; box.appendChild(h);
+    fichas.forEach(function (tipo) {
+      var preco = C[tipo], d = document.createElement("p"); d.className = "dica";
+      d.textContent = tipo === "item" ? "Você tem a ficha CRIAR ITEM! Pague " + preco + " moedas e descreva um item novo que ajuda em algo. Se a colônia aprovar, ele vai para o seu inventário e você pode usar ou vender." : "Você tem a ficha CRIAR EMPRESA! Quem tem terreno paga " + preco.toLocaleString("pt-BR") + " moedas e abre uma empresa para ganhar dinheiro. Escreva o que você quer abrir; a colônia adapta do jeito mais justo para o jogo.";
+      var ta = document.createElement("textarea"); ta.maxLength = 400; ta.placeholder = tipo === "item" ? "Ex.: uma lanterna que ajuda a achar o baú à noite" : "Ex.: uma alfaiataria que cria roupas e vende nas lojas da colônia";
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = (tipo === "item" ? "CRIAR ITEM (" : "CRIAR EMPRESA (") + preco.toLocaleString("pt-BR") + ")";
+      b.onclick = function () {
+        if (!b.dataset.c) { b.dataset.c = 1; b.textContent = "CONFIRMAR: PAGAR " + preco.toLocaleString("pt-BR"); return; }
+        b.disabled = true;
+        enviar(credenciais({ acao: "criar", tipo: tipo, texto: ta.value.trim() })).then(function (r) {
+          b.disabled = false; delete b.dataset.c; b.textContent = "TENTAR DE NOVO";
+          if (!r.ok) return mensagem("msgMercado", r.erro);
+          aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
+        });
+      };
+      box.appendChild(d); box.appendChild(ta); box.appendChild(b);
+    });
+    if (lista.length) {
+      var ul = document.createElement("ul"); ul.className = "lista-mini";
+      lista.forEach(function (c) {
+        var li = document.createElement("li"); var st = { pendente: "esperando aprovação", aprovado: "aprovado: " + (c.nome || ""), recusado: "recusado (moedas e ficha devolvidas)" }[c.status] || c.status;
+        li.textContent = (c.tipo === "empresa" ? "Empresa: " : "Item: ") + c.ideia.slice(0, 60) + " · " + st; ul.appendChild(li);
+      });
+      box.appendChild(ul);
     }
   }
   document.getElementById("btnObjetivo").addEventListener("click", function () {
@@ -1797,12 +1991,36 @@
         var li = document.createElement("li"), q = document.createElement("span"), t = document.createElement("span"), h = document.createElement("small");
         q.className = "quem nomeclick"; q.textContent = m.nome + " #" + m.numero + ":"; t.textContent = m.texto; h.textContent = hora(m.t);
         q.title = "Ver perfil"; q.onclick = function () { abrirPerfil(m.numero); };
-        li.appendChild(q); li.appendChild(t); li.appendChild(h); ul.appendChild(li);
+        if (!m.numero) { q.onclick = null; q.className = "quem"; q.textContent = "📡 NAVE:"; t.style.color = "var(--verde2)"; }
+        li.appendChild(q); li.appendChild(t); li.appendChild(h);
+        if (logado() && eu.funcao === "guarda" && m.numero && String(m.numero) !== String(eu.numero)) {
+          var sb = document.createElement("button"); sb.type = "button"; sb.className = "silenciar"; sb.textContent = "🔇"; sb.title = "Silenciar " + m.nome + " por 5 minutos";
+          sb.onclick = function () {
+            if (!sb.dataset.c) { sb.dataset.c = 1; sb.textContent = "🔇 silenciar?"; return; }
+            enviar(credenciais({ acao: "silenciar", numero: m.numero })).then(function (r) { mensagem("msgRadio", r.ok ? "Você silenciou " + r.nome + " por 5 minutos. Se houver reclamação, a colônia revisa o rádio." : r.erro, r.ok); ultimoChat = ""; setTimeout(lerRadio, 300); });
+          };
+          li.appendChild(sb);
+        }
+        ul.appendChild(li);
       });
       if (noFim || ul.dataset.primeira !== "1") { ul.scrollTop = ul.scrollHeight; ul.dataset.primeira = "1"; }
     }).catch(function () {});
   }
+  function desenharMudo() {
+    var box = document.getElementById("mudoBox"), sil = logado() && eu.silencio, mudo = logado() && Number(eu.mudoAte) > Date.now();
+    box.hidden = !(sil && (mudo || !sil.decisao)); if (box.hidden) return;
+    var assin = JSON.stringify(sil) + mudo; if (box.dataset.assin === assin) return; box.dataset.assin = assin; box.innerHTML = "";
+    var p = document.createElement("p"); p.style.margin = "0 0 6px";
+    p.textContent = (mudo ? "O guarda " + sil.guarda + " silenciou você até " + hora(eu.mudoAte) + ". " : "Você foi silenciado por " + sil.guarda + ". ") + (sil.reclamou ? "Sua reclamação foi enviada: a colônia vai ler o rádio e decidir. Se o guarda abusou, ele perde a função." : "Achou injusto? Explique e a colônia analisa o que foi dito no rádio.");
+    box.appendChild(p);
+    if (!sil.reclamou) {
+      var ta = document.createElement("textarea"); ta.maxLength = 300; ta.placeholder = "Por que foi injusto?"; box.appendChild(ta);
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn sec"; b.textContent = "RECLAMAR"; box.appendChild(b);
+      b.onclick = function () { b.disabled = true; enviar(credenciais({ acao: "reclamar", texto: ta.value.trim() })).then(function (r) { b.disabled = false; if (!r.ok) return mensagem("msgRadio", r.erro); eu.silencio.reclamou = true; salvarEu(); box.dataset.assin = ""; desenharMudo(); }); };
+    }
+  }
   function radioLigado(on) {
+    if (on) atualizarPerfil().then(desenharMudo);
     clearInterval(radioTimer); radioTimer = null;
     if (on) { lerRadio(); radioTimer = setInterval(function () { if (!document.hidden) lerRadio(); }, 6000); }
   }
@@ -1813,7 +2031,7 @@
     var btn = document.getElementById("btnRadio"); btn.disabled = true;
     enviar(credenciais({ acao: "chat", texto: texto })).then(function (r) {
       btn.disabled = false;
-      if (!r.ok) return mensagem("msgRadio", r.erro || "Não deu para enviar.");
+      if (!r.ok) { if (r.mudo) atualizarPerfil().then(desenharMudo); return mensagem("msgRadio", r.erro || "Não deu para enviar."); }
       document.getElementById("msgRadio").className = "msg";
       campo.value = ""; ultimoChat = ""; setTimeout(lerRadio, 300);
     });

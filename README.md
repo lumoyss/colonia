@@ -120,6 +120,17 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - **Obras:** quem adquire casa paga o preço + mão de obra (casa 100, prédio 500). Um engenheiro de plantão aceita e constrói em 10 minutos e recebe a mão de obra. Se ninguém aceitar em 24 horas, a nave constrói e a mão de obra vai para o cofre. Fica tudo na aba **Obras**.
 - **Mudar números:** no topo do `Codigo.gs` (FUNCOES, VAGAS, MEDICO_MIN, KIT_TEMPORARIO_HORAS, META_NAVE, ETAPA_NAVE, MAO_DE_OBRA etc.).
 
+## Torres de clã, guardas, baú e criar (atualização de 13/11, 20h)
+- **Mapa maior** com **6 torres escondidas** na borda. Quem chega perto descobre (o rádio avisa todo mundo). O explorador vê um sinal piscando onde há torre escondida.
+- **Desbloquear a torre:** ficar perto dela trabalhando. 1 ponto por minuto (explorador 2). Não dá moedas nem conserta a nave. Meta: 10.000 pontos.
+- **Dono do clã:** quem mais somou pontos tem 12 horas para pagar 1.000 moedas. Se recusar (ou o prazo acabar), a torre pede mais 500 pontos e o próximo da lista paga 10 a menos, até o mínimo de 800. O dinheiro vai para você (CONTA_DONO ou cofre).
+- **Entrar no clã:** o dono escolhe o preço (padrão 100); ele recebe e a colônia fica com 10%. Cada pessoa só pode estar em um clã. Tudo na aba **Torres**.
+- **Guardas** silenciam alguém no rádio por 5 minutos (botão 🔇 ao lado da mensagem). O silenciado pode reclamar. As reclamações chegam no e-mail diário; você decide na aba **Silenciados**, coluna **decisao**: escreva `certo` (o guarda ganha 20 moedas) ou `abuso` (o guarda perde a função e o silêncio acaba).
+- **Baú do dia:** agora vem com 50 moedas e, às vezes, a ficha **Criar item** (25%) ou **Criar empresa** (5%).
+- **Criar item:** com a ficha, a pessoa paga 500 moedas e descreve o item. **Criar empresa:** precisa de terreno, paga 5.000 e descreve a empresa. As ideias chegam no e-mail e ficam na aba **Criacoes**: escreva `aprovado` na coluna **status** e o nome do item em **nome_final** (ele vai para o inventário e pode ser vendido), ou `recusado` (a pessoa recebe as moedas e a ficha de volta).
+- **Barrinha de trabalho:** 4 partes em cima do bonequinho, cada uma enche em 15 segundos; cheia, ganha a moeda e o ponto.
+- **Como jogar:** explicação em texto logo acima do mapa.
+
 ### Moderação (na planilha)
 - Apagar uma mensagem: aba **Chat**, escreva `apagado` na coluna **status** da mensagem.
 - Silenciar alguém: aba **Sobreviventes**, escreva `sim` na coluna **banido**.
