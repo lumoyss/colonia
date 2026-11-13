@@ -87,3 +87,24 @@ Custo: o Mercado Pago cobra uma taxa pequena por Pix recebido (cerca de 1%, uns 
 5. **Implantar** → **Gerenciar implantações** → lápis (editar) → em Versão escolha **Nova versão** → **Implantar**. O link /exec continua o mesmo.
 
 Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bater com os do `config.js`.
+
+
+---
+
+## Mercado, moedas e Rádio da nave (atualização de 13/11)
+
+- A aba **Mercado** substituiu a aba Bases. Primeiro a pessoa adquire moedas (R$ 10 = 1.000 moedas, pago pela InfinitePay) e depois troca as moedas por itens: bases, traje dourado, capacete dourado, mochila, ferramentas.
+- Os preços e os itens ficam no topo do `Codigo.gs` (PACOTES e ITENS). O site lê de lá, então só precisa mudar num lugar.
+- Cada sobrevivente ganha um **código de acesso** de 6 letras ao acordar. Com o nome e o código, ele entra no Mercado e no Rádio em qualquer celular.
+- A aba **Rádio** é o chat de quem já acordou.
+
+### Moderação (na planilha)
+- Apagar uma mensagem: aba **Chat**, escreva `apagado` na coluna **status** da mensagem.
+- Silenciar alguém: aba **Sobreviventes**, escreva `sim` na coluna **banido**.
+- Dar ou tirar moedas: aba **Sobreviventes**, mude o número na coluna **moedas**.
+- Alguém esqueceu o código: aba **Sobreviventes**, coluna **chave**.
+
+### Para ligar (sempre que o Codigo.gs mudar)
+1. No Apps Script, apague o código e cole o `Codigo.gs` novo. Salve.
+2. Escolha a função **setup** e clique em **Executar**.
+3. **Implantar → Gerenciar implantações → lápis → Versão: Nova versão → Implantar**. O link continua o mesmo.
