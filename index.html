@@ -211,6 +211,7 @@
         <span class="quem" id="contaNome"></span>
         <span class="moedas" id="contaMoedas">0</span>
         <span class="inv" id="contaItens"></span>
+        <span class="inv" id="contaOnline" hidden></span>
       </div>
       <form id="formLogin" autocomplete="off">
         <p>Para usar o mercado, entre com o seu sobrevivente. Ainda não acordou? <a href="#" data-ir="entrar" style="color:var(--verde2)">Acorde aqui</a>.</p>
@@ -581,6 +582,20 @@
       salvarEu(); mostrarCartao(eu); mensagem("msgMercado", "Bem-vindo(a) de volta, " + r.nome + "!", true);
     });
   });
+
+  /* ---------------- moedas por ficar online ---------------- */
+  function pingOnline() {
+    if (!logado() || TESTE || document.visibilityState !== "visible" || !estado.mercado || !estado.mercado.online) return;
+    enviar(credenciais({ acao: "online" })).then(function (r) {
+      if (!r.ok) return;
+      eu.moedas = r.moedas; salvarEu();
+      var el = document.getElementById("contaOnline"); el.hidden = false;
+      el.textContent = r.minutos >= r.limite
+        ? "Você já ganhou o máximo de moedas por tempo online hoje. Volte amanhã!"
+        : "Online: +" + estado.mercado.online.porMinuto + " moeda por minuto com o site aberto (" + r.minutos + " de " + r.limite + " min hoje).";
+    });
+  }
+  setInterval(pingOnline, 60000);
 
   /* ---------------- mercado ---------------- */
   var mercadoPronto = false;

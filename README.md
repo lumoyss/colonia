@@ -97,6 +97,7 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - Os preços e os itens ficam no topo do `Codigo.gs` (PACOTES e ITENS). O site lê de lá, então só precisa mudar num lugar.
 - Cada sobrevivente ganha um **código de acesso** de 6 letras ao acordar. Com o nome e o código, ele entra no Mercado e no Rádio em qualquer celular.
 - A aba **Rádio** é o chat de quem já acordou.
+- **Moedas por tempo online:** com o site aberto e na tela, o sobrevivente ganha moedas a cada minuto, até um limite por dia (MOEDAS_POR_MINUTO e LIMITE_MINUTOS_DIA no topo do `Codigo.gs`).
 
 ### Moderação (na planilha)
 - Apagar uma mensagem: aba **Chat**, escreva `apagado` na coluna **status** da mensagem.

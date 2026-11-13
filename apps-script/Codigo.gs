@@ -26,6 +26,11 @@ const TIPOS_IDEIA = ['historia', 'profissao', 'lugar', 'outro'];
 
 // Colunas da aba Sobreviventes (1 = A)
 const C_NUMERO = 1, C_NOME = 3, C_INSTA = 4, C_PROF = 5, C_VISUAL = 7, C_MOEDAS = 8, C_CHAVE = 9, C_ITENS = 10, C_BANIDO = 11;
+const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14;
+
+/* ---------- Moedas por ficar online (com o site aberto e na tela) ---------- */
+const MOEDAS_POR_MINUTO = 1;
+const LIMITE_MINUTOS_DIA = 240; // 4 horas
 
 /* ---------- MERCADO: pacotes de moedas (em reais) e itens (em moedas) ---------- */
 const PACOTES = {
@@ -51,7 +56,7 @@ const ITENS = [
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto']);
   colunas_(garantirAba_(ss, ABA_TERRENOS), ['codigo', 'data', 'nome_do_lugar', 'dono', 'instagram', 'plano', 'valor', 'status', 'ref']);
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
@@ -85,6 +90,7 @@ function doGet(e) {
   }).map(function (l) { return { nome: l[2], dono: l[3], plano: l[5] }; });
   const mercado = {
     pacotes: Object.keys(PACOTES).map(function (k) { return { id: k, nome: PACOTES[k].nome, reais: PACOTES[k].reais, moedas: PACOTES[k].moedas }; }),
+    online: { porMinuto: MOEDAS_POR_MINUTO, limite: LIMITE_MINUTOS_DIA },
     itens: ITENS.map(function (i) { return { id: i.id, cat: i.cat, nome: i.nome, preco: i.preco, desc: i.desc, base: !!i.base }; })
   };
   const resposta = { ok: true, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true };
@@ -104,10 +110,10 @@ function doPost(e) {
   trava.waitLock(20000);
   try {
     const ss = planilha_();
-    const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_ };
+    const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, online: online_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
-    if (r.ok && dados.acao !== 'perfil' && dados.acao !== 'entrar' && dados.acao !== 'chat') CacheService.getScriptCache().remove('lista');
+    if (r.ok && ['perfil', 'entrar', 'chat', 'online'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
     return json_(r);
   } finally {
     trava.releaseLock();
@@ -270,6 +276,26 @@ function comprar_(ss, d) {
   return p;
 }
 
+/* ---------- Moedas por tempo online ---------- */
+function online_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const l = s.dados, agora = Date.now();
+  const hoje = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+  const diaSalvo = l[C_ON_DIA - 1] instanceof Date ? Utilities.formatDate(l[C_ON_DIA - 1], 'America/Sao_Paulo', 'yyyy-MM-dd') : String(l[C_ON_DIA - 1]).replace(/^'/, '');
+  let minutos = diaSalvo === hoje ? (Number(l[C_ON_MIN - 1]) || 0) : 0;
+  let moedas = Number(l[C_MOEDAS - 1]) || 0, ganhou = 0;
+  // Só conta 1 minuto por vez, mesmo com o site aberto em várias abas
+  if (agora - (Number(l[C_ON_ULTIMO - 1]) || 0) >= 55000 && minutos < LIMITE_MINUTOS_DIA) {
+    minutos++; ganhou = MOEDAS_POR_MINUTO; moedas += ganhou;
+    s.aba.getRange(s.linha, C_MOEDAS).setValue(moedas);
+    s.aba.getRange(s.linha, C_ON_DIA).setValue("'" + hoje);
+    s.aba.getRange(s.linha, C_ON_MIN).setValue(minutos);
+    s.aba.getRange(s.linha, C_ON_ULTIMO).setValue(agora);
+  }
+  return { ok: true, moedas: moedas, ganhou: ganhou, minutos: minutos, limite: LIMITE_MINUTOS_DIA };
+}
+
 /* ---------- Chat: Rádio da nave ---------- */
 function lerChat_() {
   const cache = CacheService.getScriptCache();
@@ -362,7 +388,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 11)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 14)).getValues();
 }
 
 function gerarChave_() {
