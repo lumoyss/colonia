@@ -27,7 +27,7 @@ const TIPOS_IDEIA = ['historia', 'profissao', 'lugar', 'outro'];
 
 // Colunas da aba Sobreviventes (1 = A)
 const C_NUMERO = 1, C_NOME = 3, C_INSTA = 4, C_PROF = 5, C_VISUAL = 7, C_MOEDAS = 8, C_CHAVE = 9, C_ITENS = 10, C_BANIDO = 11;
-const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14, C_TURNO = 15, C_PROGRESSO = 16, C_DESCANSO = 17, C_RECON = 18;
+const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14, C_TURNO = 15, C_PROGRESSO = 16, C_DESCANSO = 17, C_RECON = 18, C_OUTDOOR = 19;
 
 /* ---------- MISSÃO: consertar a nave (ganha moedas com o site aberto) ---------- */
 const MINUTOS_POR_MOEDA = 1;    // 1 moeda a cada 1 minuto consertando
@@ -71,6 +71,8 @@ const ITENS = [
     desc: 'Sua base, construída dentro do seu terreno, com o nome que você escolher. Precisa ter um terreno. Você vira cidadão da colônia e ganha voto (peso 1).' },
   { id: 'base_grande', cat: 'Residência', nome: 'Base grande', preco: 1500, base: true,
     desc: 'Uma base maior, com placa, dentro do seu terreno. Voto com peso 2.' },
+  { id: 'outdoor', cat: 'Residência', nome: 'Outdoor', preco: 300, terreno: true, fixo: true,
+    desc: 'Uma placa grande no seu terreno com a frase que você quiser (até 40 letras), para todo mundo ver no mapa. Dá para trocar a frase quando quiser.' },
   { id: 'traje_dourado', cat: 'Roupas', nome: 'Traje dourado', preco: 300,
     desc: 'Seu bonequinho passa a andar de traje dourado no mapa.' },
   { id: 'capacete_dourado', cat: 'Acessórios', nome: 'Capacete dourado', preco: 200,
@@ -86,7 +88,7 @@ const ITENS = [
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto']);
   colunas_(garantirAba_(ss, ABA_TERRENOS), ['codigo', 'data', 'nome_do_lugar', 'dono', 'instagram', 'plano', 'valor', 'status', 'ref']);
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
@@ -111,7 +113,7 @@ function doGet(e) {
 
   const ss = planilha_();
   const sobreviventes = linhas_(ss.getSheetByName(ABA_SOBREVIVENTES)).map(function (l) {
-    return { numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], visual: String(l[6] || ''), itens: String(l[9] || '') };
+    return { numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], visual: String(l[6] || ''), itens: String(l[9] || ''), outdoor: String(l[C_OUTDOOR - 1] || '') };
   });
   const ideias = linhas_(ss.getSheetByName(ABA_IDEIAS)).slice(-60).reverse().map(function (l) {
     return { data: l[0], autor: l[1], tipo: l[2], texto: l[3] };
@@ -122,7 +124,7 @@ function doGet(e) {
   const mercado = {
     pacotes: Object.keys(PACOTES).map(function (k) { return { id: k, nome: PACOTES[k].nome, reais: PACOTES[k].reais, moedas: PACOTES[k].moedas }; }),
     missao: { porMoeda: MINUTOS_POR_MOEDA, turno: TURNO_MINUTOS, descansoBase: DESCANSO_COM_BASE, descansoSemBase: DESCANSO_SEM_BASE, limite: LIMITE_MINUTOS_DIA },
-    itens: ITENS.map(function (i) { return { id: i.id, cat: i.cat, nome: i.nome, preco: i.preco, desc: i.desc, base: !!i.base }; }),
+    itens: ITENS.map(function (i) { return { id: i.id, cat: i.cat, nome: i.nome, preco: i.preco, desc: i.desc, base: !!i.base, terreno: !!(i.base || i.terreno), fixo: !!(i.base || i.fixo) }; }),
     recursos: RECURSOS,
     terrenos: { l: LOTE_L, a: LOTE_A, colunas: LOTE_COLUNAS, linhas: LOTE_LINHAS, nave: LOTES_DA_NAVE, preco: TERRENO_PRECO, minutos: TERRENO_MINUTOS, porPessoa: TERRENOS_POR_PESSOA }
   };
@@ -151,7 +153,7 @@ function doPost(e) {
     const ss = planilha_();
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
-      reconhecer: reconhecer_, registrar_terreno: registrarTerreno_ };
+      reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
     if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'reconhecer'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
@@ -207,7 +209,7 @@ function acharSobrevivente_(ss, d) {
 function perfilDe_(s) {
   const l = s.dados;
   return { ok: true, numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], visual: String(l[6] || ''),
-    moedas: Number(l[C_MOEDAS - 1]) || 0, itens: String(l[C_ITENS - 1] || ''), chave: String(l[C_CHAVE - 1]) };
+    moedas: Number(l[C_MOEDAS - 1]) || 0, itens: String(l[C_ITENS - 1] || ''), chave: String(l[C_CHAVE - 1]), outdoor: String(l[C_OUTDOOR - 1] || '') };
 }
 
 function perfil_(ss, d) {
@@ -300,14 +302,20 @@ function comprar_(ss, d) {
   if (p.moedas < item.preco) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + item.preco + '.' };
 
   let lugar = '';
-  if (item.base && !meus.some(function (i) { return /^lote_/.test(i); }))
-    return { ok: false, erro: 'Para ter uma base você precisa de um terreno. Explore o mapa e registre um terreno primeiro.' };
+  if ((item.base || item.terreno) && !meus.some(function (i) { return /^lote_/.test(i); }))
+    return { ok: false, erro: 'Para ter ' + (item.base ? 'uma base' : 'um ' + item.nome.toLowerCase()) + ' você precisa de um terreno. Explore o mapa e registre um terreno primeiro.' };
+  let frase = '';
+  if (item.id === 'outdoor') {
+    frase = limpar_(d.lugar, 40);
+    if (!frase) return { ok: false, erro: 'Escreva a frase do seu outdoor.' };
+  }
   if (item.base) {
     lugar = limpar_(d.lugar, 28);
     if (lugar.length < 2) return { ok: false, erro: 'Dê um nome para a sua base.' };
   }
 
   meus.push(item.id);
+  if (frase) { s.aba.getRange(s.linha, C_OUTDOOR).setValue(texto_(frase)); p.outdoor = frase; }
   s.aba.getRange(s.linha, C_MOEDAS).setValue(p.moedas - item.preco);
   s.aba.getRange(s.linha, C_ITENS).setValue(meus.join(','));
   ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), item.nome, item.preco]);
@@ -397,6 +405,20 @@ function abrirBau_(ss, d) {
   return p;
 }
 
+/* ---------- Outdoor: a frase no terreno ---------- */
+// Para apagar uma frase feia: limpe a célula na coluna "outdoor" da aba Sobreviventes.
+function trocarOutdoor_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const p = perfilDe_(s);
+  if ((p.itens ? p.itens.split(',') : []).indexOf('outdoor') < 0) return { ok: false, erro: 'Você ainda não tem um outdoor.' };
+  const frase = limpar_(d.texto, 40);
+  if (!frase) return { ok: false, erro: 'Escreva a frase do seu outdoor.' };
+  s.aba.getRange(s.linha, C_OUTDOOR).setValue(texto_(frase));
+  p.outdoor = frase;
+  return p;
+}
+
 /* ---------- Terrenos ---------- */
 function loteValido_(n) {
   n = Math.floor(Number(n));
@@ -445,7 +467,7 @@ function registrarTerreno_(ss, d) {
 
 /* ---------- Mercado entre jogadores ---------- */
 function vendivel_(id) {
-  return /^lote_\d+$/.test(id) || RECURSOS.some(function (r) { return r.id === id; }) || ITENS.some(function (i) { return i.id === id && !i.base; });
+  return /^lote_\d+$/.test(id) || RECURSOS.some(function (r) { return r.id === id; }) || ITENS.some(function (i) { return i.id === id && !i.base && !i.fixo; });
 }
 
 function vender_(ss, d) {
@@ -598,7 +620,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 18)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 19)).getValues();
 }
 
 function gerarChave_() {
