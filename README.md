@@ -97,7 +97,7 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - Os preços e os itens ficam no topo do `Codigo.gs` (PACOTES e ITENS). O site lê de lá, então só precisa mudar num lugar.
 - Cada sobrevivente ganha um **código de acesso** de 6 letras ao acordar. Com o nome e o código, ele entra no Mercado e no Rádio em qualquer celular.
 - A aba **Rádio** é o chat de quem já acordou.
-- **Moedas por tempo online:** com o site aberto e na tela, o sobrevivente ganha moedas a cada minuto, até um limite por dia (MOEDAS_POR_MINUTO e LIMITE_MINUTOS_DIA no topo do `Codigo.gs`).
+- **Missão: consertar a nave:** com o site aberto e o botão "Consertar a nave" ligado, o sobrevivente ganha 1 moeda a cada 15 minutos de conserto. A cada 5 minutos ele cansa: com base descansa 1 minuto, sem base 5 minutos. Limite de 4 horas por dia. Os números ficam no topo do `Codigo.gs` (MINUTOS_POR_MOEDA, TURNO_MINUTOS, DESCANSO_COM_BASE, DESCANSO_SEM_BASE, LIMITE_MINUTOS_DIA).
 
 ### Moderação (na planilha)
 - Apagar uma mensagem: aba **Chat**, escreva `apagado` na coluna **status** da mensagem.

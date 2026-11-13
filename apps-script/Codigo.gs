@@ -26,11 +26,14 @@ const TIPOS_IDEIA = ['historia', 'profissao', 'lugar', 'outro'];
 
 // Colunas da aba Sobreviventes (1 = A)
 const C_NUMERO = 1, C_NOME = 3, C_INSTA = 4, C_PROF = 5, C_VISUAL = 7, C_MOEDAS = 8, C_CHAVE = 9, C_ITENS = 10, C_BANIDO = 11;
-const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14;
+const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14, C_TURNO = 15, C_PROGRESSO = 16, C_DESCANSO = 17;
 
-/* ---------- Moedas por ficar online (com o site aberto e na tela) ---------- */
-const MOEDAS_POR_MINUTO = 1;
-const LIMITE_MINUTOS_DIA = 240; // 4 horas
+/* ---------- MISSÃO: consertar a nave (ganha moedas com o site aberto) ---------- */
+const MINUTOS_POR_MOEDA = 15;   // 1 moeda a cada 15 minutos consertando
+const TURNO_MINUTOS = 5;        // depois de 5 minutos consertando, cansa
+const DESCANSO_COM_BASE = 1;    // quem tem base descansa 1 minuto
+const DESCANSO_SEM_BASE = 5;    // quem não tem base descansa 5 minutos
+const LIMITE_MINUTOS_DIA = 240; // no máximo 4 horas de conserto por dia
 
 /* ---------- MERCADO: pacotes de moedas (em reais) e itens (em moedas) ---------- */
 const PACOTES = {
@@ -56,7 +59,7 @@ const ITENS = [
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto']);
   colunas_(garantirAba_(ss, ABA_TERRENOS), ['codigo', 'data', 'nome_do_lugar', 'dono', 'instagram', 'plano', 'valor', 'status', 'ref']);
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
@@ -90,7 +93,7 @@ function doGet(e) {
   }).map(function (l) { return { nome: l[2], dono: l[3], plano: l[5] }; });
   const mercado = {
     pacotes: Object.keys(PACOTES).map(function (k) { return { id: k, nome: PACOTES[k].nome, reais: PACOTES[k].reais, moedas: PACOTES[k].moedas }; }),
-    online: { porMinuto: MOEDAS_POR_MINUTO, limite: LIMITE_MINUTOS_DIA },
+    missao: { porMoeda: MINUTOS_POR_MOEDA, turno: TURNO_MINUTOS, descansoBase: DESCANSO_COM_BASE, descansoSemBase: DESCANSO_SEM_BASE, limite: LIMITE_MINUTOS_DIA },
     itens: ITENS.map(function (i) { return { id: i.id, cat: i.cat, nome: i.nome, preco: i.preco, desc: i.desc, base: !!i.base }; })
   };
   const resposta = { ok: true, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true };
@@ -110,10 +113,10 @@ function doPost(e) {
   trava.waitLock(20000);
   try {
     const ss = planilha_();
-    const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, online: online_ };
+    const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
-    if (r.ok && ['perfil', 'entrar', 'chat', 'online'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
+    if (r.ok && ['perfil', 'entrar', 'chat', 'consertar'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
     return json_(r);
   } finally {
     trava.releaseLock();
@@ -276,24 +279,41 @@ function comprar_(ss, d) {
   return p;
 }
 
-/* ---------- Moedas por tempo online ---------- */
-function online_(ss, d) {
+/* ---------- Missão: consertar a nave ---------- */
+// O site chama isto 1 vez por minuto enquanto a pessoa está consertando.
+function consertar_(ss, d) {
   const s = acharSobrevivente_(ss, d);
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
-  const l = s.dados, agora = Date.now();
+  const l = s.dados, agora = Date.now(), cel = function (c, v) { s.aba.getRange(s.linha, c).setValue(v); };
   const hoje = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
   const diaSalvo = l[C_ON_DIA - 1] instanceof Date ? Utilities.formatDate(l[C_ON_DIA - 1], 'America/Sao_Paulo', 'yyyy-MM-dd') : String(l[C_ON_DIA - 1]).replace(/^'/, '');
-  let minutos = diaSalvo === hoje ? (Number(l[C_ON_MIN - 1]) || 0) : 0;
+  const itens = ',' + String(l[C_ITENS - 1] || '') + ',';
+  const temBase = itens.indexOf(',base,') >= 0 || itens.indexOf(',base_grande,') >= 0;
+
+  let hojeMin = diaSalvo === hoje ? (Number(l[C_ON_MIN - 1]) || 0) : 0;
+  let turno = Number(l[C_TURNO - 1]) || 0;
+  let progresso = Number(l[C_PROGRESSO - 1]) || 0;
   let moedas = Number(l[C_MOEDAS - 1]) || 0, ganhou = 0;
-  // Só conta 1 minuto por vez, mesmo com o site aberto em várias abas
-  if (agora - (Number(l[C_ON_ULTIMO - 1]) || 0) >= 55000 && minutos < LIMITE_MINUTOS_DIA) {
-    minutos++; ganhou = MOEDAS_POR_MINUTO; moedas += ganhou;
-    s.aba.getRange(s.linha, C_MOEDAS).setValue(moedas);
-    s.aba.getRange(s.linha, C_ON_DIA).setValue("'" + hoje);
-    s.aba.getRange(s.linha, C_ON_MIN).setValue(minutos);
-    s.aba.getRange(s.linha, C_ON_ULTIMO).setValue(agora);
+  const descansoAte = Number(l[C_DESCANSO - 1]) || 0;
+  const r = function (estadoAtual, restante) {
+    return { ok: true, estado: estadoAtual, moedas: moedas, ganhou: ganhou, progresso: progresso, turno: turno, hojeMin: hojeMin,
+      descansoSeg: restante || 0, temBase: temBase };
+  };
+
+  if (agora < descansoAte) return r('descansando', Math.ceil((descansoAte - agora) / 1000));
+  if (hojeMin >= LIMITE_MINUTOS_DIA) return r('limite');
+  if (agora - (Number(l[C_ON_ULTIMO - 1]) || 0) < 55000) return r('consertando'); // 1 minuto por vez, mesmo com várias abas
+
+  hojeMin++; turno++; progresso++;
+  if (progresso >= MINUTOS_POR_MOEDA) { progresso = 0; ganhou = 1; moedas += 1; cel(C_MOEDAS, moedas); }
+  let est = 'consertando', restante = 0;
+  if (turno >= TURNO_MINUTOS) {
+    turno = 0; est = 'cansado';
+    restante = (temBase ? DESCANSO_COM_BASE : DESCANSO_SEM_BASE) * 60;
+    cel(C_DESCANSO, agora + restante * 1000);
   }
-  return { ok: true, moedas: moedas, ganhou: ganhou, minutos: minutos, limite: LIMITE_MINUTOS_DIA };
+  cel(C_ON_DIA, "'" + hoje); cel(C_ON_MIN, hojeMin); cel(C_ON_ULTIMO, agora); cel(C_TURNO, turno); cel(C_PROGRESSO, progresso);
+  return r(est, restante);
 }
 
 /* ---------- Chat: Rádio da nave ---------- */
@@ -388,7 +408,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 14)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 17)).getValues();
 }
 
 function gerarChave_() {

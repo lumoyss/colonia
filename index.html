@@ -90,6 +90,11 @@
   .radio-form{display:flex;gap:8px}
   .radio-form input{flex:1;min-width:0}
   .radio-form .btn{width:auto;margin-top:0}
+  .missao{margin:18px 0 6px;padding:14px;background:var(--fundo);border:3px solid var(--verde);text-align:left}
+  .barra{height:14px;background:var(--fundo2);border:2px solid var(--fundo3);margin:4px 0 10px}
+  .barra span{display:block;height:100%;width:0;background:var(--verde);transition:width .5s}
+  .barra.moeda span{background:#E8C25A}
+  .missao .rot{font-size:14px;color:var(--apagado)}
   .chave{font-family:"Press Start 2P",monospace;color:var(--laranja);background:var(--fundo);padding:6px 10px;display:inline-block;letter-spacing:2px}
   .aviso-teste{background:var(--ferrugem);color:var(--creme);text-align:center;font-size:14px;padding:6px 10px}
   footer{text-align:center;color:var(--apagado);font-size:14px;margin-top:28px}
@@ -174,6 +179,14 @@
       <p id="cartaoTexto"></p>
       <p class="dica">Tire um print e poste nos stories marcando a página. Seu bonequinho já está andando no mapa ali em cima.</p>
       <div id="cartaoChave" hidden><p class="dica" style="margin-bottom:6px">Seu código de acesso (guarde! serve para entrar em outro celular):</p><span class="chave" id="cartaoChaveTxt"></span></div>
+      <div class="missao" id="missao" hidden>
+        <h2 class="pix">MISSÃO: CONSERTAR A NAVE</h2>
+        <p class="dica" id="missaoRegra"></p>
+        <div class="rot">Energia</div><div class="barra"><span id="barEnergia"></span></div>
+        <div class="rot">Próxima moeda</div><div class="barra moeda"><span id="barMoeda"></span></div>
+        <p id="missaoStatus">Seu sobrevivente está parado.</p>
+        <button class="btn" type="button" id="btnConsertar">CONSERTAR A NAVE</button>
+      </div>
       <button class="btn" type="button" data-ir="mercado">IR AO MERCADO</button>
       <button class="btn sec" type="button" data-ir="ideias">MANDAR UMA IDEIA PARA A HISTÓRIA</button>
     </div>
@@ -419,6 +432,14 @@
       if (grande) { mctx.fillStyle = "#E07A3A"; mctx.fillRect(p[0] + r + 1, p[1] - 3, 4, 3); mctx.fillStyle = "#7A2E22"; mctx.fillRect(p[0] + r + 2, p[1], 1, 4); }
     });
     var vivos = ordem.map(function (id) { return bonecos[id]; });
+    if (eu && bonecos[eu.nome] && (missao.modo === "consertando" || missao.modo === "descansando")) {
+      var meu = bonecos[eu.nome], alvo = [120, 76];
+      if (missao.modo === "descansando") {
+        var ib = -1; estado.terrenos.forEach(function (t, i) { if (ib < 0 && t.dono === eu.nome) ib = i; });
+        alvo = ib >= 0 ? posTerreno(ib).map(function (v, k) { return v + (k ? 8 : 0); }) : [112, 78];
+      }
+      meu.tx = alvo[0] + (missao.modo === "consertando" ? Math.sin(meu.t / 40) * 8 : 0); meu.ty = alvo[1]; meu.espera = 0;
+    }
     vivos.forEach(function (b) {
       b.t++;
       if (b.espera > 0) { b.espera--; }
@@ -568,7 +589,7 @@
     }
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
-    desenharItens();
+    desenharItens(); mostrarMissao();
   }
   document.getElementById("formLogin").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -583,19 +604,61 @@
     });
   });
 
-  /* ---------------- moedas por ficar online ---------------- */
-  function pingOnline() {
-    if (!logado() || TESTE || document.visibilityState !== "visible" || !estado.mercado || !estado.mercado.online) return;
-    enviar(credenciais({ acao: "online" })).then(function (r) {
-      if (!r.ok) return;
-      eu.moedas = r.moedas; salvarEu();
-      var el = document.getElementById("contaOnline"); el.hidden = false;
-      el.textContent = r.minutos >= r.limite
-        ? "Você já ganhou o máximo de moedas por tempo online hoje. Volte amanhã!"
-        : "Online: +" + estado.mercado.online.porMinuto + " moeda por minuto com o site aberto (" + r.minutos + " de " + r.limite + " min hoje).";
-    });
+  /* ---------------- missão: consertar a nave ---------------- */
+  var missao = { modo: "parado", turno: 0, progresso: 0, descanso: 0, temBase: false, timer: null, relogio: null, seg: 0 };
+  function regras() { return estado.mercado && estado.mercado.missao; }
+  function mostrarMissao() {
+    var R = regras(), box = document.getElementById("missao");
+    box.hidden = !(R && logado() && !TESTE);
+    if (box.hidden) return;
+    document.getElementById("missaoRegra").textContent = "Fique com o site aberto consertando a nave: a cada " + R.porMoeda + " minutos de conserto você ganha 1 moeda. Depois de " + R.turno +
+      " minutos você cansa e precisa descansar: quem tem base descansa " + R.descansoBase + " minuto; quem não tem base fica " + R.descansoSemBase + " minutos sem consertar.";
+    desenharMissao();
   }
-  setInterval(pingOnline, 60000);
+  function desenharMissao() {
+    var R = regras(); if (!R) return;
+    var energia = missao.modo === "descansando" ? 0 : 1 - (missao.turno + (missao.modo === "consertando" ? missao.seg / 60 : 0)) / R.turno;
+    var moeda = (missao.progresso + (missao.modo === "consertando" ? missao.seg / 60 : 0)) / R.porMoeda;
+    document.getElementById("barEnergia").style.width = Math.max(0, Math.min(1, energia)) * 100 + "%";
+    document.getElementById("barMoeda").style.width = Math.max(0, Math.min(1, moeda)) * 100 + "%";
+    var st = document.getElementById("missaoStatus"), bt = document.getElementById("btnConsertar");
+    bt.hidden = missao.modo === "consertando" || missao.modo === "descansando";
+    if (missao.modo === "consertando") st.textContent = document.hidden ? "Pausado: volte para o site para continuar consertando." : "Consertando a nave... (" + (missao.progresso) + " de " + R.porMoeda + " min para a próxima moeda)";
+    else if (missao.modo === "descansando") {
+      var m = Math.floor(missao.descanso / 60), ss = ("0" + (missao.descanso % 60)).slice(-2);
+      st.textContent = (missao.temBase ? "Cansado! Descansando na sua base: " : "Cansado e sem base! Descansando na nave: ") + m + ":" + ss;
+    }
+    else if (missao.modo === "limite") { st.textContent = "Você já consertou o máximo por hoje. Volte amanhã!"; bt.hidden = true; }
+    else { st.textContent = "Seu sobrevivente está parado."; bt.textContent = missao.turno || missao.progresso ? "VOLTAR A CONSERTAR" : "CONSERTAR A NAVE"; }
+  }
+  function aplicarMissao(r) {
+    if (!r || !r.ok) return;
+    if (r.moedas != null) { eu.moedas = r.moedas; salvarEu(); }
+    missao.turno = r.turno; missao.progresso = r.progresso; missao.temBase = r.temBase; missao.seg = 0;
+    if (r.ganhou) mensagem("msgMercado", "+" + r.ganhou + " moeda por consertar a nave!", true);
+    if (r.estado === "cansado" || r.estado === "descansando") { missao.modo = "descansando"; missao.descanso = r.descansoSeg; }
+    else if (r.estado === "limite") { pararMissao(); missao.modo = "limite"; }
+    desenharMissao();
+  }
+  function pingMissao() {
+    if (missao.modo !== "consertando" || document.hidden) return;
+    enviar(credenciais({ acao: "consertar" })).then(aplicarMissao);
+  }
+  function pararMissao() { clearInterval(missao.timer); missao.timer = null; }
+  document.getElementById("btnConsertar").addEventListener("click", function () {
+    missao.modo = "consertando"; missao.seg = 0; pararMissao();
+    missao.timer = setInterval(pingMissao, 60000);
+    desenharMissao();
+  });
+  // relógio de 1 segundo: anima as barras e conta o descanso
+  setInterval(function () {
+    if (missao.modo === "consertando" && !document.hidden) missao.seg = Math.min(59, missao.seg + 1);
+    if (missao.modo === "descansando") {
+      missao.descanso--;
+      if (missao.descanso <= 0) { missao.modo = "parado"; pararMissao(); }
+    }
+    if (!document.getElementById("missao").hidden) desenharMissao();
+  }, 1000);
 
   /* ---------------- mercado ---------------- */
   var mercadoPronto = false;
@@ -618,6 +681,7 @@
     mercadoPronto = true;
     document.getElementById("mercadoFechado").hidden = true; document.getElementById("mercado").hidden = false;
     var pac = document.getElementById("pacotes");
+    mostrarMissao();
     estado.mercado.pacotes.forEach(function (p) {
       var c = cartaoLoja(p.nome, reais(p.reais), "Pague com Pix ou cartão. As moedas entram na sua conta assim que o pagamento é confirmado.", "ADQUIRIR MOEDAS");
       c.el.dataset.pacote = p.id;
