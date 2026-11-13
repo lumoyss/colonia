@@ -28,6 +28,7 @@ const ABA_OBRAS = 'Obras';
 const ABA_TORRES = 'Torres';
 const ABA_SILENCIO = 'Silenciados';
 const ABA_CRIACOES = 'Criacoes';
+const ABA_LEILOES = 'Leiloes';
 const TIPOS_IDEIA = ['historia', 'profissao', 'lugar', 'outro'];
 
 // Colunas da aba Sobreviventes (1 = A)
@@ -139,6 +140,10 @@ const TAXA_CLA = 0.10;               // 10% da entrada no clã fica com a colôn
 // GUARDAS: silenciam no rádio; quem foi silenciado pode reclamar.
 // Você decide na aba Silenciados: escreva "certo" ou "abuso" na coluna decisao.
 const SILENCIO_MINUTOS = 5, GUARDA_BONUS = 20;
+// LEILÃO DO VÍDEO: quem der o maior lance tem o @ divulgado no vídeo.
+// Quem é superado recebe as moedas de volta na hora. Fecha todo dia às LEILAO_HORA (horário de Brasília).
+// O vencedor escreve a frase do que quer divulgar; aparece no e-mail diário e na aba Leiloes.
+const LEILAO_HORA = 20, LEILAO_MINIMO = 100, LEILAO_AUMENTO = 10;
 const MAPA_L = 880, MAPA_A = 560;    // tamanho do mapa (o site usa o mesmo)
 
 /* ---------- TERRENOS: explorar, reconhecer e registrar ---------- */
@@ -204,6 +209,7 @@ function setup() {
   garantirTorres_(ss);
   colunas_(garantirAba_(ss, ABA_SILENCIO), ['id', 'data', 'guarda_numero', 'guarda', 'silenciado_numero', 'silenciado', 'mensagens', 'reclamacao', 'decisao', 'processado']);
   colunas_(garantirAba_(ss, ABA_CRIACOES), ['id', 'data', 'numero', 'nome', 'tipo', 'ideia', 'moedas_pagas', 'status', 'nome_final', 'processado']);
+  colunas_(garantirAba_(ss, ABA_LEILOES), ['id', 'fechou', 'numero', 'nome', 'instagram', 'lance', 'frase', 'status']);
   colunas_(garantirAba_(ss, ABA_OFERTAS), ['id', 'data', 'vendedor_numero', 'vendedor', 'item', 'preco', 'status', 'comprador_numero', 'comprador']);
 
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
@@ -237,6 +243,7 @@ function doGet(e) {
   try { if (ss.getSheetByName(ABA_TORRES)) torresVencidas_(ss); } catch (err) { /* segue */ }
   try { if (ss.getSheetByName(ABA_SILENCIO)) processarSilencios_(ss); } catch (err) { /* segue */ }
   try { if (ss.getSheetByName(ABA_CRIACOES)) processarCriacoes_(ss); } catch (err) { /* segue */ }
+  try { if (ss.getSheetByName(ABA_LEILOES)) fecharLeilao_(ss); } catch (err) { /* segue */ }
   const alugueis = listarImoveis_(ss);
   const todas = linhas_(ss.getSheetByName(ABA_SOBREVIVENTES));
   const pontosNave = Number(PropertiesService.getScriptProperties().getProperty('PONTOS_NAVE')) || 0;
@@ -266,7 +273,7 @@ function doGet(e) {
   const resposta = { ok: true, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
     nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros,
     obras: ss.getSheetByName(ABA_OBRAS) ? obrasAbertas_(ss) : [], funcoes: funcoes,
-    torres: ss.getSheetByName(ABA_TORRES) ? torresPublicas_(ss, todas) : [], criados: ss.getSheetByName(ABA_CRIACOES) ? criadosPublicos_(ss) : {},
+    torres: ss.getSheetByName(ABA_TORRES) ? torresPublicas_(ss, todas) : [], leilao: ss.getSheetByName(ABA_LEILOES) ? leilaoPublico_(ss) : null, criados: ss.getSheetByName(ABA_CRIACOES) ? criadosPublicos_(ss) : {},
     ofertas: ofertas, bau: bau, mapa: { l: MAPA_L, a: MAPA_A } };
   try { cache.put('lista', JSON.stringify(resposta), 20); } catch (err) { /* grande demais para o cache */ }
   return json_(resposta);
@@ -289,7 +296,7 @@ function doPost(e) {
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_,
       curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
-      silenciar: silenciar_, reclamar: reclamar_, criar: criar_ };
+      silenciar: silenciar_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
     if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'trabalhar', 'plantao', 'reconhecer', 'amigo', 'objetivo'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
@@ -1252,6 +1259,11 @@ function resumoDiario() {
     corpo += '\nRECLAMAÇÕES DE SILENCIADOS ESPERANDO VOCÊ (' + recl.length + ') — decida na aba Silenciados (certo ou abuso)\n';
     recl.forEach(function (l) { corpo += l[0] + ' | guarda ' + l[3] + ' silenciou ' + l[5] + '\n   Mensagens: ' + l[6] + '\n   Reclamação: ' + l[7] + '\n'; });
   }
+  if (ss.getSheetByName(ABA_LEILOES)) {
+    const lei = linhas_(ss.getSheetByName(ABA_LEILOES)).filter(function (l) { return new Date(l[1]) > desde; });
+    corpo += '\nLEILÃO DO VÍDEO (' + lei.length + ')\n';
+    lei.forEach(function (l) { corpo += l[0] + ' | ' + l[3] + (l[4] ? ' (@' + l[4] + ')' : '') + ' | ' + l[5] + ' moedas | frase: ' + (l[6] || '(ainda não escreveu)') + '\n'; });
+  }
   if (ss.getSheetByName(ABA_CRIACOES)) {
     const cri = linhas_(ss.getSheetByName(ABA_CRIACOES)).filter(function (l) { return String(l[7] || 'pendente') === 'pendente'; });
     corpo += '\nIDEIAS DE ITEM/EMPRESA ESPERANDO APROVAÇÃO (' + cri.length + ') — na aba Criacoes escreva aprovado (e o nome_final) ou recusado\n';
@@ -1479,6 +1491,71 @@ function criadosPublicos_(ss) {
     r[(String(l[4]) === 'empresa' ? 'empresa_' : 'criado_') + l[0]] = { nome: String(l[8] || l[5]).slice(0, 40), tipo: String(l[4]), dono: String(l[3]) };
   });
   return r;
+}
+
+/* ---------- Leilão do vídeo ---------- */
+function proximoFechamento_(agora) {
+  const dia = Utilities.formatDate(new Date(agora), 'America/Sao_Paulo', 'yyyy-MM-dd');
+  let f = new Date(dia + 'T' + ('0' + LEILAO_HORA).slice(-2) + ':00:00-03:00').getTime();
+  if (f <= agora) f += 86400000;
+  return f;
+}
+function leilaoAtual_() {
+  const pr = PropertiesService.getScriptProperties();
+  let a = null; try { a = JSON.parse(pr.getProperty('LEILAO') || 'null'); } catch (e) { a = null; }
+  if (!a) { a = { fecha: proximoFechamento_(Date.now()), topo: null }; pr.setProperty('LEILAO', JSON.stringify(a)); }
+  return a;
+}
+function salvarLeilao_(a) { PropertiesService.getScriptProperties().setProperty('LEILAO', JSON.stringify(a)); }
+function fecharLeilao_(ss) {
+  const a = leilaoAtual_();
+  if (Date.now() < a.fecha) return a;
+  const id = Utilities.formatDate(new Date(a.fecha), 'America/Sao_Paulo', 'yyyy-MM-dd');
+  if (a.topo) {
+    ss.getSheetByName(ABA_LEILOES).appendRow([id, new Date(a.fecha), a.topo.numero, texto_(a.topo.nome), texto_(a.topo.insta || ''), a.topo.valor, '', 'esperando frase']);
+    cobrarTaxa_(ss, a.topo.valor, 'Leilão do vídeo ' + id);
+    avisoRadio_(ss, a.topo.nome + ' venceu o leilão do vídeo com ' + a.topo.valor + ' moedas! O @ vai ser divulgado no próximo vídeo.');
+  }
+  const novo = { fecha: proximoFechamento_(Date.now()), topo: null }; salvarLeilao_(novo);
+  CacheService.getScriptCache().remove('lista');
+  return novo;
+}
+function lance_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente para dar um lance.' };
+  const a = fecharLeilao_(ss), valor = Math.floor(Number(d.valor));
+  const minimo = a.topo ? a.topo.valor + LEILAO_AUMENTO : LEILAO_MINIMO;
+  if (!(valor >= minimo)) return { ok: false, erro: 'O lance mínimo agora é ' + minimo + ' moedas.' };
+  const meu = a.topo && String(a.topo.numero) === String(s.dados[0]);
+  const moedas = Number(s.dados[C_MOEDAS - 1]) || 0, disponivel = moedas + (meu ? a.topo.valor : 0);
+  if (disponivel < valor) return { ok: false, erro: 'Você tem ' + disponivel + ' moedas para esse lance.' };
+  if (a.topo && !meu) creditar_(ss, a.topo.numero, a.topo.valor); // quem foi superado recebe de volta
+  s.aba.getRange(s.linha, C_MOEDAS).setValue(disponivel - valor);
+  const insta = limpar_(d.instagram, 31).replace(/^@*/, '') || String(s.dados[3] || '');
+  a.topo = { numero: s.dados[0], nome: String(s.dados[2]), insta: insta, valor: valor }; salvarLeilao_(a);
+  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), s.dados[0], texto_(String(s.dados[2])), 'Lance no leilão do vídeo (devolvido se for superado)', valor]);
+  const p = perfil_(ss, d); p.leilao = leilaoPublico_(ss); return p;
+}
+function fraseLeilao_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const aba = ss.getSheetByName(ABA_LEILOES), ls = linhas_(aba);
+  for (let i = ls.length - 1; i >= 0; i--) {
+    if (String(ls[i][2]) !== String(s.dados[0]) || String(ls[i][6])) continue;
+    const frase = limpar_(d.frase, 300);
+    if (frase.length < 5) return { ok: false, erro: 'Escreva o que você quer divulgar.' };
+    const insta = limpar_(d.instagram, 31).replace(/^@*/, '');
+    aba.getRange(i + 2, 7).setValue(texto_(frase)); aba.getRange(i + 2, 8).setValue('pronto para o vídeo');
+    if (insta) aba.getRange(i + 2, 5).setValue(texto_(insta));
+    CacheService.getScriptCache().remove('lista');
+    return { ok: true };
+  }
+  return { ok: false, erro: 'Você não tem leilão vencido esperando frase.' };
+}
+function leilaoPublico_(ss) {
+  const a = leilaoAtual_(), ls = linhas_(ss.getSheetByName(ABA_LEILOES)), u = ls[ls.length - 1];
+  return { fecha: a.fecha, topo: a.topo ? { nome: a.topo.nome, valor: a.topo.valor } : null, minimo: a.topo ? a.topo.valor + LEILAO_AUMENTO : LEILAO_MINIMO, aumento: LEILAO_AUMENTO,
+    ultimo: u ? { id: String(u[0]), nome: String(u[3]), insta: String(u[4] || ''), valor: Number(u[5]) || 0, temFrase: !!String(u[6] || ''), numero: String(u[2]) } : null };
 }
 
 /* ---------- ajudantes ---------- */

@@ -369,6 +369,10 @@
       <div class="loja" id="pacotes"></div>
       <p class="dica" style="margin-top:8px">As moedas só valem dentro da Nave Orion e não podem ser trocadas de volta por dinheiro.</p>
       <div class="loja" id="itens"></div>
+      <h3 class="pix cat" style="margin-top:26px">LEILÃO DO VÍDEO</h3>
+      <p class="dica">Quer que o seu @ (ou o seu produto) seja divulgado no próximo vídeo da Nave Orion? Dê um lance em moedas. Se alguém der mais, as suas moedas voltam na hora. Quem tiver o maior lance quando o leilão fechar ganha a divulgação e escreve o que quer divulgar.</p>
+      <div class="msg" id="msgLeilao" role="status"></div>
+      <div id="leilaoBox"></div>
       <h3 class="pix cat" style="margin-top:26px">ANUNCIE NUM OUTDOOR</h3>
       <p class="dica">Pague ao dono de um outdoor para a sua mensagem aparecer no mapa. A colônia fica com uma pequena taxa.</p>
       <div class="msg" id="msgAnuncio" role="status"></div>
@@ -660,6 +664,7 @@
     estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
+    estado.leilao = d.leilao || null; desenharLeilao();
     calcularDonos(); desenharAlugueis(); desenharAnuncios(); if (logado()) desenharExtras();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
     desenharOfertas();
@@ -1298,7 +1303,7 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
   }
   function atualizarPerfil() {
     if (!logado() || TESTE) return Promise.resolve();
@@ -1770,6 +1775,43 @@
     };
     linha.appendChild(inp); linha.appendChild(bt); w.appendChild(d); w.appendChild(linha); w.appendChild(tirar);
     return w;
+  }
+  function desenharLeilao() {
+    var box = document.getElementById("leilaoBox"), L = estado.leilao; if (!box) return;
+    if (!L) { box.innerHTML = ""; return; }
+    var meuGanho = logado() && L.ultimo && !L.ultimo.temFrase && String(L.ultimo.numero) === String(eu.numero);
+    var assin = JSON.stringify(L) + logado() + meuGanho; if (box.dataset.assin === assin) return; box.dataset.assin = assin; box.innerHTML = "";
+    var add = function (tag, txt, cls) { var e = document.createElement(tag); if (txt != null) e.textContent = txt; if (cls) e.className = cls; box.appendChild(e); return e; };
+    var fecha = new Date(L.fecha), quando = fecha.toLocaleString("pt-BR", { weekday: "long", hour: "2-digit", minute: "2-digit" });
+    var card = add("div", null, "loja-item");
+    var b = document.createElement("b"); b.textContent = L.topo ? "Maior lance: " + L.topo.valor.toLocaleString("pt-BR") + " moedas (" + L.topo.nome + ")" : "Ninguém deu lance ainda"; card.appendChild(b);
+    var p = document.createElement("small"); p.textContent = "Fecha " + quando + ". Lance mínimo: " + L.minimo.toLocaleString("pt-BR") + " moedas."; card.appendChild(p);
+    if (logado()) {
+      var v = document.createElement("input"); v.type = "number"; v.min = L.minimo; v.step = L.aumento; v.value = L.minimo; card.appendChild(v);
+      var ig = document.createElement("input"); ig.maxLength = 31; ig.placeholder = "@ que você quer divulgar"; ig.value = eu.instagram ? "@" + eu.instagram : ""; card.appendChild(ig);
+      var bt = document.createElement("button"); bt.type = "button"; bt.className = "btn mini"; bt.textContent = "DAR LANCE"; card.appendChild(bt);
+      bt.onclick = function () {
+        var valor = Math.floor(Number(v.value) || 0);
+        if (!bt.dataset.c) { bt.dataset.c = 1; bt.textContent = "CONFIRMAR " + valor; return; }
+        delete bt.dataset.c; bt.disabled = true;
+        enviar(credenciais({ acao: "lance", valor: valor, instagram: ig.value.trim() })).then(function (r) {
+          bt.disabled = false; bt.textContent = "DAR LANCE";
+          if (!r.ok) return mensagem("msgLeilao", r.erro || "Não deu certo.");
+          aplicarPerfil(r); salvarEu(); mostrarCartao(eu); estado.leilao = r.leilao; box.dataset.assin = ""; desenharLeilao();
+          mensagem("msgLeilao", "Lance de " + valor + " moedas feito! Se alguém der mais, suas moedas voltam.", true);
+        });
+      };
+    } else { var s2 = document.createElement("small"); s2.textContent = "Entre com o seu sobrevivente para dar lance."; card.appendChild(s2); }
+    if (L.ultimo) add("p", "Último vencedor: " + L.ultimo.nome + (L.ultimo.insta ? " (@" + L.ultimo.insta + ")" : "") + " com " + L.ultimo.valor.toLocaleString("pt-BR") + " moedas.", "dica");
+    if (meuGanho) {
+      var c2 = add("div", null, "loja-item");
+      var t2 = document.createElement("b"); t2.textContent = "VOCÊ GANHOU O LEILÃO!"; c2.appendChild(t2);
+      var d2 = document.createElement("small"); d2.textContent = "Escreva o que você quer divulgar no vídeo (seu perfil, um produto, uma frase)."; c2.appendChild(d2);
+      var ig2 = document.createElement("input"); ig2.maxLength = 31; ig2.placeholder = "@ para divulgar"; ig2.value = L.ultimo.insta ? "@" + L.ultimo.insta : ""; c2.appendChild(ig2);
+      var ta = document.createElement("textarea"); ta.maxLength = 300; ta.placeholder = "Ex.: Sigam a minha loja de roupas feitas à mão!"; c2.appendChild(ta);
+      var b2 = document.createElement("button"); b2.type = "button"; b2.className = "btn mini"; b2.textContent = "ENVIAR"; c2.appendChild(b2);
+      b2.onclick = function () { b2.disabled = true; enviar(credenciais({ acao: "leilao_frase", frase: ta.value.trim(), instagram: ig2.value.trim() })).then(function (r) { b2.disabled = false; if (!r.ok) return mensagem("msgLeilao", r.erro); mensagem("msgLeilao", "Recebido! Sua divulgação vai para o próximo vídeo.", true); estado.leilao.ultimo.temFrase = true; box.dataset.assin = ""; desenharLeilao(); }); };
+    }
   }
   function desenharAnuncios() {
     var box = document.getElementById("anuncios"); if (!box || !estado.mercado) return;

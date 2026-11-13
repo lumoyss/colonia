@@ -131,6 +131,11 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - **Barrinha de trabalho:** 4 partes em cima do bonequinho, cada uma enche em 15 segundos; cheia, ganha a moeda e o ponto.
 - **Como jogar:** explicação em texto logo acima do mapa.
 
+## Leilão do vídeo (atualização de 13/11, 21h)
+- No Mercado, **LEILÃO DO VÍDEO**: cada um dá lance em moedas para ter o @ divulgado no próximo vídeo. Lance mínimo 100, cada lance novo tem que ser pelo menos 10 maior. Quem é superado recebe as moedas de volta na hora.
+- Fecha **todo dia às 20h** (LEILAO_HORA no topo do `Codigo.gs`). O rádio anuncia o vencedor, as moedas vão para você (CONTA_DONO ou cofre) e um novo leilão começa.
+- O vencedor escreve no site o @ e o que quer divulgar. Aparece no e-mail diário e na aba **Leiloes** (coluna frase).
+
 ### Moderação (na planilha)
 - Apagar uma mensagem: aba **Chat**, escreva `apagado` na coluna **status** da mensagem.
 - Silenciar alguém: aba **Sobreviventes**, escreva `sim` na coluna **banido**.
