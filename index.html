@@ -120,6 +120,7 @@
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas></div>
   <button class="btn" type="button" id="btnBau" hidden style="margin:0 0 8px">ABRIR O BAÚ!</button>
+  <div id="terrenoBox" hidden style="text-align:center;margin:0 0 8px"><p class="legenda" id="terrenoInfo" style="margin:0 0 6px;color:var(--creme)"></p><button class="btn" type="button" id="btnTerreno" hidden style="margin:0">REGISTRAR TERRENO</button></div>
   <p class="legenda" id="bauInfo">A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação.</p>
   <p class="legenda" style="margin-top:-6px">Toque no mapa para explorar com o seu bonequinho.</p>
 
@@ -242,7 +243,7 @@
       <p class="dica" style="margin-top:8px">As moedas só valem dentro da Nave Orion e não podem ser trocadas de volta por dinheiro.</p>
       <div class="loja" id="itens"></div>
       <h3 class="pix cat" style="margin-top:26px">MERCADO DOS SOBREVIVENTES</h3>
-      <p class="dica">Compre e venda recursos e itens com outros sobreviventes, em moedas. Bases não podem ser vendidas.</p>
+      <p class="dica">Compre e venda recursos e itens com outros sobreviventes, em moedas. Terrenos também podem ser vendidos aqui. Bases não.</p>
       <div class="msg" id="msgVenda" role="status"></div>
       <div class="loja" id="ofertas" style="margin-top:8px"></div>
       <form id="formVender" autocomplete="off" hidden>
@@ -392,6 +393,7 @@
     if (d.mercado) { estado.mercado = d.mercado; montarMercado(); }
     if (d.chat) document.getElementById("abaRadio").hidden = false;
     estado.ofertas = d.ofertas || [];
+    calcularDonos();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
     desenharOfertas();
     document.getElementById("total").textContent = estado.total;
@@ -444,6 +446,96 @@
     if (i < spots.length) return spots[i];
     var r = rnd(i * 97 + 3); return [14 + r() * (W - 28) | 0, 14 + r() * (H - 28) | 0];
   }
+  /* ---------- terrenos (lotes) ---------- */
+  estado.donos = {}; estado.aVenda = {}; estado.meusLotes = [];
+  function lotesCfg() { return estado.mercado && estado.mercado.terrenos; }
+  function loteEm(x, y) {
+    var T = lotesCfg(); if (!T) return 0;
+    var c = Math.floor(x / T.l), l = Math.floor(y / T.a);
+    if (c < 0 || l < 0 || c >= T.colunas || l >= T.linhas) return 0;
+    var n = l * T.colunas + c + 1; return T.nave.indexOf(n) >= 0 ? 0 : n;
+  }
+  function centroLote(n) { var T = lotesCfg(); return [((n - 1) % T.colunas) * T.l + T.l / 2, Math.floor((n - 1) / T.colunas) * T.a + T.a / 2]; }
+  function calcularDonos() {
+    var d = {}, v = {}, porNome = {};
+    estado.sobreviventes.forEach(function (s) { String(s.itens || "").split(",").forEach(function (i) { var m = /^lote_(\d+)$/.exec(i); if (m) { d[m[1]] = s.nome; if (!porNome[s.nome]) porNome[s.nome] = +m[1]; } }); });
+    (estado.ofertas || []).forEach(function (o) { var m = /^lote_(\d+)$/.exec(o.item); if (m) { d[m[1]] = o.vendedor; v[m[1]] = 1; } });
+    estado.donos = d; estado.aVenda = v; estado.lotePorNome = porNome;
+  }
+  function posBase(t, i) {
+    var n = lotesCfg() && estado.lotePorNome && estado.lotePorNome[t.dono];
+    if (n) { var c = centroLote(n); return [c[0], c[1] + 4]; }
+    return posTerreno(i);
+  }
+  function desenharLotes() {
+    var T = lotesCfg(); if (!T) return;
+    var meu = meuBoneco(), aqui = meu ? loteEm(meu.x, meu.y) : 0;
+    for (var n = 1; n <= T.colunas * T.linhas; n++) {
+      if (T.nave.indexOf(n) >= 0) continue;
+      var x0 = ((n - 1) % T.colunas) * T.l, y0 = Math.floor((n - 1) / T.colunas) * T.a, dono = estado.donos[n];
+      if (dono) {
+        mctx.fillStyle = estado.aVenda[n] ? "rgba(224,122,58,.18)" : "rgba(63,167,160,.16)"; mctx.fillRect(x0 + 2, y0 + 2, T.l - 4, T.a - 4);
+        mctx.fillStyle = estado.aVenda[n] ? "#E07A3A" : "#7FD6C8";
+        for (var k = 2; k < T.l - 2; k += 4) { mctx.fillRect(x0 + k, y0 + 2, 2, 1); mctx.fillRect(x0 + k, y0 + T.a - 3, 2, 1); }
+        for (k = 2; k < T.a - 2; k += 4) { mctx.fillRect(x0 + 2, y0 + k, 1, 2); mctx.fillRect(x0 + T.l - 3, y0 + k, 1, 2); }
+      } else {
+        // estacas nos cantos dos terrenos livres
+        mctx.fillStyle = n === aqui ? "#F3E9D6" : "rgba(243,233,214,.35)";
+        [[2, 2], [T.l - 4, 2], [2, T.a - 4], [T.l - 4, T.a - 4]].forEach(function (q) { mctx.fillRect(x0 + q[0], y0 + q[1], 2, 2); });
+        if (n === aqui) { mctx.fillStyle = "rgba(243,233,214,.08)"; mctx.fillRect(x0 + 2, y0 + 2, T.l - 4, T.a - 4); }
+      }
+    }
+  }
+  var recon = null, avisoAte = 0; // recon = { lote, inicio, pronto }
+  function avisoTerreno(t) { document.getElementById("terrenoInfo").textContent = t; avisoAte = Date.now() + 5000; }
+  function meusLotes() { return logado() && eu.itens ? String(eu.itens).split(",").filter(function (i) { return /^lote_/.test(i); }) : []; }
+  function verTerreno() {
+    var T = lotesCfg(), box = document.getElementById("terrenoBox"), info = document.getElementById("terrenoInfo"), bt = document.getElementById("btnTerreno");
+    var meu = meuBoneco();
+    if (!T || !meu) { box.hidden = true; return; }
+    box.hidden = false;
+    if (Date.now() < avisoAte) return;
+    bt.hidden = true;
+    var n = loteEm(meu.x, meu.y), parado = !meu.tx, limite = meusLotes().length >= T.porPessoa;
+    var perto = Math.hypot(meu.x - NAVE.x, meu.y - NAVE.y) < 40;
+    if (recon && recon.pronto) {
+      if (estado.donos[recon.lote]) { info.textContent = estado.donos[recon.lote] + " registrou o Terreno " + recon.lote + " antes de você. Procure outro terreno livre."; recon = null; return; }
+      if (perto) { info.textContent = "Você está na nave. Registre o Terreno " + recon.lote + " agora:"; bt.hidden = false; bt.textContent = "REGISTRAR TERRENO " + recon.lote + " (" + T.preco + " MOEDAS)"; }
+      else info.textContent = "Reconhecimento do Terreno " + recon.lote + " feito! Volte para a nave para registrar o terreno.";
+      return;
+    }
+    if (n && estado.donos[n]) { info.textContent = "Terreno " + n + (estado.aVenda[n] ? ": à venda no mercado dos sobreviventes." : ": de " + estado.donos[n] + "."); recon = null; return; }
+    if (recon && recon.lote !== n) { info.textContent = "Você saiu do Terreno " + recon.lote + " e o reconhecimento parou. Volte e fique lá dentro para recomeçar."; recon = null; return; }
+    if (!n) { info.textContent = perto ? "Você está na nave. Explore o mapa: os terrenos livres têm estacas nos cantos." : "Explore o mapa: fique parado num terreno livre (estacas nos cantos) para reconhecê-lo."; return; }
+    if (limite) { info.textContent = "Terreno " + n + " está livre. Você já tem o seu terreno; outros só no mercado dos sobreviventes."; return; }
+    if (!recon) {
+      if (!parado) { info.textContent = "Terreno " + n + " está livre! Pare aqui dentro para fazer o reconhecimento."; return; }
+      recon = { lote: n, inicio: Date.now(), pronto: false, enviando: true };
+      enviar(credenciais({ acao: "reconhecer", lote: n })).then(function (r) {
+        if (!recon || recon.lote !== n) return;
+        recon.enviando = false;
+        if (!r.ok) { recon = null; avisoTerreno(r.erro || "Não deu para reconhecer esse terreno."); carregar(); }
+      });
+    }
+    var falta = Math.max(0, T.minutos * 60000 - (Date.now() - recon.inicio));
+    if (falta <= 0 && !recon.enviando) { recon.pronto = true; verTerreno(); return; }
+    var seg = Math.ceil(falta / 1000);
+    info.textContent = "Reconhecendo o Terreno " + n + "... faltam " + Math.floor(seg / 60) + ":" + ("0" + seg % 60).slice(-2) + ". Fique dentro do terreno.";
+  }
+  setInterval(verTerreno, 1000);
+  document.getElementById("btnTerreno").addEventListener("click", function () {
+    var bt = this, T = lotesCfg();
+    if (!recon) return;
+    bt.disabled = true;
+    enviar(credenciais({ acao: "registrar_terreno" })).then(function (r) {
+      bt.disabled = false;
+      if (!r.ok) { avisoTerreno((r.erro || "Não deu certo.") + (/custa/.test(r.erro || "") ? " Consiga moedas no Mercado ou consertando a nave." : "")); if (/antes de você|reconhecimento/i.test(r.erro || "")) recon = null; carregar(); return; }
+      eu.moedas = r.moedas; eu.itens = r.itens; salvarEu(); mostrarCartao(eu); recon = null;
+      avisoTerreno("O Terreno " + r.lote + " agora é seu! Se você tiver uma base, ela é montada dentro dele.");
+      carregar();
+    });
+  });
+
   function sincronizarCena() {
     estado.sobreviventes.forEach(function (s) {
       var id = String(s.nome);
@@ -465,8 +557,9 @@
   function quadro() {
     tempo++;
     mctx.drawImage(chao, 0, 0);
+    desenharLotes();
     estado.terrenos.forEach(function (t, i) {
-      var p = posTerreno(i), grande = /grande|placa|casa/i.test(t.plano || ""), r = grande ? 8 : 5;
+      var p = posBase(t, i), grande = /grande|placa|casa/i.test(t.plano || ""), r = grande ? 8 : 5;
       mctx.fillStyle = "#3a4a52"; mctx.fillRect(p[0] - r - 1, p[1] + 3, r * 2 + 2, 2);
       mctx.fillStyle = "#F3E9D6"; mctx.fillRect(p[0] - r, p[1] - 2, r * 2, 5); mctx.fillRect(p[0] - r + 2, p[1] - 4, r * 2 - 4, 2);
       mctx.fillStyle = "#7FD6C8"; mctx.fillRect(p[0] - r + 2, p[1] - 1, r * 2 - 4, 2);
@@ -480,7 +573,7 @@
       var alvo = PONTO_CONSERTO;
       if (missao.modo === "descansando") {
         var ib = -1; estado.terrenos.forEach(function (t, i) { if (ib < 0 && t.dono === eu.nome) ib = i; });
-        alvo = ib >= 0 ? [posTerreno(ib)[0], posTerreno(ib)[1] + 8] : [NAVE.x - 10, NAVE.y + 22];
+        if (ib >= 0) { var pb = posBase(estado.terrenos[ib], ib); alvo = [pb[0], pb[1] + 8]; } else alvo = [NAVE.x - 10, NAVE.y + 22];
       }
       meu.explorando = false;
       meu.tx = alvo[0] + (missao.modo === "consertando" ? Math.sin(meu.t / 40) * 8 : 0); meu.ty = alvo[1]; meu.espera = 0;
@@ -514,7 +607,14 @@
     cctx.textAlign = "center"; cctx.font = Math.round(Math.min(esc * 3, 7.5 / tela)) + "px 'Press Start 2P', monospace";
     var dentro = function (x, y) { return x > cx - 20 && x < cx + VW + 20 && y > cy - 10 && y < cy + VH + 20; };
     estado.terrenos.forEach(function (t, i) {
-      var p = posTerreno(i); if (dentro(p[0], p[1])) rotulo(t.nome, (p[0] - cx) * esc, (p[1] + 11 - cy) * esc, "#F3E9D6", "#7A2E22");
+      var p = posBase(t, i); if (dentro(p[0], p[1])) rotulo(t.nome, (p[0] - cx) * esc, (p[1] + 11 - cy) * esc, "#F3E9D6", "#7A2E22");
+    });
+    var LT = lotesCfg();
+    if (LT) Object.keys(estado.donos).forEach(function (n) {
+      var c = centroLote(+n); if (!dentro(c[0], c[1])) return;
+      cctx.save(); cctx.font = Math.round(Math.min(esc * 2.4, 6.5 / tela)) + "px 'Press Start 2P', monospace";
+      rotulo((estado.aVenda[n] ? "À VENDA · " : "") + estado.donos[n], (c[0] - cx) * esc, (c[1] - LT.a / 2 + 2 - cy) * esc, "#F3E9D6", estado.aVenda[n] ? "rgba(224,122,58,.85)" : "rgba(63,167,160,.75)");
+      cctx.restore();
     });
     if (vivos.length <= 120) vivos.forEach(function (b) {
       if (dentro(b.x, b.y)) rotulo(b.nome, (b.x - cx) * esc, (b.y + 4 - cy) * esc, b === meu ? "#0B161C" : "#F3E9D6", b === meu ? "#E07A3A" : "rgba(11,22,28,.75)");
@@ -754,7 +854,7 @@
   }
   function vendivel(id) {
     var m = estado.mercado; if (!m) return false;
-    return (m.recursos || []).some(function (r) { return r.id === id; }) || m.itens.some(function (i) { return i.id === id && !i.base; });
+    return /^lote_\d+$/.test(id) || (m.recursos || []).some(function (r) { return r.id === id; }) || m.itens.some(function (i) { return i.id === id && !i.base; });
   }
   function desenharOfertas() {
     var box = document.getElementById("ofertas"); if (!box || !estado.mercado) return;
@@ -809,6 +909,7 @@
   /* ---------------- mercado ---------------- */
   var mercadoPronto = false;
   function nomeItem(id) {
+    var lt = /^lote_(\d+)$/.exec(id); if (lt) return "Terreno " + lt[1];
     var m = estado.mercado; if (!m) return null;
     var i = m.itens.concat(m.recursos || []).filter(function (x) { return x.id === id; })[0]; return i ? i.nome : null;
   }

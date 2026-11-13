@@ -27,7 +27,7 @@ const TIPOS_IDEIA = ['historia', 'profissao', 'lugar', 'outro'];
 
 // Colunas da aba Sobreviventes (1 = A)
 const C_NUMERO = 1, C_NOME = 3, C_INSTA = 4, C_PROF = 5, C_VISUAL = 7, C_MOEDAS = 8, C_CHAVE = 9, C_ITENS = 10, C_BANIDO = 11;
-const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14, C_TURNO = 15, C_PROGRESSO = 16, C_DESCANSO = 17;
+const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14, C_TURNO = 15, C_PROGRESSO = 16, C_DESCANSO = 17, C_RECON = 18;
 
 /* ---------- MISSÃO: consertar a nave (ganha moedas com o site aberto) ---------- */
 const MINUTOS_POR_MOEDA = 1;    // 1 moeda a cada 1 minuto consertando
@@ -55,6 +55,17 @@ const BAU_CHANCE_RARO = 0.15;        // chance de vir também um item raro do me
 const BAU_RAROS = ['capacete_dourado', 'traje_dourado', 'mochila'];
 const MAPA_L = 480, MAPA_A = 300;    // tamanho do mapa (o site usa o mesmo)
 
+/* ---------- TERRENOS: explorar, reconhecer e registrar ---------- */
+// O mapa é dividido em lotes de 60 x 50 (8 colunas x 6 linhas). Os 4 lotes do meio são da nave.
+// A pessoa fica parada dentro de um lote livre por TERRENO_MINUTOS (reconhecimento),
+// volta para a nave e registra o terreno pagando TERRENO_PRECO moedas.
+// Quando acabarem os terrenos livres, só dá para conseguir um no mercado dos sobreviventes.
+const LOTE_L = 60, LOTE_A = 50, LOTE_COLUNAS = 8, LOTE_LINHAS = 6;
+const LOTES_DA_NAVE = [20, 21, 28, 29];
+const TERRENO_PRECO = 50;            // valor simbólico do registro, em moedas
+const TERRENO_MINUTOS = 3;           // tempo parado dentro do terreno para reconhecer
+const TERRENOS_POR_PESSOA = 1;       // quantos terrenos cada um pode registrar (no mercado pode comprar mais)
+
 const ITENS = [
   { id: 'base', cat: 'Residência', nome: 'Base oxigenada', preco: 500, base: true,
     desc: 'Sua base no mapa, com o nome que você escolher. Você vira cidadão da colônia e ganha voto (peso 1).' },
@@ -75,7 +86,7 @@ const ITENS = [
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto']);
   colunas_(garantirAba_(ss, ABA_TERRENOS), ['codigo', 'data', 'nome_do_lugar', 'dono', 'instagram', 'plano', 'valor', 'status', 'ref']);
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
@@ -112,7 +123,8 @@ function doGet(e) {
     pacotes: Object.keys(PACOTES).map(function (k) { return { id: k, nome: PACOTES[k].nome, reais: PACOTES[k].reais, moedas: PACOTES[k].moedas }; }),
     missao: { porMoeda: MINUTOS_POR_MOEDA, turno: TURNO_MINUTOS, descansoBase: DESCANSO_COM_BASE, descansoSemBase: DESCANSO_SEM_BASE, limite: LIMITE_MINUTOS_DIA },
     itens: ITENS.map(function (i) { return { id: i.id, cat: i.cat, nome: i.nome, preco: i.preco, desc: i.desc, base: !!i.base }; }),
-    recursos: RECURSOS
+    recursos: RECURSOS,
+    terrenos: { l: LOTE_L, a: LOTE_A, colunas: LOTE_COLUNAS, linhas: LOTE_LINHAS, nave: LOTES_DA_NAVE, preco: TERRENO_PRECO, minutos: TERRENO_MINUTOS, porPessoa: TERRENOS_POR_PESSOA }
   };
   const ofertas = linhas_(ss.getSheetByName(ABA_OFERTAS)).filter(function (l) { return l[6] === 'aberta'; }).slice(-100).reverse().map(function (l) {
     return { id: l[0], vendedor: l[3], item: l[4], preco: l[5] };
@@ -138,10 +150,11 @@ function doPost(e) {
   try {
     const ss = planilha_();
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
-      bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_ };
+      bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
+      reconhecer: reconhecer_, registrar_terreno: registrarTerreno_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
-    if (r.ok && ['perfil', 'entrar', 'chat', 'consertar'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
+    if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'reconhecer'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
     return json_(r);
   } finally {
     trava.releaseLock();
@@ -382,9 +395,55 @@ function abrirBau_(ss, d) {
   return p;
 }
 
+/* ---------- Terrenos ---------- */
+function loteValido_(n) {
+  n = Math.floor(Number(n));
+  return n >= 1 && n <= LOTE_COLUNAS * LOTE_LINHAS && LOTES_DA_NAVE.indexOf(n) < 0 ? n : 0;
+}
+// Quem é dono de cada lote: está nos itens de alguém ou guardado numa oferta aberta
+function donoDoLote_(ss, n) {
+  const id = 'lote_' + n;
+  const s = linhas_(ss.getSheetByName(ABA_SOBREVIVENTES)).filter(function (l) { return String(l[C_ITENS - 1] || '').split(',').indexOf(id) >= 0; })[0];
+  if (s) return String(s[C_NOME - 1]);
+  const o = linhas_(ss.getSheetByName(ABA_OFERTAS)).filter(function (l) { return l[6] === 'aberta' && l[4] === id; })[0];
+  return o ? String(o[3]) : '';
+}
+
+function reconhecer_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const n = loteValido_(d.lote);
+  if (!n) return { ok: false, erro: 'Esse lugar não é um terreno.' };
+  if (donoDoLote_(ss, n)) return { ok: false, erro: 'O Terreno ' + n + ' já tem dono.' };
+  s.aba.getRange(s.linha, C_RECON).setValue(n + '|' + Date.now());
+  return { ok: true, lote: n, minutos: TERRENO_MINUTOS };
+}
+
+function registrarTerreno_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const rec = String(s.dados[C_RECON - 1] || '').split('|'), n = loteValido_(rec[0]);
+  if (!n) return { ok: false, erro: 'Primeiro fique dentro de um terreno livre para fazer o reconhecimento.' };
+  if (Date.now() - Number(rec[1]) < TERRENO_MINUTOS * 60000 - 5000) return { ok: false, erro: 'O reconhecimento do Terreno ' + n + ' ainda não terminou.' };
+  const dono = donoDoLote_(ss, n);
+  if (dono) { s.aba.getRange(s.linha, C_RECON).setValue(''); return { ok: false, erro: dono + ' registrou o Terreno ' + n + ' antes de você.' }; }
+  const p = perfilDe_(s), lista = p.itens ? p.itens.split(',') : [];
+  if (lista.filter(function (i) { return /^lote_/.test(i); }).length >= TERRENOS_POR_PESSOA)
+    return { ok: false, erro: 'Você já registrou o seu terreno. Para ter outro, compre no mercado dos sobreviventes.' };
+  if (p.moedas < TERRENO_PRECO) return { ok: false, erro: 'O registro custa ' + TERRENO_PRECO + ' moedas e você tem ' + p.moedas + '.' };
+  p.moedas -= TERRENO_PRECO;
+  lista.push('lote_' + n);
+  p.itens = lista.join(',');
+  salvarPerfil_(s, p);
+  s.aba.getRange(s.linha, C_RECON).setValue('');
+  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Terreno ' + n, TERRENO_PRECO]);
+  p.lote = n;
+  return p;
+}
+
 /* ---------- Mercado entre jogadores ---------- */
 function vendivel_(id) {
-  return RECURSOS.some(function (r) { return r.id === id; }) || ITENS.some(function (i) { return i.id === id && !i.base; });
+  return /^lote_\d+$/.test(id) || RECURSOS.some(function (r) { return r.id === id; }) || ITENS.some(function (i) { return i.id === id && !i.base; });
 }
 
 function vender_(ss, d) {
@@ -535,7 +594,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 17)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 18)).getValues();
 }
 
 function gerarChave_() {
