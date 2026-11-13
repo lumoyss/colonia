@@ -119,7 +119,9 @@
   </header>
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas></div>
-  <p class="legenda">A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação.</p>
+  <button class="btn" type="button" id="btnBau" hidden style="margin:0 0 8px">ABRIR O BAÚ!</button>
+  <p class="legenda" id="bauInfo">A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação.</p>
+  <p class="legenda" style="margin-top:-6px">Toque no mapa para explorar com o seu bonequinho.</p>
 
   <nav class="abas" role="tablist">
     <button role="tab" aria-selected="true" data-aba="entrar">ENTRAR</button>
@@ -239,6 +241,21 @@
       <div class="loja" id="pacotes"></div>
       <p class="dica" style="margin-top:8px">As moedas só valem dentro da Nave Orion e não podem ser trocadas de volta por dinheiro.</p>
       <div class="loja" id="itens"></div>
+      <h3 class="pix cat" style="margin-top:26px">MERCADO DOS SOBREVIVENTES</h3>
+      <p class="dica">Compre e venda recursos e itens com outros sobreviventes, em moedas. Bases não podem ser vendidas.</p>
+      <div class="msg" id="msgVenda" role="status"></div>
+      <div class="loja" id="ofertas" style="margin-top:8px"></div>
+      <form id="formVender" autocomplete="off" hidden>
+        <h3 class="pix cat" style="margin-top:18px">VENDER UM ITEM</h3>
+        <p class="dica" id="venderVazio">Você ainda não tem nada para vender. Explore o mapa e procure o baú do dia!</p>
+        <div id="venderCampos">
+          <label for="venderItem">Item</label>
+          <select id="venderItem"></select>
+          <label for="venderPreco">Preço (moedas)</label>
+          <input id="venderPreco" type="number" min="1" max="100000" placeholder="ex.: 50">
+          <button class="btn sec" type="submit" id="btnVender">COLOCAR À VENDA</button>
+        </div>
+      </form>
     </div>
   </section>
 
@@ -374,54 +391,79 @@
     estado.total = d.total || estado.sobreviventes.length;
     if (d.mercado) { estado.mercado = d.mercado; montarMercado(); }
     if (d.chat) document.getElementById("abaRadio").hidden = false;
+    estado.ofertas = d.ofertas || [];
+    if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
+    desenharOfertas();
     document.getElementById("total").textContent = estado.total;
     sincronizarCena(); desenharMural();
   }
 
-  /* ---------------- cena ao vivo ---------------- */
-  var W = 240, H = 150;
+  /* ---------------- cena ao vivo (mapa grande com câmera) ---------------- */
+  var W = 480, H = 300, VW = 240, VH = 150;
+  var NAVE = { x: 240, y: 136 }, PONTO_CONSERTO = [240, 158];
   var cena = document.getElementById("cena"), cctx = cena.getContext("2d");
   var mundo = document.createElement("canvas"); mundo.width = W; mundo.height = H;
   var mctx = mundo.getContext("2d");
   var chao = document.createElement("canvas"); chao.width = W; chao.height = H;
-  var bonecos = {}, ordem = [];
+  var bonecos = {}, ordem = [], cam = { x: (W - VW) / 2, y: (H - VH) / 2 };
 
   function rnd(seed) { return function () { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
   function pintarChao() {
-    var c = chao.getContext("2d"), r = rnd(42);
+    var c = chao.getContext("2d"), r = rnd(42), i, x, y;
     c.fillStyle = "#c4683a"; c.fillRect(0, 0, W, H);
-    for (var i = 0; i < 1400; i++) { c.fillStyle = r() < 0.5 ? "#b85d33" : "#d27645"; c.fillRect((r() * W) | 0, (r() * H) | 0, 1 + (r() * 2 | 0), 1); }
-    for (i = 0; i < 26; i++) { var x = r() * W | 0, y = r() * H | 0; c.fillStyle = "#7A2E22"; c.fillRect(x, y, 3, 2); c.fillStyle = "#9a3e2a"; c.fillRect(x, y, 2, 1); }
+    for (i = 0; i < 5600; i++) { c.fillStyle = r() < 0.5 ? "#b85d33" : "#d27645"; c.fillRect((r() * W) | 0, (r() * H) | 0, 1 + (r() * 2 | 0), 1); }
+    // dunas escuras
+    for (i = 0; i < 14; i++) { x = r() * W | 0; y = r() * H | 0; c.fillStyle = "#b35a31"; c.fillRect(x, y, 20 + r() * 30 | 0, 3); c.fillRect(x + 4, y - 2, 14, 2); }
+    // crateras
+    for (i = 0; i < 9; i++) {
+      x = 20 + r() * (W - 40) | 0; y = 20 + r() * (H - 40) | 0; var rr = 4 + r() * 6 | 0;
+      c.fillStyle = "#8f4527"; c.fillRect(x - rr, y - rr / 2, rr * 2, rr); c.fillStyle = "#a9502c"; c.fillRect(x - rr + 2, y - rr / 2 + 1, rr * 2 - 4, rr - 2);
+    }
+    // pedras
+    for (i = 0; i < 90; i++) { x = r() * W | 0; y = r() * H | 0; c.fillStyle = "#7A2E22"; c.fillRect(x, y, 3, 2); c.fillStyle = "#9a3e2a"; c.fillRect(x, y, 2, 1); }
+    // cristais
+    for (i = 0; i < 16; i++) { x = r() * W | 0; y = r() * H | 0; c.fillStyle = "#3FA7A0"; c.fillRect(x, y, 1, 3); c.fillRect(x - 1, y + 1, 3, 1); c.fillStyle = "#c9f0e8"; c.fillRect(x, y, 1, 1); }
     // trilhas
-    c.fillStyle = "#d8875a"; c.fillRect(0, 74, W, 4); c.fillRect(118, 0, 4, H);
-    // nave pousada
-    c.fillStyle = "#3a4a52"; c.fillRect(102, 48, 36, 22); c.fillStyle = "#F3E9D6"; c.fillRect(104, 46, 32, 20);
-    c.fillStyle = "#c9bfac"; c.fillRect(104, 60, 32, 6); c.fillStyle = "#3FA7A0"; c.fillRect(110, 50, 6, 4); c.fillRect(124, 50, 6, 4);
-    c.fillStyle = "#E07A3A"; c.fillRect(116, 42, 8, 4); c.fillStyle = "#7A2E22"; c.fillRect(117, 66, 6, 4);
-    // cúpulas
-    [[40, 30], [190, 34], [56, 112], [180, 110]].forEach(function (p) {
+    c.fillStyle = "#d8875a"; c.fillRect(0, 154, W, 4); c.fillRect(238, 0, 4, H);
+    // nave pousada (no meio do mapa)
+    var nx = NAVE.x - 18, ny = NAVE.y - 14;
+    c.fillStyle = "#3a4a52"; c.fillRect(nx, ny + 6, 36, 22); c.fillStyle = "#F3E9D6"; c.fillRect(nx + 2, ny + 4, 32, 20);
+    c.fillStyle = "#c9bfac"; c.fillRect(nx + 2, ny + 18, 32, 6); c.fillStyle = "#3FA7A0"; c.fillRect(nx + 8, ny + 8, 6, 4); c.fillRect(nx + 22, ny + 8, 6, 4);
+    c.fillStyle = "#E07A3A"; c.fillRect(nx + 14, ny, 8, 4); c.fillStyle = "#7A2E22"; c.fillRect(nx + 15, ny + 24, 6, 4);
+    // cúpulas antigas espalhadas
+    [[80, 60], [400, 70], [110, 240], [370, 230], [190, 40], [300, 270]].forEach(function (p) {
       c.fillStyle = "#1f5c58"; c.fillRect(p[0] - 9, p[1] + 4, 18, 3);
       c.fillStyle = "#7FD6C8"; c.fillRect(p[0] - 8, p[1] - 2, 16, 6); c.fillRect(p[0] - 6, p[1] - 4, 12, 2); c.fillRect(p[0] - 3, p[1] - 5, 6, 1);
       c.fillStyle = "#c9f0e8"; c.fillRect(p[0] - 5, p[1] - 3, 2, 2);
     });
     // antena
-    c.fillStyle = "#F3E9D6"; c.fillRect(214, 70, 1, 12); c.fillStyle = "#E07A3A"; c.fillRect(213, 69, 3, 1);
+    c.fillStyle = "#F3E9D6"; c.fillRect(300, 150, 1, 12); c.fillStyle = "#E07A3A"; c.fillRect(299, 149, 3, 1);
   }
   function posTerreno(i) {
-    var spots = [[20, 60], [80, 20], [160, 18], [222, 50], [24, 96], [90, 128], [150, 132], [222, 96], [64, 64], [170, 64], [36, 136], [204, 132]];
+    var spots = [[200, 120], [280, 120], [200, 190], [280, 190], [160, 150], [320, 150], [240, 90], [240, 215], [150, 100], [330, 100], [150, 205], [330, 205]];
     if (i < spots.length) return spots[i];
-    var r = rnd(i * 97 + 3); return [10 + r() * (W - 20) | 0, 10 + r() * (H - 20) | 0];
+    var r = rnd(i * 97 + 3); return [14 + r() * (W - 28) | 0, 14 + r() * (H - 28) | 0];
   }
   function sincronizarCena() {
     estado.sobreviventes.forEach(function (s) {
       var id = String(s.nome);
       if (bonecos[id]) { bonecos[id].itens = s.itens || ""; return; }
       var r = rnd(hash(id));
-      bonecos[id] = { nome: s.nome, itens: s.itens || "", v: lerVisual(s.visual, s.nome), x: 20 + r() * (W - 40), y: 16 + r() * (H - 36), tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r };
+      bonecos[id] = { nome: s.nome, itens: s.itens || "", v: lerVisual(s.visual, s.nome), x: 190 + r() * 100, y: 150 + r() * 30, tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r };
       ordem.push(id);
     });
   }
+  function meuBoneco() { return eu && logado() ? bonecos[eu.nome] : null; }
+  function bauVisivel() { var b = estado.bau; return b && b.x != null && !b.abertoPor; }
+  function desenharBau(x, y, t) {
+    mctx.fillStyle = "#5a3418"; mctx.fillRect(x - 4, y - 3, 8, 6);
+    mctx.fillStyle = "#8a5426"; mctx.fillRect(x - 4, y - 3, 8, 2);
+    mctx.fillStyle = OURO; mctx.fillRect(x - 4, y - 1, 8, 1); mctx.fillRect(x - 1, y - 1, 2, 2);
+    if ((t >> 4) % 2) { mctx.fillStyle = "#fff"; mctx.fillRect(x + 4, y - 6, 1, 1); mctx.fillRect(x - 6, y - 4, 1, 1); }
+  }
+  var tempo = 0;
   function quadro() {
+    tempo++;
     mctx.drawImage(chao, 0, 0);
     estado.terrenos.forEach(function (t, i) {
       var p = posTerreno(i), grande = /grande|placa|casa/i.test(t.plano || ""), r = grande ? 8 : 5;
@@ -431,43 +473,59 @@
       mctx.fillStyle = "#3a4a52"; mctx.fillRect(p[0] - 1, p[1] + 1, 2, 2);
       if (grande) { mctx.fillStyle = "#E07A3A"; mctx.fillRect(p[0] + r + 1, p[1] - 3, 4, 3); mctx.fillStyle = "#7A2E22"; mctx.fillRect(p[0] + r + 2, p[1], 1, 4); }
     });
-    var vivos = ordem.map(function (id) { return bonecos[id]; });
-    if (eu && bonecos[eu.nome] && (missao.modo === "consertando" || missao.modo === "descansando")) {
-      var meu = bonecos[eu.nome], alvo = [120, 76];
+    if (bauVisivel()) desenharBau(estado.bau.x, estado.bau.y, tempo);
+
+    var vivos = ordem.map(function (id) { return bonecos[id]; }), meu = meuBoneco();
+    if (meu && (missao.modo === "consertando" || missao.modo === "descansando")) {
+      var alvo = PONTO_CONSERTO;
       if (missao.modo === "descansando") {
         var ib = -1; estado.terrenos.forEach(function (t, i) { if (ib < 0 && t.dono === eu.nome) ib = i; });
-        alvo = ib >= 0 ? posTerreno(ib).map(function (v, k) { return v + (k ? 8 : 0); }) : [112, 78];
+        alvo = ib >= 0 ? [posTerreno(ib)[0], posTerreno(ib)[1] + 8] : [NAVE.x - 10, NAVE.y + 22];
       }
+      meu.explorando = false;
       meu.tx = alvo[0] + (missao.modo === "consertando" ? Math.sin(meu.t / 40) * 8 : 0); meu.ty = alvo[1]; meu.espera = 0;
     }
     vivos.forEach(function (b) {
       b.t++;
+      if (b.explorando) { b.tx = b.ax; b.ty = b.ay; b.espera = 0; }
       if (b.espera > 0) { b.espera--; }
       else {
-        if (!b.tx) { b.tx = 12 + b.r() * (W - 24); b.ty = 14 + b.r() * (H - 34); }
-        var dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy);
-        if (d < 1) { b.tx = 0; b.espera = 60 + b.r() * 240 | 0; }
-        else { b.x += dx / d * 0.25; b.y += dy / d * 0.25; }
+        if (!b.tx) { b.tx = 150 + b.r() * 180; b.ty = 110 + b.r() * 90; }
+        var dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy), vel = b === meu ? 0.6 : 0.25;
+        if (d < 1) { b.tx = 0; b.espera = b === meu ? 100000 : 60 + b.r() * 240 | 0; b.explorando = false; }
+        else { b.x += dx / d * Math.min(vel, d); b.y += dy / d * Math.min(vel, d); }
       }
     });
     vivos.sort(function (a, b) { return a.y - b.y; }).forEach(function (b) {
       var andando = b.espera <= 0 && b.tx;
       desenharSprite(mctx, b.v, Math.round(b.x) - 5, Math.round(b.y) - 14, andando && (b.t >> 3) % 2, b.itens);
     });
-    // escala para a tela
-    var esc = cena.width / W;
+
+    // câmera segue o seu bonequinho (ou fica na nave)
+    var fx = meu ? meu.x : NAVE.x, fy = meu ? meu.y : NAVE.y + 10;
+    cam.x += (Math.max(0, Math.min(W - VW, fx - VW / 2)) - cam.x) * 0.08;
+    cam.y += (Math.max(0, Math.min(H - VH, fy - VH / 2)) - cam.y) * 0.08;
+    var cx = Math.round(cam.x), cy = Math.round(cam.y);
+
+    var esc = cena.width / VW;
     cctx.imageSmoothingEnabled = false;
-    cctx.drawImage(mundo, 0, 0, cena.width, cena.height);
+    cctx.drawImage(mundo, cx, cy, VW, VH, 0, 0, cena.width, cena.height);
     var tela = (cena.clientWidth || cena.width) / cena.width;
     cctx.textAlign = "center"; cctx.font = Math.round(Math.min(esc * 3, 7.5 / tela)) + "px 'Press Start 2P', monospace";
+    var dentro = function (x, y) { return x > cx - 20 && x < cx + VW + 20 && y > cy - 10 && y < cy + VH + 20; };
     estado.terrenos.forEach(function (t, i) {
-      var p = posTerreno(i); rotulo(t.nome, p[0] * esc, (p[1] + 11) * esc, "#F3E9D6", "#7A2E22");
+      var p = posTerreno(i); if (dentro(p[0], p[1])) rotulo(t.nome, (p[0] - cx) * esc, (p[1] + 11 - cy) * esc, "#F3E9D6", "#7A2E22");
     });
-    if (vivos.length <= 80) vivos.forEach(function (b) { rotulo(b.nome, b.x * esc, (b.y + 4) * esc, "#F3E9D6", "rgba(11,22,28,.75)"); });
+    if (vivos.length <= 120) vivos.forEach(function (b) {
+      if (dentro(b.x, b.y)) rotulo(b.nome, (b.x - cx) * esc, (b.y + 4 - cy) * esc, b === meu ? "#0B161C" : "#F3E9D6", b === meu ? "#E07A3A" : "rgba(11,22,28,.75)");
+    });
     if (!vivos.length) {
       cctx.font = Math.round(Math.min(esc * 4, 9 / tela)) + "px 'Press Start 2P', monospace";
       rotulo("TODOS AINDA ESTÃO EM HIBERNAÇÃO", cena.width / 2, cena.height * 0.9, "#F3E9D6", "rgba(11,22,28,.8)");
     }
+    // perto do baú?
+    var perto = meu && bauVisivel() && Math.hypot(meu.x - estado.bau.x, meu.y - estado.bau.y) < 14;
+    var bb = document.getElementById("btnBau"); if (bb.hidden === !!perto) bb.hidden = !perto;
     requestAnimationFrame(quadro);
   }
   function rotulo(txt, x, y, cor, fundo) {
@@ -475,6 +533,36 @@
     cctx.fillStyle = fundo; cctx.fillRect(x - w / 2 - 3, y - 1, w + 6, h + 5);
     cctx.fillStyle = cor; cctx.fillText(txt, x, y + h + 1);
   }
+  // tocar no mapa: o seu bonequinho anda até lá (exploração)
+  cena.addEventListener("click", function (ev) {
+    var meu = meuBoneco();
+    if (!meu) { mensagemMapa("Acorde seu sobrevivente (ou entre com o seu código no Mercado) para explorar o mapa."); return; }
+    if (missao.modo === "descansando") { mensagemMapa("Seu sobrevivente está cansado. Espere o descanso terminar."); return; }
+    if (missao.modo === "consertando") { missao.modo = "parado"; pararMissao(); desenharMissao(); }
+    var r = cena.getBoundingClientRect();
+    meu.ax = cam.x + (ev.clientX - r.left) / r.width * VW;
+    meu.ay = cam.y + (ev.clientY - r.top) / r.height * VH + 7;
+    meu.explorando = true;
+  });
+  function mensagemMapa(t) { var el = document.getElementById("bauInfo"); el.textContent = t; clearTimeout(mensagemMapa.t); mensagemMapa.t = setTimeout(desenharBauInfo, 4000); }
+  function desenharBauInfo() {
+    var b = estado.bau, el = document.getElementById("bauInfo");
+    if (!b) { el.textContent = "A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação."; return; }
+    if (b.abertoPor) el.textContent = "O baú de hoje já foi aberto por " + b.abertoPor + ". Amanhã aparece outro!";
+    else if (b.x == null) el.textContent = "O baú de hoje aparece às " + b.hora + "h em algum lugar do mapa. Fique de olho!";
+    else el.textContent = "O BAÚ DE HOJE APARECEU! Toque no mapa para explorar com o seu bonequinho e encontrá-lo.";
+  }
+  document.getElementById("btnBau").addEventListener("click", function () {
+    var bt = this; bt.disabled = true;
+    enviar(credenciais({ acao: "bau" })).then(function (r) {
+      bt.disabled = false;
+      if (!r.ok) { mensagemMapa(r.erro || "Não deu para abrir."); carregar(); return; }
+      eu.moedas = r.moedas; eu.itens = r.itens; salvarEu();
+      estado.bau.abertoPor = eu.nome;
+      mensagemMapa("Você abriu o baú e encontrou: " + r.ganhou.map(nomeItem).join(", ") + "!");
+      carregar();
+    });
+  });
 
   /* ---------------- criador de personagem ---------------- */
   var prev = document.getElementById("preview");
@@ -584,12 +672,12 @@
     if (on) {
       document.getElementById("contaNome").textContent = eu.nome + " · #" + eu.numero;
       document.getElementById("contaMoedas").textContent = (Number(eu.moedas) || 0).toLocaleString("pt-BR");
-      var inv = (eu.itens ? String(eu.itens).split(",") : []).map(nomeItem).filter(Boolean);
+      var cont = contarItens(eu.itens), inv = Object.keys(cont).filter(nomeItem).map(function (id) { return nomeItem(id) + (cont[id] > 1 ? " x" + cont[id] : ""); });
       document.getElementById("contaItens").textContent = inv.length ? "Seus itens: " + inv.join(", ") : "Você ainda não tem itens.";
     }
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
-    desenharItens(); mostrarMissao();
+    desenharItens(); mostrarMissao(); desenharOfertas();
   }
   document.getElementById("formLogin").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -611,7 +699,7 @@
     var R = regras(), box = document.getElementById("missao");
     box.hidden = !(R && logado() && !TESTE);
     if (box.hidden) return;
-    document.getElementById("missaoRegra").textContent = "Fique com o site aberto consertando a nave: a cada " + R.porMoeda + " minutos de conserto você ganha 1 moeda. Depois de " + R.turno +
+    document.getElementById("missaoRegra").textContent = "Fique com o site aberto consertando a nave: " + (R.porMoeda == 1 ? "a cada minuto" : "a cada " + R.porMoeda + " minutos") + " de conserto você ganha 1 moeda. Depois de " + R.turno +
       " minutos você cansa e precisa descansar: quem tem base descansa " + R.descansoBase + " minuto; quem não tem base fica " + R.descansoSemBase + " minutos sem consertar.";
     desenharMissao();
   }
@@ -623,7 +711,7 @@
     document.getElementById("barMoeda").style.width = Math.max(0, Math.min(1, moeda)) * 100 + "%";
     var st = document.getElementById("missaoStatus"), bt = document.getElementById("btnConsertar");
     bt.hidden = missao.modo === "consertando" || missao.modo === "descansando";
-    if (missao.modo === "consertando") st.textContent = document.hidden ? "Pausado: volte para o site para continuar consertando." : "Consertando a nave... (" + (missao.progresso) + " de " + R.porMoeda + " min para a próxima moeda)";
+    if (missao.modo === "consertando") st.textContent = document.hidden ? "Pausado: volte para o site para continuar consertando." : (R.porMoeda == 1 ? "Consertando a nave... você ganha 1 moeda a cada minuto." : "Consertando a nave... (" + (missao.progresso) + " de " + R.porMoeda + " min para a próxima moeda)");
     else if (missao.modo === "descansando") {
       var m = Math.floor(missao.descanso / 60), ss = ("0" + (missao.descanso % 60)).slice(-2);
       st.textContent = (missao.temBase ? "Cansado! Descansando na sua base: " : "Cansado e sem base! Descansando na nave: ") + m + ":" + ss;
@@ -660,11 +748,69 @@
     if (!document.getElementById("missao").hidden) desenharMissao();
   }, 1000);
 
+  /* ---------------- mercado entre jogadores ---------------- */
+  function contarItens(itens) {
+    var c = {}; (itens ? String(itens).split(",") : []).forEach(function (i) { if (i) c[i] = (c[i] || 0) + 1; }); return c;
+  }
+  function vendivel(id) {
+    var m = estado.mercado; if (!m) return false;
+    return (m.recursos || []).some(function (r) { return r.id === id; }) || m.itens.some(function (i) { return i.id === id && !i.base; });
+  }
+  function desenharOfertas() {
+    var box = document.getElementById("ofertas"); if (!box || !estado.mercado) return;
+    box.innerHTML = "";
+    var lista = estado.ofertas || [];
+    if (!lista.length) { var v = document.createElement("p"); v.className = "dica"; v.textContent = "Ninguém está vendendo nada agora. Seja o primeiro!"; box.appendChild(v); }
+    lista.forEach(function (o) {
+      var minha = logado() && o.vendedor === eu.nome;
+      var c = cartaoLoja(nomeItem(o.item) || o.item, Number(o.preco).toLocaleString("pt-BR") + " moedas", "Vendido por " + o.vendedor, minha ? "CANCELAR" : "COMPRAR");
+      c.botao.disabled = !logado();
+      c.botao.onclick = function () {
+        if (!minha && (Number(eu.moedas) || 0) < o.preco) return mensagem("msgVenda", "Moedas insuficientes para essa compra.");
+        if (!c.botao.dataset.confirmar) { c.botao.dataset.confirmar = "1"; c.botao.textContent = minha ? "CONFIRMAR CANCELAR" : "CONFIRMAR (" + o.preco + ")"; return; }
+        c.botao.disabled = true;
+        enviar(credenciais({ acao: minha ? "cancelar" : "comprar_oferta", id: o.id })).then(function (r) {
+          if (!r.ok) { mensagem("msgVenda", r.erro || "Não deu certo."); carregar(); return; }
+          eu.moedas = r.moedas; eu.itens = r.itens; salvarEu(); mostrarCartao(eu);
+          mensagem("msgVenda", minha ? "Oferta cancelada. O item voltou para você." : "Comprado! " + nomeItem(o.item) + " agora é seu.", true);
+          carregar();
+        });
+      };
+      box.appendChild(c.el);
+    });
+    // itens que eu posso vender
+    var sel = document.getElementById("venderItem"), atual = sel.value, cont = logado() ? contarItens(eu.itens) : {};
+    sel.innerHTML = "";
+    Object.keys(cont).filter(vendivel).forEach(function (id) {
+      var op = document.createElement("option"); op.value = id; op.textContent = nomeItem(id) + " (você tem " + cont[id] + ")"; sel.appendChild(op);
+    });
+    if (atual) sel.value = atual;
+    var temAlgo = sel.options.length > 0;
+    document.getElementById("formVender").hidden = !logado();
+    document.getElementById("venderVazio").hidden = !logado() || temAlgo;
+    document.getElementById("venderCampos").hidden = !temAlgo;
+  }
+  document.getElementById("formVender").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var item = document.getElementById("venderItem").value, preco = Math.floor(Number(document.getElementById("venderPreco").value));
+    if (!item) return;
+    if (!(preco >= 1)) return mensagem("msgVenda", "Escolha um preço em moedas.");
+    var bt = document.getElementById("btnVender"); bt.disabled = true;
+    enviar(credenciais({ acao: "vender", item: item, preco: preco })).then(function (r) {
+      bt.disabled = false;
+      if (!r.ok) return mensagem("msgVenda", r.erro || "Não deu certo.");
+      eu.moedas = r.moedas; eu.itens = r.itens; salvarEu(); mostrarCartao(eu);
+      document.getElementById("venderPreco").value = "";
+      mensagem("msgVenda", nomeItem(item) + " está à venda por " + preco + " moedas.", true);
+      carregar();
+    });
+  });
+
   /* ---------------- mercado ---------------- */
   var mercadoPronto = false;
   function nomeItem(id) {
     var m = estado.mercado; if (!m) return null;
-    var i = m.itens.filter(function (x) { return x.id === id; })[0]; return i ? i.nome : null;
+    var i = m.itens.concat(m.recursos || []).filter(function (x) { return x.id === id; })[0]; return i ? i.nome : null;
   }
   function reais(v) { return "R$ " + Number(v).toFixed(2).replace(".", ","); }
   function cartaoLoja(nome, preco, desc, txt) {

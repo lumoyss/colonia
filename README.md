@@ -97,7 +97,11 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - Os preços e os itens ficam no topo do `Codigo.gs` (PACOTES e ITENS). O site lê de lá, então só precisa mudar num lugar.
 - Cada sobrevivente ganha um **código de acesso** de 6 letras ao acordar. Com o nome e o código, ele entra no Mercado e no Rádio em qualquer celular.
 - A aba **Rádio** é o chat de quem já acordou.
-- **Missão: consertar a nave:** com o site aberto e o botão "Consertar a nave" ligado, o sobrevivente ganha 1 moeda a cada 15 minutos de conserto. A cada 5 minutos ele cansa: com base descansa 1 minuto, sem base 5 minutos. Limite de 4 horas por dia. Os números ficam no topo do `Codigo.gs` (MINUTOS_POR_MOEDA, TURNO_MINUTOS, DESCANSO_COM_BASE, DESCANSO_SEM_BASE, LIMITE_MINUTOS_DIA).
+- **Missão: consertar a nave:** com o site aberto e o botão "Consertar a nave" ligado, o sobrevivente ganha 1 moeda a cada minuto de conserto. A cada 5 minutos ele cansa: com base descansa 1 minuto, sem base 5 minutos. Limite de 4 horas por dia. Os números ficam no topo do `Codigo.gs` (MINUTOS_POR_MOEDA, TURNO_MINUTOS, DESCANSO_COM_BASE, DESCANSO_SEM_BASE, LIMITE_MINUTOS_DIA).
+
+- **Exploração:** o mapa ficou 4x maior. Toque no mapa e o seu bonequinho anda até lá. Explorar não dá moedas.
+- **Baú do dia:** uma vez por dia, numa hora sorteada entre 10h e 21h, aparece um baú no mapa com 3 recursos (cristal, peça da nave, minério, semente, fóssil) e 15% de chance de um item raro (capacete dourado, traje dourado ou mochila). Quem chegar primeiro e tocar em "ABRIR O BAÚ" leva. Números no topo do `Codigo.gs` (BAU_QTD_RECURSOS, BAU_CHANCE_RARO, BAU_RAROS).
+- **Mercado dos sobreviventes:** cada um coloca itens e recursos à venda pelo preço que quiser, em moedas (bases não podem ser vendidas; máximo 10 ofertas por pessoa). Fica tudo na aba **Ofertas** da planilha. O item fica guardado enquanto está à venda; quem vende pode cancelar e o item volta.
 
 ### Moderação (na planilha)
 - Apagar uma mensagem: aba **Chat**, escreva `apagado` na coluna **status** da mensagem.

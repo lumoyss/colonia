@@ -22,6 +22,7 @@ const ABA_TERRENOS = 'Terrenos';
 const ABA_PEDIDOS = 'Pedidos';
 const ABA_COMPRAS = 'Compras';
 const ABA_CHAT = 'Chat';
+const ABA_OFERTAS = 'Ofertas';
 const TIPOS_IDEIA = ['historia', 'profissao', 'lugar', 'outro'];
 
 // Colunas da aba Sobreviventes (1 = A)
@@ -29,7 +30,7 @@ const C_NUMERO = 1, C_NOME = 3, C_INSTA = 4, C_PROF = 5, C_VISUAL = 7, C_MOEDAS 
 const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14, C_TURNO = 15, C_PROGRESSO = 16, C_DESCANSO = 17;
 
 /* ---------- MISSÃO: consertar a nave (ganha moedas com o site aberto) ---------- */
-const MINUTOS_POR_MOEDA = 15;   // 1 moeda a cada 15 minutos consertando
+const MINUTOS_POR_MOEDA = 1;    // 1 moeda a cada 1 minuto consertando
 const TURNO_MINUTOS = 5;        // depois de 5 minutos consertando, cansa
 const DESCANSO_COM_BASE = 1;    // quem tem base descansa 1 minuto
 const DESCANSO_SEM_BASE = 5;    // quem não tem base descansa 5 minutos
@@ -39,6 +40,21 @@ const LIMITE_MINUTOS_DIA = 240; // no máximo 4 horas de conserto por dia
 const PACOTES = {
   moedas1000: { nome: '1.000 moedas', reais: 10, moedas: 1000 }
 };
+/* ---------- EXPLORAÇÃO: o baú do dia ---------- */
+// Todo dia um baú aparece num lugar do mapa, num horário entre 10h e 21h.
+// Quem chegar primeiro com o bonequinho e abrir leva os recursos.
+const RECURSOS = [
+  { id: 'cristal', nome: 'Cristal de oxigênio' },
+  { id: 'peca', nome: 'Peça da nave' },
+  { id: 'minerio', nome: 'Minério raro' },
+  { id: 'semente', nome: 'Semente alienígena' },
+  { id: 'fossil', nome: 'Fóssil antigo' }
+];
+const BAU_QTD_RECURSOS = 3;          // quantos recursos vêm no baú
+const BAU_CHANCE_RARO = 0.15;        // chance de vir também um item raro do mercado
+const BAU_RAROS = ['capacete_dourado', 'traje_dourado', 'mochila'];
+const MAPA_L = 480, MAPA_A = 300;    // tamanho do mapa (o site usa o mesmo)
+
 const ITENS = [
   { id: 'base', cat: 'Residência', nome: 'Base oxigenada', preco: 500, base: true,
     desc: 'Sua base no mapa, com o nome que você escolher. Você vira cidadão da colônia e ganha voto (peso 1).' },
@@ -65,6 +81,7 @@ function setup() {
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
   colunas_(garantirAba_(ss, ABA_COMPRAS), ['data', 'numero', 'nome', 'item', 'preco_moedas']);
   colunas_(garantirAba_(ss, ABA_CHAT), ['data', 'numero', 'nome', 'texto', 'status']);
+  colunas_(garantirAba_(ss, ABA_OFERTAS), ['id', 'data', 'vendedor_numero', 'vendedor', 'item', 'preco', 'status', 'comprador_numero', 'comprador']);
 
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('resumoDiario').timeBased().everyDays(1).atHour(21).create();
@@ -94,9 +111,16 @@ function doGet(e) {
   const mercado = {
     pacotes: Object.keys(PACOTES).map(function (k) { return { id: k, nome: PACOTES[k].nome, reais: PACOTES[k].reais, moedas: PACOTES[k].moedas }; }),
     missao: { porMoeda: MINUTOS_POR_MOEDA, turno: TURNO_MINUTOS, descansoBase: DESCANSO_COM_BASE, descansoSemBase: DESCANSO_SEM_BASE, limite: LIMITE_MINUTOS_DIA },
-    itens: ITENS.map(function (i) { return { id: i.id, cat: i.cat, nome: i.nome, preco: i.preco, desc: i.desc, base: !!i.base }; })
+    itens: ITENS.map(function (i) { return { id: i.id, cat: i.cat, nome: i.nome, preco: i.preco, desc: i.desc, base: !!i.base }; }),
+    recursos: RECURSOS
   };
-  const resposta = { ok: true, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true };
+  const ofertas = linhas_(ss.getSheetByName(ABA_OFERTAS)).filter(function (l) { return l[6] === 'aberta'; }).slice(-100).reverse().map(function (l) {
+    return { id: l[0], vendedor: l[3], item: l[4], preco: l[5] };
+  });
+  const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
+  const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
+  const resposta = { ok: true, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true,
+    ofertas: ofertas, bau: bau, mapa: { l: MAPA_L, a: MAPA_A } };
   try { cache.put('lista', JSON.stringify(resposta), 20); } catch (err) { /* grande demais para o cache */ }
   return json_(resposta);
 }
@@ -113,7 +137,8 @@ function doPost(e) {
   trava.waitLock(20000);
   try {
     const ss = planilha_();
-    const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_ };
+    const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
+      bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
     if (r.ok && ['perfil', 'entrar', 'chat', 'consertar'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
@@ -314,6 +339,108 @@ function consertar_(ss, d) {
   }
   cel(C_ON_DIA, "'" + hoje); cel(C_ON_MIN, hojeMin); cel(C_ON_ULTIMO, agora); cel(C_TURNO, turno); cel(C_PROGRESSO, progresso);
   return r(est, restante);
+}
+
+/* ---------- Inventário (itens repetidos = quantidade) ---------- */
+function tirarItem_(lista, id) { const i = lista.indexOf(id); if (i < 0) return false; lista.splice(i, 1); return true; }
+function salvarPerfil_(s, p) {
+  s.aba.getRange(s.linha, C_MOEDAS).setValue(p.moedas);
+  s.aba.getRange(s.linha, C_ITENS).setValue(p.itens);
+}
+function linhaPorNumero_(ss, numero) {
+  const aba = ss.getSheetByName(ABA_SOBREVIVENTES), ls = linhas_(aba);
+  for (let i = 0; i < ls.length; i++) if (String(ls[i][0]) === String(numero)) return { aba: aba, linha: i + 2, dados: ls[i] };
+  return null;
+}
+
+/* ---------- Baú do dia ---------- */
+function bauDeHoje_() {
+  const dia = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+  let h = 0; for (let i = 0; i < dia.length; i++) h = (h * 31 + dia.charCodeAt(i)) % 1000003;
+  const hora = 10 + h % 12;
+  const x = 30 + (h * 7) % (MAPA_L - 60), y = 30 + (h * 13) % (MAPA_A - 60);
+  const aparece = new Date(dia + 'T' + ('0' + hora).slice(-2) + ':00:00-03:00').getTime();
+  return { dia: dia, hora: hora, x: x, y: y, aparece: aparece };
+}
+
+function abrirBau_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente para abrir o baú.' };
+  const b = bauDeHoje_(), props = PropertiesService.getScriptProperties();
+  if (Date.now() < b.aparece) return { ok: false, erro: 'O baú de hoje ainda não apareceu. Ele surge às ' + b.hora + 'h.' };
+  const ja = props.getProperty('BAU_' + b.dia);
+  if (ja) return { ok: false, erro: JSON.parse(ja).nome + ' chegou primeiro e já abriu o baú de hoje.' };
+
+  const p = perfilDe_(s), lista = p.itens ? p.itens.split(',') : [], ganhou = [];
+  for (let i = 0; i < BAU_QTD_RECURSOS; i++) ganhou.push(RECURSOS[Math.floor(Math.random() * RECURSOS.length)].id);
+  if (Math.random() < BAU_CHANCE_RARO) ganhou.push(BAU_RAROS[Math.floor(Math.random() * BAU_RAROS.length)]);
+  p.itens = lista.concat(ganhou).join(',');
+  salvarPerfil_(s, p);
+  props.setProperty('BAU_' + b.dia, JSON.stringify({ nome: String(p.nome), numero: p.numero }));
+  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Baú do dia: ' + ganhou.join(', '), 0]);
+  p.ganhou = ganhou;
+  return p;
+}
+
+/* ---------- Mercado entre jogadores ---------- */
+function vendivel_(id) {
+  return RECURSOS.some(function (r) { return r.id === id; }) || ITENS.some(function (i) { return i.id === id && !i.base; });
+}
+
+function vender_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const item = String(d.item || ''), preco = Math.floor(Number(d.preco));
+  if (!vendivel_(item)) return { ok: false, erro: 'Esse item não pode ser vendido.' };
+  if (!(preco >= 1 && preco <= 100000)) return { ok: false, erro: 'Escolha um preço entre 1 e 100.000 moedas.' };
+  const aba = ss.getSheetByName(ABA_OFERTAS);
+  const minhas = linhas_(aba).filter(function (l) { return l[6] === 'aberta' && String(l[2]) === String(s.dados[0]); }).length;
+  if (minhas >= 10) return { ok: false, erro: 'Você já tem 10 itens à venda. Cancele algum primeiro.' };
+  const p = perfilDe_(s), lista = p.itens ? p.itens.split(',') : [];
+  if (!tirarItem_(lista, item)) return { ok: false, erro: 'Você não tem esse item.' };
+  p.itens = lista.join(',');
+  salvarPerfil_(s, p);
+  const id = 'O' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
+  aba.appendRow([id, new Date(), p.numero, texto_(String(p.nome)), item, preco, 'aberta', '', '']);
+  return p;
+}
+
+function acharOferta_(ss, id) {
+  const aba = ss.getSheetByName(ABA_OFERTAS), ls = linhas_(aba);
+  for (let i = 0; i < ls.length; i++) if (String(ls[i][0]) === String(id)) return { aba: aba, linha: i + 2, dados: ls[i] };
+  return null;
+}
+
+function cancelarOferta_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const o = acharOferta_(ss, d.id);
+  if (!o || o.dados[6] !== 'aberta') return { ok: false, erro: 'Essa oferta não está mais aberta.' };
+  if (String(o.dados[2]) !== String(s.dados[0])) return { ok: false, erro: 'Essa oferta não é sua.' };
+  o.aba.getRange(o.linha, 7).setValue('cancelada');
+  const p = perfilDe_(s);
+  p.itens = (p.itens ? p.itens.split(',') : []).concat([o.dados[4]]).join(',');
+  salvarPerfil_(s, p);
+  return p;
+}
+
+function comprarOferta_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const o = acharOferta_(ss, d.id);
+  if (!o || o.dados[6] !== 'aberta') return { ok: false, erro: 'Alguém já comprou essa oferta.' };
+  if (String(o.dados[2]) === String(s.dados[0])) return { ok: false, erro: 'Essa oferta é sua.' };
+  const preco = Number(o.dados[5]) || 0, p = perfilDe_(s);
+  if (p.moedas < preco) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + preco + '.' };
+  const vend = linhaPorNumero_(ss, o.dados[2]);
+  p.moedas -= preco;
+  p.itens = (p.itens ? p.itens.split(',') : []).concat([o.dados[4]]).join(',');
+  salvarPerfil_(s, p);
+  if (vend) vend.aba.getRange(vend.linha, C_MOEDAS).setValue((Number(vend.dados[C_MOEDAS - 1]) || 0) + preco);
+  o.aba.getRange(o.linha, 7).setValue('vendida');
+  o.aba.getRange(o.linha, 8).setValue(p.numero);
+  o.aba.getRange(o.linha, 9).setValue(texto_(String(p.nome)));
+  return p;
 }
 
 /* ---------- Chat: Rádio da nave ---------- */
