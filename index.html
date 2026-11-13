@@ -120,6 +120,22 @@
   .barra{height:14px;background:var(--fundo2);border:2px solid var(--fundo3);margin:4px 0 10px}
   .barra span{display:block;height:100%;width:0;background:var(--verde);transition:width .5s}
   .barra.moeda span{background:#E8C25A}
+  .barra.fome span{background:#d9883a}
+  .barra.ar span{background:#7FD6C8}
+  .nave-meta{max-width:520px;margin:12px auto 0;text-align:left}
+  .nave-meta .barra{height:16px;margin:4px 0}
+  .nave-meta .barra span{background:linear-gradient(90deg,#3FA7A0,#7FD6C8)}
+  .nave-meta p{font-size:13px;color:var(--apagado);margin:2px 0 0}
+  .ranking{list-style:none;padding:0;margin:8px 0 18px;counter-reset:pos}
+  .ranking li{display:flex;justify-content:space-between;gap:8px;background:var(--fundo);border-left:4px solid var(--verde);padding:8px 10px;margin-bottom:6px;counter-increment:pos}
+  .ranking li::before{content:counter(pos) "º";font-family:"Press Start 2P",monospace;font-size:10px;color:var(--laranja);min-width:28px}
+  .ranking li span{flex:1}
+  .ranking li:nth-child(1){border-left-color:#E8C25A}
+  .trab{display:flex;flex-direction:column;gap:0}
+  .lista-mini{list-style:none;padding:0;margin:8px 0}
+  .lista-mini li{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--fundo2);padding:8px;margin-bottom:6px}
+  .lista-mini .btn{width:auto;margin:0;padding:8px 10px;font-size:9px}
+  .loja-item b.pix{font-size:13px;line-height:1.6}
   .missao .rot{font-size:14px;color:var(--apagado)}
   .chave{font-family:"Press Start 2P",monospace;color:var(--laranja);background:var(--fundo);padding:6px 10px;display:inline-block;letter-spacing:2px}
   .aviso-teste{background:var(--ferrugem);color:var(--creme);text-align:center;font-size:14px;padding:6px 10px}
@@ -142,6 +158,11 @@
     <h1 class="pix">NAVE ORION</h1>
     <p class="sub">A Terra caiu. A Nave Orion pousou num planeta com pouquíssimo oxigênio.<br>Todos a bordo dormem em hibernação, e o ar da nave está acabando.<br>Entre pelo link para acordar o seu sobrevivente.</p>
     <div class="contador pix"><b id="total">0</b> SOBREVIVENTES ACORDADOS</div>
+    <div class="nave-meta" id="naveMeta" hidden>
+      <div class="pix" style="font-size:10px;color:var(--verde2)">MISSÃO DE TODOS: CONSERTAR A NAVE ANTES DO AR ACABAR</div>
+      <div class="barra"><span id="barNave"></span></div>
+      <p id="naveTxt"></p>
+    </div>
   </header>
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
@@ -157,6 +178,7 @@
     <button role="tab" aria-selected="false" data-aba="ideias">IDEIAS</button>
     <button role="tab" aria-selected="false" data-aba="mercado">MERCADO</button>
     <button role="tab" aria-selected="false" data-aba="radio" id="abaRadio" hidden>RÁDIO</button>
+    <button role="tab" aria-selected="false" data-aba="ranking" id="abaRanking" hidden>RANKING</button>
   </nav>
 
   <!-- ===================== ENTRAR ===================== -->
@@ -189,13 +211,18 @@
         <label for="profissao">Profissão na colônia</label>
         <select id="profissao" required>
           <option value="">Escolha...</option>
-          <option>Engenheira(o)</option><option>Médica(o)</option><option>Agricultor(a)</option>
-          <option>Piloto</option><option>Cientista</option><option>Mecânica(o)</option>
-          <option>Cozinheira(o)</option><option>Explorador(a)</option><option>Guarda</option>
-          <option>Professor(a)</option><option>Comerciante</option><option>Artista</option>
+          <optgroup label="Profissões da nave (ganham com o sistema)">
+            <option>Mecânica(o)</option><option>Engenheira(o)</option><option>Agricultor(a)</option><option>Cozinheira(o)</option>
+            <option>Minerador(a)</option><option>Explorador(a)</option><option>Médica(o)</option><option>Guarda</option><option>Desempregado(a)</option>
+          </optgroup>
+          <optgroup label="Profissões livres (ganhe com os outros jogadores)">
+            <option>Piloto</option><option>Cientista</option><option>Professor(a)</option><option>Comerciante</option><option>Artista</option>
+            <option>Alfaiate</option><option>Inventor(a)</option><option>Padre</option>
+          </optgroup>
           <option value="__outra">Outra...</option>
         </select>
         <input id="profissaoOutra" maxlength="30" placeholder="Qual profissão?" hidden style="margin-top:8px">
+        <p class="dica" id="profissaoDesc" style="margin:6px 0 0"></p>
         <label for="objetivo">Seu objetivo na colônia <span class="dica">(opcional)</span></label>
         <input id="objetivo" maxlength="120" placeholder="ex.: ser líder, ter o maior prédio, achar o fóssil raro...">
         <label for="historia">Sua história <span class="dica">(opcional)</span></label>
@@ -224,12 +251,23 @@
         <p class="dica" id="amigosLista" style="margin:0">Você ainda não adicionou amigos. Toque no nome de alguém no Rádio para ver o perfil.</p>
       </div>
       <div class="missao" id="missao" hidden>
-        <h2 class="pix">MISSÃO: CONSERTAR A NAVE</h2>
+        <h2 class="pix" id="missaoTitulo">TRABALHO</h2>
+        <p class="dica" id="profInfo" style="margin-top:0"></p>
         <p class="dica" id="missaoRegra"></p>
         <div class="rot">Energia</div><div class="barra"><span id="barEnergia"></span></div>
-        <div class="rot">Próxima moeda</div><div class="barra moeda"><span id="barMoeda"></span></div>
+        <div class="rot" id="rotFome">Fome</div><div class="barra fome"><span id="barFome"></span></div>
+        <div class="rot" id="rotAr">Ar no tanque</div><div class="barra ar"><span id="barAr"></span></div>
         <p id="missaoStatus">Seu sobrevivente está parado.</p>
-        <button class="btn" type="button" id="btnConsertar">CONSERTAR A NAVE</button>
+        <div class="trab" id="botoesTrabalho"></div>
+        <button class="btn" type="button" id="btnConsertar" hidden>CONSERTAR A NAVE</button>
+        <div id="plantaoBox" hidden></div>
+        <div id="medicosBox" hidden></div>
+        <div id="comidasBox" hidden><h3 class="pix cat">SUA COMIDA</h3><ul class="lista-mini" id="comidas"></ul></div>
+        <div id="trocaBox" style="margin-top:14px">
+          <label for="trocaFuncao">Trocar de profissão <span class="dica">(1 vez por semana)</span></label>
+          <div class="linha"><select id="trocaFuncao"></select><button class="btn sec mini" type="button" id="btnTrocaFuncao">TROCAR</button></div>
+          <p class="dica" id="trocaInfo" style="margin:4px 0 0"></p>
+        </div>
       </div>
       <button class="btn" type="button" data-ir="mercado">IR AO MERCADO</button>
       <button class="btn sec" type="button" data-ir="ideias">MANDAR UMA IDEIA PARA A HISTÓRIA</button>
@@ -321,6 +359,19 @@
     <button class="btn sec" type="button" id="perfilAmigo" hidden>ADICIONAR AMIGO</button>
     <div class="msg" id="msgPerfil" role="status"></div>
   </div></div>
+
+  <!-- ===================== RANKING ===================== -->
+  <section class="painel" id="painel-ranking" role="tabpanel">
+    <h2 class="pix">FUNCIONÁRIOS DA SEMANA</h2>
+    <p class="dica">Quem mais consertou a nave nesta semana.</p>
+    <ul class="ranking" id="rankSemana"></ul>
+    <h2 class="pix">QUEM MAIS CONSERTOU</h2>
+    <p class="dica">Desde o começo da colônia.</p>
+    <ul class="ranking" id="rankTotal"></ul>
+    <h2 class="pix">OS MAIS RICOS</h2>
+    <p class="dica">Os 10 sobreviventes com mais moedas.</p>
+    <ul class="ranking" id="rankRicos"></ul>
+  </section>
 
   <!-- ===================== RÁDIO ===================== -->
   <section class="painel" id="painel-radio" role="tabpanel">
@@ -560,6 +611,9 @@
     estado.ofertas = d.ofertas || [];
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
+    estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.funcoes = d.funcoes || [];
+    if (d.nave) desenharNave(d.nave);
+    if (d.ranking) desenharRanking(d.ranking);
     calcularDonos(); desenharAlugueis(); desenharAnuncios(); if (logado()) desenharExtras();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
     desenharOfertas();
@@ -793,7 +847,7 @@
     if (bauVisivel()) desenharBau(estado.bau.x, estado.bau.y, tempo);
 
     var vivos = ordem.map(function (id) { return bonecos[id]; }), meu = meuBoneco();
-    if (meu && (missao.modo === "consertando" || missao.modo === "descansando")) {
+    if (meu && ((missao.modo === "consertando" && missao.trabalho === "consertar") || missao.modo === "descansando")) {
       var alvo = PONTO_CONSERTO;
       if (missao.modo === "descansando") {
         var casaDe = eu.nome; if (eu.mora) (estado.alugueis || []).forEach(function (a) { if (a.codigo === eu.mora) casaDe = a.dono; });
@@ -915,7 +969,7 @@
     var meu = meuBoneco();
     if (!meu) { mensagemMapa("Acorde seu sobrevivente (ou entre com o seu código no Mercado) para explorar o mapa."); return; }
     if (missao.modo === "descansando") { mensagemMapa("Seu sobrevivente está cansado. Espere o descanso terminar."); return; }
-    if (missao.modo === "consertando") { missao.modo = "parado"; pararMissao(); desenharMissao(); }
+    if (missao.modo === "consertando" && missao.trabalho === "consertar") { missao.modo = "parado"; pararMissao(); desenharMissao(); }
     var r = cena.getBoundingClientRect();
     meu.ax = cam.x + (ev.clientX - r.left) / r.width * VW;
     meu.ay = cam.y + (ev.clientY - r.top) / r.height * VH + 7;
@@ -1011,6 +1065,7 @@
       btn.disabled = false; btn.textContent = "ACORDAR DA HIBERNAÇÃO";
       if (!r.ok) return mensagem("msgCadastro", r.erro || "Algo deu errado. Tente de novo.");
       eu = { numero: r.numero, nome: dados.nome, profissao: dados.profissao, visual: dados.visual, instagram: dados.instagram, chave: r.chave || "", moedas: 0, itens: "", veste: "", gas: !!r.gas, objetivo: dados.objetivo, amigos: "" };
+      setTimeout(atualizarPerfil, 800);
       salvarEu();
       estado.sobreviventes.push(eu); estado.total++; document.getElementById("total").textContent = estado.total;
       sincronizarCena(); mostrarCartao(eu);
@@ -1018,19 +1073,26 @@
     });
   });
 
+  var MAPA_PROF = { "Mecânica(o)": "mecanico", "Engenheira(o)": "engenheiro", "Agricultor(a)": "agricultor", "Cozinheira(o)": "cozinheiro", "Minerador(a)": "minerador", "Explorador(a)": "explorador", "Médica(o)": "medico", "Guarda": "guarda", "Desempregado(a)": "desempregado" };
+  function descProfissao() {
+    var v = document.getElementById("profissao").value, info = funcaoInfo(MAPA_PROF[v] || "livre"), el = document.getElementById("profissaoDesc");
+    el.textContent = !v ? "" : info ? info.desc + (info.vagas ? " Vagas: " + info.pessoas + " de " + info.vagas + "." : "") : "";
+  }
+  document.getElementById("profissao").addEventListener("change", descProfissao);
+
   /* ---------------- ideias ---------------- */
   var NOMES_TIPO = { historia: "HISTÓRIA", lugar: "LUGAR", profissao: "PROFISSÃO", outro: "IDEIA" };
   var ordemIdeias = "curtidas";
   document.querySelectorAll("[data-ordem]").forEach(function (b) { b.onclick = function () {
     ordemIdeias = b.dataset.ordem; document.querySelectorAll("[data-ordem]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); }); desenharMural();
   }; });
-  function temCasa() { return logado() && (tem(eu.itens, "base") || tem(eu.itens, "base_grande")); }
+  function temCasa() { return logado() && (tem(eu.itens, "base") || tem(eu.itens, "base_grande") || !!eu.mora); }
   function desenharFormIdeia() {
     var precisa = !estado.mercado || estado.mercado.ideiaPrecisaBase !== false, aviso = document.getElementById("ideiaAviso"), form = document.getElementById("formIdeia");
     var pode = TESTE || (logado() && (!precisa || temCasa()));
     form.hidden = !pode; aviso.hidden = pode;
     aviso.textContent = !logado() ? "Para mandar ideias, acorde seu sobrevivente (aba Entrar) e construa sua casa. Quem já acordou pode dar gostei nas ideias abaixo." :
-      "Só quem tem casa construída pode mandar ideias. Registre um terreno e construa sua casa no Mercado. Enquanto isso, dê gostei nas ideias que você quer ver na história!";
+      "Só quem tem casa (própria ou alugada) pode mandar ideias. Registre um terreno e construa sua casa, ou alugue um lugar no Mercado. Enquanto isso, dê gostei nas ideias que você quer ver na história!";
   }
   function desenharMural() {
     var ul = document.getElementById("mural");
@@ -1082,7 +1144,7 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
   }
   function atualizarPerfil() {
     if (!logado() || TESTE) return Promise.resolve();
@@ -1118,55 +1180,232 @@
     });
   });
 
-  /* ---------------- missão: consertar a nave ---------------- */
-  var missao = { modo: "parado", turno: 0, progresso: 0, descanso: 0, temBase: false, timer: null, relogio: null, seg: 0 };
+  /* ---------------- meta da nave e rankings ---------------- */
+  function desenharNave(n) {
+    document.getElementById("naveMeta").hidden = false;
+    var pct = n.pontos / n.meta * 100, etapa = Math.floor(n.pontos / n.etapa) + 1, naEtapa = n.pontos % n.etapa;
+    document.getElementById("barNave").style.width = Math.max(0.5, naEtapa / n.etapa * 100) + "%";
+    document.getElementById("naveTxt").textContent = "Etapa " + etapa + ": " + naEtapa.toLocaleString("pt-BR") + " de " + n.etapa.toLocaleString("pt-BR") + " pontos · Nave " + pct.toLocaleString("pt-BR", { maximumFractionDigits: 3 }) + "% consertada (" + n.pontos.toLocaleString("pt-BR") + " de " + n.meta.toLocaleString("pt-BR") + ")";
+  }
+  function desenharRanking(rk) {
+    document.getElementById("abaRanking").hidden = false;
+    var pinta = function (id, lista, valor, vazio) {
+      var ul = document.getElementById(id); ul.innerHTML = "";
+      if (!lista.length) { var v = document.createElement("li"); v.textContent = vazio; v.style.counterIncrement = "none"; ul.appendChild(v); return; }
+      lista.forEach(function (x) { var li = document.createElement("li"), a = document.createElement("span"), b = document.createElement("b"); a.textContent = x.nome; b.textContent = valor(x); li.appendChild(a); li.appendChild(b); ul.appendChild(li); });
+    };
+    pinta("rankSemana", rk.semana || [], function (x) { return x.pontos.toLocaleString("pt-BR") + " pts"; }, "Ninguém consertou nesta semana ainda.");
+    pinta("rankTotal", rk.total || [], function (x) { return x.pontos.toLocaleString("pt-BR") + " pts"; }, "Ninguém consertou ainda.");
+    pinta("rankRicos", rk.ricos || [], function (x) { return x.moedas.toLocaleString("pt-BR") + " moedas"; }, "Ninguém tem moedas ainda.");
+  }
+
+  /* ---------------- trabalho: profissões, energia, fome, ar ---------------- */
+  var missao = { modo: "parado", trabalho: "consertar", turno: 0, progresso: 0, descanso: 0, temBase: false, timer: null, seg: 0, aviso: "", obra: null, obras: [], plantao: false, plantaoTimer: null };
   function regras() { return estado.mercado && estado.mercado.missao; }
+  function vida() { return estado.mercado && estado.mercado.vida; }
+  var BOTAO_TRAB = { consertar: "CONSERTAR A NAVE", vigiar: "VIGIAR A COLÔNIA", cultivar: "CULTIVAR COMIDA", cozinhar: "COZINHAR", construir: "CONSTRUIR" };
+  var VERBO_TRAB = { consertar: "Consertando a nave", vigiar: "Vigiando a colônia", cultivar: "Cultivando comida", cozinhar: "Cozinhando", construir: "Construindo" };
+  var COMIDAS = { comida: "Comida", refeicao: "Refeição", racao: "Ração da nave" };
+  function funcaoInfo(f) { return (estado.funcoes || []).filter(function (x) { return x.id === f; })[0]; }
+  function minhaFuncao() { return eu && eu.funcao || "livre"; }
+  function modosDe(f) { var m = []; if (f === "guarda") m.push("vigiar"); if (f === "agricultor") m.push("cultivar"); if (f === "cozinheiro") m.push("cozinhar"); if (f !== "medico") m.push("consertar"); return m; }
+  function semKit() { return logado() && eu.kitAte != null && eu.kitAte !== -1 && Date.now() > eu.kitAte; }
+  function doente() { return logado() && eu.funcao !== "desempregado" && Number(eu.doenteAte) > Date.now(); }
+  function tempoTxt(seg) { seg = Math.max(0, Math.round(seg)); var h = Math.floor(seg / 3600), m = Math.floor(seg % 3600 / 60), s2 = ("0" + seg % 60).slice(-2); return (h ? h + ":" + ("0" + m).slice(-2) : m) + ":" + s2; }
   function mostrarMissao() {
-    var R = regras(), box = document.getElementById("missao");
+    var R = regras(), V = vida(), box = document.getElementById("missao");
     box.hidden = !(R && logado() && !TESTE);
     if (box.hidden) return;
+    var f = minhaFuncao(), info = funcaoInfo(f);
+    document.getElementById("missaoTitulo").textContent = "TRABALHO: " + (info ? info.nome.toUpperCase() : "SOBREVIVENTE");
+    document.getElementById("profInfo").textContent = info ? info.desc : "";
     var tempo = function (m) { return m >= 60 ? (m / 60) + (m === 60 ? " hora" : " horas") : m + (m === 1 ? " minuto" : " minutos"); };
-    document.getElementById("missaoRegra").textContent = "Fique com o site aberto consertando a nave: " + (R.porMoeda == 1 ? "a cada minuto" : "a cada " + R.porMoeda + " minutos") + " de conserto você ganha 1 moeda. Depois de " + tempo(R.turno) +
-      " você cansa e precisa descansar: quem mora numa casa (sua ou alugada) descansa " + tempo(R.descansoBase) + "; quem não tem casa descansa " + tempo(R.descansoSemBase) + ". Para trabalhar você precisa de gás de oxigênio.";
+    document.getElementById("missaoRegra").textContent = "Fique com o site aberto trabalhando. Depois de " + tempo(R.turno) + " você cansa: quem tem casa (própria ou alugada) descansa " + tempo(R.descansoBase) +
+      " em casa; quem não tem espera " + tempo(R.descansoSemBase) + " na nave." + (V ? " Coma a cada " + tempo(V.fomeLimite) + " de trabalho e mantenha ar no tanque: sem comida ou sem ar você fica doente por " + tempo(V.doente) + " (ou chama um médico)." : "");
+    // troca de profissão
+    var sel = document.getElementById("trocaFuncao"), atual = sel.value;
+    if (sel.options.length !== (estado.funcoes || []).length) {
+      sel.innerHTML = "";
+      (estado.funcoes || []).forEach(function (x) { var o = document.createElement("option"); o.value = x.id; o.textContent = x.nome + (x.vagas ? " (" + x.pessoas + "/" + x.vagas + " vagas)" : ""); sel.appendChild(o); });
+      sel.value = atual || f;
+    }
+    if (sel.dataset.f !== f) { sel.value = f; sel.dataset.f = f; }
+    var prox = (Number(eu.funcaoDesde) || 0) + ((V && V.trocaDias) || 7) * 86400000;
+    document.getElementById("trocaInfo").textContent = Date.now() < prox ? "Próxima troca liberada em " + new Date(prox).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Você já pode trocar de profissão.";
     desenharMissao();
   }
+  var assinaturaBotoes = "";
   function desenharMissao() {
-    var R = regras(); if (!R) return;
-    var energia = missao.modo === "descansando" ? 0 : 1 - (missao.turno + (missao.modo === "consertando" ? missao.seg / 60 : 0)) / R.turno;
-    var moeda = (missao.progresso + (missao.modo === "consertando" ? missao.seg / 60 : 0)) / R.porMoeda;
+    var R = regras(), V = vida(); if (!R || !logado()) return;
+    var f = minhaFuncao(), trabalhando = missao.modo === "consertando";
+    var energia = missao.modo === "descansando" ? 0 : 1 - (missao.turno + (trabalhando ? missao.seg / 60 : 0)) / R.turno;
     document.getElementById("barEnergia").style.width = Math.max(0, Math.min(1, energia)) * 100 + "%";
-    document.getElementById("barMoeda").style.width = Math.max(0, Math.min(1, moeda)) * 100 + "%";
-    var st = document.getElementById("missaoStatus"), bt = document.getElementById("btnConsertar");
-    bt.hidden = missao.modo === "consertando" || missao.modo === "descansando";
-    if (missao.modo === "consertando") st.textContent = document.hidden ? "Pausado: volte para o site para continuar consertando." : (R.porMoeda == 1 ? "Consertando a nave... você ganha 1 moeda a cada minuto." : "Consertando a nave... (" + (missao.progresso) + " de " + R.porMoeda + " min para a próxima moeda)");
-    else if (missao.modo === "descansando") {
-      var hh = Math.floor(missao.descanso / 3600), m = Math.floor(missao.descanso % 3600 / 60), ss = ("0" + (missao.descanso % 60)).slice(-2);
-      st.textContent = (missao.temBase ? "Cansado! Descansando em casa: " : "Cansado e sem casa! Descansando na nave: ") + (hh ? hh + ":" + ("0" + m).slice(-2) : m) + ":" + ss;
+    var des = f === "desempregado";
+    document.getElementById("rotFome").textContent = des ? "Fome (desempregado não fica doente)" : "Fome";
+    document.getElementById("rotAr").textContent = des ? "Ar (desempregado não precisa)" : "Ar no tanque";
+    var fome = V ? Math.max(0, (Number(eu.fome) || 0) + (trabalhando ? missao.seg / 60 : 0)) / V.fomeLimite : 0;
+    document.getElementById("barFome").style.width = (des ? 0 : Math.max(0, Math.min(1, fome)) * 100) + "%";
+    var ar = V ? (Number(eu.ar) || 0) / V.arMax : 1;
+    document.getElementById("barAr").style.width = (des ? 100 : Math.max(0, Math.min(1, ar)) * 100) + "%";
+    var st = document.getElementById("missaoStatus"), txt;
+    if (doente()) txt = "Você está doente! Recupera em " + tempoTxt((eu.doenteAte - Date.now()) / 1000) + ". Garanta comida e ar, ou chame um médico para curar na hora.";
+    else if (missao.modo === "descansando") txt = (missao.temBase ? "Cansado! Descansando em casa: " : "Cansado e sem casa! Esperando na nave: ") + tempoTxt(missao.descanso);
+    else if (missao.modo === "plantao") txt = missao.obra ? "Construindo a casa “" + missao.obra.nome + "” de " + missao.obra.dono + ": " + (missao.obra.progresso || 0) + " de " + missao.obra.total + " minutos." : f === "medico" ? "De plantão! Os doentes veem você na lista de médicos. Fique com o site aberto." : "De plantão! Aceite uma obra abaixo.";
+    else if (trabalhando) txt = document.hidden ? "Pausado: volte para o site para continuar." : VERBO_TRAB[missao.trabalho] + "..." + (missao.trabalho === "construir" && missao.obra ? " (" + (missao.obra.progresso || 0) + " de " + missao.obra.total + " min)" : "");
+    else txt = missao.aviso || "Seu sobrevivente está parado.";
+    if (!des && !doente() && V) { if (fome >= 0.85) txt += " Você está com fome: coma algo!"; if (ar <= 0.1) txt += " O ar está acabando: encha o tanque no Mercado!"; }
+    st.textContent = txt;
+    // botões
+    var modos = modosDe(f), plantao = f === "medico" || f === "engenheiro";
+    var assin = [f, missao.modo, missao.trabalho, semKit(), doente(), !!missao.obra].join("|");
+    if (assin !== assinaturaBotoes) {
+      assinaturaBotoes = assin;
+      var box = document.getElementById("botoesTrabalho"); box.innerHTML = "";
+      var botao = function (txt2, cls, fn) { var b = document.createElement("button"); b.type = "button"; b.className = "btn" + (cls ? " " + cls : ""); b.textContent = txt2; b.onclick = fn; box.appendChild(b); return b; };
+      if (trabalhando || missao.modo === "plantao") botao("PARAR", "sec", pararTudo);
+      else if (missao.modo !== "descansando" && !doente()) {
+        modos.forEach(function (m) {
+          if (m === "consertar" && semKit()) botao("COMPRAR KIT DE FERRAMENTAS (CONSERTAR)", "sec", function () { irPara("mercado"); var k = document.querySelector('[data-item="ferramentas"]'); if (k) k.scrollIntoView({ behavior: "smooth", block: "center" }); });
+          else botao(BOTAO_TRAB[m], m === modos[0] ? "" : "sec", function () { comecar(m); });
+        });
+        if (plantao) botao(f === "medico" ? "FICAR DE PLANTÃO (CURAR DOENTES)" : "FICAR DE PLANTÃO (CONSTRUIR CASAS)", "", comecarPlantao);
+      }
     }
-    else if (missao.modo === "limite") { st.textContent = "Você já consertou o máximo por hoje. Volte amanhã!"; bt.hidden = true; }
-    else if (missao.modo === "doente" || (logado() && eu.gas === false)) { st.textContent = "Sem gás de oxigênio! Você ficou doente e não pode trabalhar. Adquira gás no Mercado."; bt.hidden = false; bt.textContent = "ADQUIRIR GÁS NO MERCADO"; }
-    else { st.textContent = "Seu sobrevivente está parado."; bt.textContent = missao.turno || missao.progresso ? "VOLTAR A CONSERTAR" : "CONSERTAR A NAVE"; }
+    desenharPlantao(); desenharMedicos(); desenharComidas();
   }
+  function comecar(m) {
+    missao.trabalho = m; missao.modo = "consertando"; missao.seg = 0; missao.aviso = ""; pararMissao(); pararPlantao();
+    missao.timer = setInterval(pingMissao, 60000);
+    desenharMissao();
+  }
+  function pararTudo() { pararMissao(); pararPlantao(); missao.modo = "parado"; missao.obra = null; missao.aviso = ""; desenharMissao(); }
   function aplicarMissao(r) {
-    if (!r || !r.ok) return;
-    if (r.moedas != null) { eu.moedas = r.moedas; salvarEu(); }
+    if (!r) return;
+    if (!r.ok) {
+      pararMissao(); if (missao.trabalho === "construir") { missao.obra = null; atualizarPerfil(); }
+      missao.modo = "parado"; missao.aviso = r.erro || "Não deu para trabalhar agora."; if (r.semKit) eu.kitAte = 0;
+      desenharMissao(); return;
+    }
+    ["moedas", "ar", "fome", "itens"].forEach(function (k) { if (r[k] != null) eu[k] = r[k]; });
+    eu.gas = r.gas; salvarEu();
     missao.turno = r.turno; missao.progresso = r.progresso; missao.temBase = r.temBase; missao.seg = 0;
-    if (r.ganhou) mensagem("msgMercado", "+" + r.ganhou + " moeda por consertar a nave!", true);
-    if (r.estado === "cansado" || r.estado === "descansando") { missao.modo = "descansando"; missao.descanso = r.descansoSeg; }
-    else if (r.estado === "limite") { pararMissao(); missao.modo = "limite"; }
-    else if (r.estado === "doente") { pararMissao(); missao.modo = "doente"; eu.gas = false; salvarEu(); }
+    if (r.ganhou) mensagem("msgMercado", "+" + r.ganhou + " moeda" + (r.ganhou > 1 ? "s" : "") + " pelo trabalho!", true);
+    if (r.produziu) mensagemMapa("Você produziu: " + (COMIDAS[r.produziu] || r.produziu) + "!");
+    if (missao.trabalho === "construir" && missao.obra && r.estado !== "doente") {
+      missao.obra.progresso = (missao.obra.progresso || 0) + 1;
+      if (missao.obra.progresso >= missao.obra.total) { mensagemMapa("Obra concluída! Você recebeu " + missao.obra.mao + " moedas de mão de obra."); missao.obra = null; pararMissao(); missao.modo = "parado"; atualizarPerfil(); carregar(); }
+    }
+    if (r.estado === "cansado" || r.estado === "descansando") { pararMissao(); missao.modo = "descansando"; missao.descanso = r.descansoSeg; }
+    else if (r.estado === "doente") { pararMissao(); missao.modo = "parado"; eu.doenteAte = Date.now() + r.descansoSeg * 1000; salvarEu(); }
     desenharMissao();
   }
   function pingMissao() {
     if (missao.modo !== "consertando" || document.hidden) return;
-    enviar(credenciais({ acao: "consertar" })).then(aplicarMissao);
+    enviar(credenciais({ acao: "trabalhar", modo: missao.trabalho })).then(aplicarMissao);
   }
   function pararMissao() { clearInterval(missao.timer); missao.timer = null; }
-  document.getElementById("btnConsertar").addEventListener("click", function () {
-    if (missao.modo === "doente" || eu.gas === false) { irPara("mercado"); var g = document.querySelector('[data-item="gas"]'); if (g) g.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
-    missao.modo = "consertando"; missao.seg = 0; pararMissao();
-    missao.timer = setInterval(pingMissao, 60000);
-    desenharMissao();
+  // compatibilidade: botão antigo
+  document.getElementById("btnConsertar").addEventListener("click", function () { comecar("consertar"); });
+  // plantão de médicos e engenheiros
+  function comecarPlantao() { pararMissao(); missao.modo = "plantao"; missao.aviso = ""; pingPlantao(); clearInterval(missao.plantaoTimer); missao.plantaoTimer = setInterval(pingPlantao, 60000); desenharMissao(); }
+  function pararPlantao() { clearInterval(missao.plantaoTimer); missao.plantaoTimer = null; }
+  function pingPlantao() {
+    if (missao.modo !== "plantao" || document.hidden) return;
+    var extra = { acao: "plantao" }; if (minhaFuncao() === "medico") extra.preco = Number(eu.precoConsulta) || (vida() && vida().medicoMin) || 50;
+    enviar(credenciais(extra)).then(function (r) {
+      if (!r.ok) { missao.aviso = r.erro; pararTudo(); return; }
+      if (r.obras) missao.obras = r.obras;
+      if (r.minha && !missao.obra) missao.obra = { id: r.minha.id, dono: r.minha.donoNome, nome: r.minha.nome, mao: r.minha.mao, progresso: r.minha.progresso, total: (vida() && vida().obraMinutos) || 10 };
+      desenharPlantao();
+    });
+  }
+  function desenharPlantao() {
+    var box = document.getElementById("plantaoBox"), f = minhaFuncao();
+    var mostrar = missao.modo === "plantao" && !missao.obra;
+    box.hidden = !mostrar; if (!mostrar) return;
+    var assin = f + JSON.stringify(missao.obras) + (eu.precoConsulta || "");
+    if (box.dataset.assin === assin) return; box.dataset.assin = assin;
+    box.innerHTML = "";
+    if (f === "medico") {
+      var l = document.createElement("label"); l.textContent = "Preço da sua consulta (mínimo " + ((vida() && vida().medicoMin) || 50) + " moedas)";
+      var linha = document.createElement("div"); linha.className = "linha";
+      var inp = document.createElement("input"); inp.type = "number"; inp.min = (vida() && vida().medicoMin) || 50; inp.value = eu.precoConsulta || inp.min;
+      var bt = document.createElement("button"); bt.type = "button"; bt.className = "btn sec mini"; bt.textContent = "SALVAR";
+      bt.onclick = function () { enviar(credenciais({ acao: "plantao", preco: Math.floor(Number(inp.value) || 0) })).then(function (r) { if (!r.ok) { missao.aviso = r.erro; return mensagem("msgMercado", r.erro); } eu.precoConsulta = Math.floor(Number(inp.value)); salvarEu(); bt.textContent = "SALVO!"; setTimeout(function () { bt.textContent = "SALVAR"; }, 1500); }); };
+      linha.appendChild(inp); linha.appendChild(bt); box.appendChild(l); box.appendChild(linha);
+    } else {
+      var h = document.createElement("h3"); h.className = "pix cat"; h.textContent = "OBRAS ESPERANDO ENGENHEIRO"; box.appendChild(h);
+      var ul = document.createElement("ul"); ul.className = "lista-mini"; box.appendChild(ul);
+      if (!missao.obras.length) { var v = document.createElement("li"); v.textContent = "Nenhuma obra agora. Fique de plantão: quando alguém comprar uma casa, ela aparece aqui."; ul.appendChild(v); }
+      missao.obras.forEach(function (o) {
+        var li = document.createElement("li"), t = document.createElement("span"), b = document.createElement("button");
+        t.textContent = (o.item === "base_grande" ? "Prédio" : "Casa") + " “" + o.nome + "” de " + o.dono + " · paga " + o.mao + " moedas";
+        b.type = "button"; b.className = "btn"; b.textContent = "ACEITAR";
+        b.onclick = function () {
+          b.disabled = true;
+          enviar(credenciais({ acao: "aceitar_obra", id: o.id })).then(function (r) {
+            b.disabled = false;
+            if (!r.ok) { missao.aviso = r.erro; pingPlantao(); return mensagem("msgMercado", r.erro); }
+            missao.obra = r.obra; missao.obra.progresso = 0;
+            comecar("construir");
+          });
+        };
+        li.appendChild(t); li.appendChild(b); ul.appendChild(li);
+      });
+    }
+  }
+  function desenharMedicos() {
+    var box = document.getElementById("medicosBox"), mostrar = doente();
+    box.hidden = !mostrar; if (!mostrar) return;
+    var lista = (estado.medicos || []).filter(function (m) { return m.nome !== eu.nome; });
+    var assin = JSON.stringify(lista); if (box.dataset.assin === assin) return; box.dataset.assin = assin;
+    box.innerHTML = "";
+    var h = document.createElement("h3"); h.className = "pix cat"; h.textContent = "MÉDICOS DE PLANTÃO"; box.appendChild(h);
+    var ul = document.createElement("ul"); ul.className = "lista-mini"; box.appendChild(ul);
+    if (!lista.length) { var v = document.createElement("li"); v.textContent = "Nenhum médico online agora. Espere a recuperação ou tente daqui a pouco."; ul.appendChild(v); }
+    lista.forEach(function (m) {
+      var li = document.createElement("li"), t = document.createElement("span"), b = document.createElement("button");
+      t.textContent = m.nome + " · " + m.preco + " moedas"; b.type = "button"; b.className = "btn"; b.textContent = "CHAMAR";
+      b.onclick = function () {
+        if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + m.preco + ")"; return; }
+        b.disabled = true;
+        enviar(credenciais({ acao: "chamar_medico", numero: m.numero })).then(function (r) {
+          b.disabled = false;
+          if (!r.ok) { delete b.dataset.confirmar; b.textContent = "CHAMAR"; return mensagem("msgMercado", r.erro || "Não deu certo."); }
+          aplicarPerfil(r); eu.doenteAte = 0; salvarEu(); missao.aviso = "Curado por " + r.curadoPor + "! Pode voltar ao trabalho."; box.dataset.assin = ""; desenharMissao();
+        });
+      };
+      li.appendChild(t); li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  function desenharComidas() {
+    var box = document.getElementById("comidasBox"), cont = contarItens(eu.itens), tem2 = Object.keys(COMIDAS).filter(function (k) { return cont[k]; });
+    box.hidden = !tem2.length || minhaFuncao() === "desempregado"; if (box.hidden) return;
+    var assin = tem2.map(function (k) { return k + cont[k]; }).join(","), ul = document.getElementById("comidas");
+    if (ul.dataset.assin === assin) return; ul.dataset.assin = assin; ul.innerHTML = "";
+    tem2.forEach(function (k) {
+      var li = document.createElement("li"), t = document.createElement("span"), b = document.createElement("button");
+      t.textContent = COMIDAS[k] + " x" + cont[k] + (k === "refeicao" ? " (sacia 8h)" : " (sacia 4h)"); b.type = "button"; b.className = "btn"; b.textContent = "COMER";
+      b.onclick = function () {
+        b.disabled = true;
+        enviar(credenciais({ acao: "comer", item: k })).then(function (r) {
+          b.disabled = false; if (!r.ok) return mensagem("msgMercado", r.erro || "Não deu certo.");
+          aplicarPerfil(r); salvarEu(); ul.dataset.assin = ""; missao.aviso = "Hum! Fome saciada."; desenharMissao();
+        });
+      };
+      li.appendChild(t); li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  document.getElementById("btnTrocaFuncao").addEventListener("click", function () {
+    var bt = this, f = document.getElementById("trocaFuncao").value;
+    if (f === minhaFuncao()) return mensagem("msgMercado", "Essa já é a sua profissão.");
+    if (!bt.dataset.confirmar) { bt.dataset.confirmar = "1"; bt.textContent = "CONFIRMAR"; return; }
+    delete bt.dataset.confirmar; bt.disabled = true;
+    enviar(credenciais({ acao: "funcao", funcao: f })).then(function (r) {
+      bt.disabled = false; bt.textContent = "TROCAR";
+      if (!r.ok) { document.getElementById("trocaInfo").textContent = r.erro; return; }
+      aplicarPerfil(r); salvarEu(); pararTudo(); mostrarCartao(eu); mostrarMissao(); carregar();
+    });
   });
   // relógio de 1 segundo: anima as barras e conta o descanso
   setInterval(function () {
@@ -1261,14 +1500,14 @@
     mostrarMissao();
     estado.mercado.pacotes.forEach(function (p) {
       var c = cartaoLoja(p.nome, reais(p.reais), "Pague com Pix ou cartão. As moedas entram na sua conta assim que o pagamento é confirmado.", "ADQUIRIR MOEDAS");
-      c.el.dataset.pacote = p.id;
+      c.el.dataset.pacote = p.id; c.el.querySelector("b").className = "pix";
       c.botao.onclick = function () { adquirirMoedas(p, c.botao); };
       pac.appendChild(c.el);
     });
     var lista = document.getElementById("itens"), cat = "";
     estado.mercado.itens.forEach(function (it) {
       if (it.cat !== cat) { cat = it.cat; var h = document.createElement("h3"); h.className = "pix cat"; h.textContent = cat.toUpperCase(); lista.appendChild(h); }
-      var c = cartaoLoja(it.nome, it.preco.toLocaleString("pt-BR") + " moedas", it.desc, "TROCAR");
+      var c = cartaoLoja(it.nome, it.preco.toLocaleString("pt-BR") + " moedas" + (it.maoDeObra ? " + " + it.maoDeObra + " de mão de obra" : ""), it.desc + (it.maoDeObra ? " Um engenheiro online constrói a sua casa; se nenhum aceitar a obra em 24 horas, a nave constrói sozinha." : ""), "TROCAR");
       c.el.dataset.item = it.id;
       if (it.base || it.terreno) { var inp = document.createElement("input"); inp.maxLength = it.base ? 28 : 40; inp.placeholder = it.base ? "Nome da sua base" : "Frase do outdoor (até 40 letras)"; c.el.insertBefore(inp, c.botao); }
       c.botao.onclick = function () { trocar(it, c.el, c.botao); };
@@ -1283,7 +1522,12 @@
     document.querySelectorAll("[data-pacote] button").forEach(function (b) { b.disabled = !on; });
     document.querySelectorAll("[data-item]").forEach(function (el) {
       var ja = meus.indexOf(el.dataset.item) >= 0, b = el.querySelector("button"), i = el.querySelector("input");
-      if (el.dataset.item === "gas") { var tg = on && eu.gas; b.disabled = !on || tg; b.textContent = tg ? "VOCÊ TEM GÁS HOJE" : "ADQUIRIR GÁS"; delete b.dataset.confirmar; return; }
+      if (el.dataset.item === "gas") {
+        var V = vida(), cheio = on && V && eu.ar > V.arMax * 0.75, des = on && eu.funcao === "desempregado";
+        b.disabled = !on || cheio || des; b.textContent = des ? "DESEMPREGADO NÃO PRECISA" : cheio ? "TANQUE AINDA CHEIO" : "ENCHER O TANQUE"; delete b.dataset.confirmar; return;
+      }
+      if (el.dataset.item === "racao") { b.disabled = !on; if (!b.dataset.confirmar) b.textContent = "ADQUIRIR"; return; }
+      if (on && eu.obra && eu.obra.item === el.dataset.item) { b.disabled = true; b.textContent = eu.obra.status === "em obra" ? "EM OBRA (" + (eu.obra.engenheiro || "engenheiro") + ")" : "AGUARDANDO ENGENHEIRO"; if (i) i.hidden = true; delete b.dataset.confirmar; return; }
       var semTerreno = !!i && lotesCfg() && !meus.some(function (x) { return /^lote_/.test(x); });
       var dono = el.querySelector(".outdoor-dono"); if (dono) dono.hidden = !ja;
       if (ja && el.dataset.item === "outdoor") {
@@ -1324,14 +1568,17 @@
       return;
     }
     if (it.base && lugar.length < 2) { inp.focus(); return mensagem("msgMercado", "Dê um nome para a sua base antes de trocar."); }
-    if ((Number(eu.moedas) || 0) < it.preco) return mensagem("msgMercado", "Moedas insuficientes: você tem " + (Number(eu.moedas) || 0) + " e precisa de " + it.preco + ". Adquira moedas acima.");
-    if (!btn.dataset.confirmar) { btn.dataset.confirmar = "1"; btn.textContent = "CONFIRMAR (" + it.preco + ")"; return; }
+    var total = it.preco + (it.maoDeObra || 0);
+    if ((Number(eu.moedas) || 0) < total) return mensagem("msgMercado", "Moedas insuficientes: você tem " + (Number(eu.moedas) || 0) + " e precisa de " + total + ". Adquira moedas acima.");
+    if (it.maoDeObra && !estado.engenheirosOnline && !btn.dataset.avisado) { btn.dataset.avisado = "1"; mensagem("msgMercado", "Não há engenheiro online agora. Você pode adquirir mesmo assim: a obra fica esperando um engenheiro e, se nenhum aceitar em 24 horas, a nave constrói sozinha. Toque de novo para continuar."); return; }
+    if (!btn.dataset.confirmar) { btn.dataset.confirmar = "1"; btn.textContent = "CONFIRMAR (" + total + ")"; return; }
     btn.disabled = true; btn.textContent = "TROCANDO...";
     enviar(credenciais({ acao: "comprar", item: it.id, lugar: lugar })).then(function (r) {
       if (!r.ok) { desenharItens(); return mensagem("msgMercado", r.erro || "Não deu certo. Tente de novo."); }
       aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
-      if (it.gas) { eu.gas = true; salvarEu(); if (missao.modo === "doente") missao.modo = "parado"; }
-      mensagem("msgMercado", it.gas ? "Gás de oxigênio garantido até meia-noite. Pode voltar a trabalhar!" : "Agora é seu: " + it.nome + "!" + (it.base ? " Sua casa já aparece no seu terreno." : it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
+      if (it.gas) { eu.gas = true; salvarEu(); }
+      mensagem("msgMercado", it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua casa aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
+      if (r.obra) atualizarPerfil();
       carregar();
     });
   }
