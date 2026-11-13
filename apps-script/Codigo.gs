@@ -50,7 +50,7 @@ const FOME_LIMITE = 240;
 const DOENTE_MINUTOS = 60;      // doente fica 1 hora sem trabalhar (ou chama um médico)
 const RACAO_PRECO = 30;         // ração da nave, para ninguém ficar sem comida
 // META DA NAVE: todo mundo consertando junto
-const META_NAVE = 10000000, ETAPA_NAVE = 50000;
+const META_NAVE = 1000000, ETAPA_NAVE = 50000;
 // PROFISSÕES
 const FUNCOES = {
   mecanico:     { nome: 'Mecânico(a)', desc: 'Conserta a nave mais rápido: 2 pontos por minuto e +1 moeda extra a cada 2 minutos.' },

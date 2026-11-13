@@ -112,7 +112,7 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - **Mercado dos sobreviventes:** cada um coloca itens e recursos à venda pelo preço que quiser, em moedas (terrenos podem; bases não podem ser vendidas; máximo 10 ofertas por pessoa). Fica tudo na aba **Ofertas** da planilha. O item fica guardado enquanto está à venda; quem vende pode cancelar e o item volta.
 
 ## Profissões, comida e meta da nave (atualização de 13/11, noite)
-- **Meta:** todos consertam a nave juntos até 10.000.000 pontos, em etapas de 50.000. A barra aparece no topo do site. Aba **RANKING**: top 10 da semana (funcionários da semana), top 10 de todos os tempos e top 10 mais ricos.
+- **Meta:** todos consertam a nave juntos até 1.000.000 de pontos, em etapas de 50.000. A barra aparece no topo do site. Aba **RANKING**: top 10 da semana (funcionários da semana), top 10 de todos os tempos e top 10 mais ricos.
 - **Profissões da nave:** mecânico (2 pontos/min e moeda extra), engenheiro (conserta e constrói casas), agricultor (cultiva comida), cozinheiro (faz refeição com comida), minerador (minera em metade do tempo), explorador, médico (cura na hora; não conserta; precisa estar online), guarda (1 moeda a cada 2 min com o site aberto e +30 por turno de 4h), desempregado (não ganha consertando, não fica doente). Profissões livres consertam por 1 moeda/min. Troca 1 vez por semana. Vagas: 1 médico a cada 20 e 1 guarda a cada 10 sobreviventes.
 - **Kit de ferramentas:** 100 moedas, obrigatório para consertar. Quem acorda ganha um kit temporário de 1 dia.
 - **Cansaço:** depois de 4 horas de trabalho, descansa 10 min (com casa própria ou alugada) ou 1 hora na nave (sem casa). Site aberto 24h.
