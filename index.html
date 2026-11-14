@@ -686,6 +686,12 @@
     var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
     return "rgb(" + ((r + (255 - r) * f) | 0) + "," + ((g + (255 - g) * f) | 0) + "," + ((b + (255 - b) * f) | 0) + ")";
   }
+  var cacheRetratos = {};
+  function retratoCache(v, itens) {
+    var k = JSON.stringify(v) + "|" + (itens || "") + "|" + (SEM_OXIGENIO ? 1 : 0);
+    if (!cacheRetratos[k]) { var c = document.createElement("canvas"); retratoEm(c, v, itens, itens); cacheRetratos[k] = c; }
+    return cacheRetratos[k];
+  }
   function retratoEm(canvas, v, itens, veste) {
     var c = canvas.getContext("2d");
     canvas.width = RW; canvas.height = RH;
@@ -1041,13 +1047,13 @@
       }
     });
     vivos.sort(function (a, b) { return a.y - b.y; }).forEach(function (b) {
-      var andando = b.espera <= 0 && b.tx;
-      desenharSprite(mctx, b.v, Math.round(b.x) - 5, Math.round(b.y) - 14, andando && (b.t >> 3) % 2, b.itens);
+      // sombrinha no chão; o bonequinho (versão detalhada) é desenhado por cima, já na tela
+      mctx.fillStyle = "rgba(0,0,0,.22)"; mctx.fillRect(Math.round(b.x) - 4, Math.round(b.y) + 1, 8, 2);
     });
 
     // barrinha de trabalho (4 partes de 15 segundos) em cima do seu bonequinho
     if (meu && missao.modo === "consertando") {
-      var cheias = Math.min(4, Math.floor((missao.seg + 1) / 15)), bx0 = Math.round(meu.x) - 9, by0 = Math.round(meu.y) - 21;
+      var cheias = Math.min(4, Math.floor((missao.seg + 1) / 15)), bx0 = Math.round(meu.x) - 9, by0 = Math.round(meu.y) - 25;
       mctx.fillStyle = "#0B161C"; mctx.fillRect(bx0 - 1, by0 - 1, 20, 5);
       for (var q = 0; q < 4; q++) { mctx.fillStyle = q < cheias ? (missao.trabalho === "torre" ? "#b79cff" : "#E8C25A") : "#2a3a42"; mctx.fillRect(bx0 + q * 5, by0, 4, 3); }
     }
@@ -1086,6 +1092,22 @@
       var A = areaOutdoor(+n); if (!dentro(A.x + A.w / 2, A.y + A.h / 2)) return;
       escreverNaPlaca(estado.outdoors[n], (A.x + 3 - cx) * esc, (A.y + 2 - cy) * esc, (A.w - 6) * esc, (A.h - 4) * esc);
     });
+    // bonequinhos detalhados (mesmo desenho do cartão), para as roupas aparecerem bem
+    var sR = esc * 22 / RH; if (sR >= 1) sR = Math.round(sR);
+    cctx.imageSmoothingEnabled = false;
+    vivos.forEach(function (b) {
+      if (!dentro(b.x, b.y)) return;
+      var img = retratoCache(b.v, b.itens), andando = b.espera <= 0 && b.tx, pulo = andando && (b.t >> 3) % 2 ? 1 : 0;
+      var sx = (b.x - cx) * esc - RW * sR / 2, sy = (b.y + 2 - cy) * esc - RH * sR - pulo * sR;
+      cctx.drawImage(img, Math.round(sx), Math.round(sy), RW * sR, RH * sR);
+      if (/dourad/.test(b.itens || "")) { // brilho de ostentação
+        var fase = (b.t + (b.numero || 0) * 13) % 90;
+        if (fase < 24) {
+          var bx = sx + RW * sR * (0.15 + ((b.numero || 1) * 37 % 70) / 100), by = sy + RH * sR * (0.2 + ((b.t / 90 | 0) * 29 % 60) / 100), tam = Math.max(2, sR * 2) * (1 - Math.abs(fase - 12) / 12);
+          cctx.fillStyle = "#FFF6C8"; cctx.fillRect(bx - tam, by, tam * 2 + 1, Math.max(1, sR / 2)); cctx.fillRect(bx, by - tam, Math.max(1, sR / 2), tam * 2 + 1);
+        }
+      }
+    });
     if (vivos.length <= 120) vivos.forEach(function (b) {
       if (dentro(b.x, b.y)) rotulo(b.nome, (b.x - cx) * esc, (b.y + 4 - cy) * esc, b === meu ? "#0B161C" : "#F3E9D6", b === meu ? "#E07A3A" : "rgba(11,22,28,.75)");
     });
@@ -1093,7 +1115,7 @@
     vivos.forEach(function (b) {
       if (!b.fala || b.fala.ate < agoraF || !dentro(b.x, b.y)) return;
       cctx.save(); cctx.font = Math.round(Math.min(esc * 2.6, 7.5 / tela)) + "px 'Press Start 2P', monospace";
-      var bx2 = (b.x - cx) * esc, by2 = (b.y - 26 - cy) * esc - (b === meu && missao.modo === "consertando" ? 6 * esc : 0);
+      var bx2 = (b.x - cx) * esc, by2 = (b.y - 30 - cy) * esc - (b === meu && missao.modo === "consertando" ? 6 * esc : 0);
       rotulo(b.fala.texto, bx2, by2, "#0B161C", "#F3E9D6");
       cctx.fillStyle = "#F3E9D6"; cctx.beginPath(); var hb = parseInt(cctx.font, 10); cctx.moveTo(bx2 - 4, by2 + hb + 4); cctx.lineTo(bx2 + 4, by2 + hb + 4); cctx.lineTo(bx2, by2 + hb + 10); cctx.fill();
       cctx.restore();
@@ -1282,7 +1304,7 @@
   document.getElementById("zoomCentro").onclick = function () { cam.livre = false; };
   function tocarMapa(ev) {
     var rr = cena.getBoundingClientRect(), wx = cam.x + (ev.clientX - rr.left) / rr.width * VW, wy = cam.y + (ev.clientY - rr.top) / rr.height * VH, alvoP = null;
-    ordem.forEach(function (id) { var b = bonecos[id]; if (b && b !== meuBoneco() && b.numero && wx > b.x - 7 && wx < b.x + 7 && wy > b.y - 17 && wy < b.y + 9) alvoP = b; });
+    ordem.forEach(function (id) { var b = bonecos[id]; if (b && b !== meuBoneco() && b.numero && wx > b.x - 8 && wx < b.x + 8 && wy > b.y - 21 && wy < b.y + 9) alvoP = b; });
     if (alvoP) { abrirPerfil(alvoP.numero); return; }
     var ofTocada = null;
     if (lotesCfg()) Object.keys(estado.outdoorOferta || {}).forEach(function (n) { var A = areaOutdoor(+n); if (wx >= A.x && wx <= A.x + A.w && wy >= A.y && wy <= A.y + A.h) ofTocada = estado.outdoorOferta[n]; });
