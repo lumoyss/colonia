@@ -120,6 +120,23 @@ const DOENTE_MINUTOS = 60;      // doente fica 1 hora sem trabalhar (ou chama um
 const RACAO_PRECO = 20;         // ração da nave, para ninguém ficar sem comida
 // META DA NAVE: todo mundo consertando junto
 const META_NAVE = 1000000, ETAPA_NAVE = 50000;
+// Lucas 14/11: metas curtas dentro de cada etapa de 50 mil; a última (50 mil) é a meta grande.
+// Ao bater a meta grande da etapa 1, o plano é expandir o mapa e criar mais terrenos.
+const METAS_PARTES = [2000, 5000, 10000, 18000, 30000, 50000];
+const METAS_NOMES = [
+  ['Estabilizar o oxigênio da área de hibernação', 'Religar as luzes dos corredores', 'Consertar o rádio de longo alcance', 'Abrir o hangar e ligar o scanner do planeta', 'Ligar o reator auxiliar', 'Reativar o motor principal'],
+  ['Limpar os filtros de ar', 'Consertar os elevadores da nave', 'Recalibrar os sensores externos', 'Reforçar o casco', 'Reabrir a estufa da nave', 'Ligar o escudo da nave']
+];
+function metaNome_(etapa, i) { const l = METAS_NOMES[etapa - 1]; return l ? l[i] : 'Reparo ' + (i + 1) + ' da etapa ' + etapa; }
+function metasNave_(pontos) {
+  const etapa = Math.floor(pontos / ETAPA_NAVE) + 1, base = (etapa - 1) * ETAPA_NAVE, feitas = [];
+  let proxima = null;
+  METAS_PARTES.forEach(function (p, i) {
+    const alvo = base + p * ETAPA_NAVE / 50000, nome = metaNome_(etapa, i);
+    if (pontos >= alvo) feitas.push(nome); else if (!proxima) proxima = { nome: nome, alvo: alvo, desde: i ? base + METAS_PARTES[i - 1] * ETAPA_NAVE / 50000 : base, grande: i === METAS_PARTES.length - 1 };
+  });
+  return { etapa: etapa, feitas: feitas, proxima: proxima };
+}
 // PROFISSÕES
 const FUNCOES = {
   mecanico:     { nome: 'Mecânico(a)', desc: 'O melhor para consertar a nave. Ganha: 1 moeda a cada 15 s consertando (2 com caixa de ferramentas) e, com a caixa, vale 3 pontos da nave a cada 15 s (os outros fazem 1).' },
@@ -401,7 +418,7 @@ function doGet(e) {
   const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
   const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
   const resposta = { ok: true, bauzinhos: bauzinhos_().lista, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
-    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, lider: LIDER_NOME, guardas: guardasSeguranca_(todas), titulos: TITULOS, checkinMoedas: CHECKIN_MOEDAS, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
+    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE, metas: metasNave_(pontosNave) }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, lider: LIDER_NOME, guardas: guardasSeguranca_(todas), titulos: TITULOS, checkinMoedas: CHECKIN_MOEDAS, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
     obras: ss.getSheetByName(ABA_OBRAS) ? obrasAbertas_(ss) : [], funcoes: funcoes,
     torres: ss.getSheetByName(ABA_TORRES) ? torresPublicas_(ss, todas) : [], leilao: ss.getSheetByName(ABA_LEILOES) ? leilaoPublico_(ss) : null, criados: ss.getSheetByName(ABA_CRIACOES) ? criadosPublicos_(ss) : {},
     ofertas: ofertas, bau: bau, mapa: { l: MAPA_L, a: MAPA_A } };
@@ -821,8 +838,15 @@ function somarPontos_(s, l, n) {
   s.aba.getRange(s.linha, C_PONTOS).setValue((Number(l[C_PONTOS - 1]) || 0) + n);
   const sem = String(l[C_PONTOS_SEM - 1] || '').split('|'), chave = semana_();
   s.aba.getRange(s.linha, C_PONTOS_SEM).setValue(chave + '|' + ((sem[0] === chave ? Number(sem[1]) || 0 : 0) + n));
-  const pr = PropertiesService.getScriptProperties();
-  pr.setProperty('PONTOS_NAVE', String((Number(pr.getProperty('PONTOS_NAVE')) || 0) + n));
+  const pr = PropertiesService.getScriptProperties(), antes = Number(pr.getProperty('PONTOS_NAVE')) || 0, depois = antes + n;
+  pr.setProperty('PONTOS_NAVE', String(depois));
+  const m = metasNave_(antes).proxima;
+  if (m && depois >= m.alvo) {
+    try {
+      avisoRadio_(planilha_(), (m.grande ? '🚀🎉 META GRANDE BATIDA: ' : '✅ Meta da nave batida: ') + m.nome + '! (' + m.alvo.toLocaleString('pt-BR') + ' pontos)' + (m.grande ? ' Obrigado, sobreviventes! Grandes novidades vêm aí.' : ''));
+      CacheService.getScriptCache().remove('lista');
+    } catch (e) { /* segue */ }
+  }
 }
 // Quem tem casa e vai descansar em casa: o descanso cai de 10 para 5 minutos
 function descansarEmCasa_(ss, d) {

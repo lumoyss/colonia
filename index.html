@@ -267,6 +267,7 @@
       <div class="pix" style="font-size:10px;color:var(--verde2)">MISSÃO DE TODOS: CONSERTAR A NAVE ANTES DO AR ACABAR</div>
       <div class="barra"><span id="barNave"></span></div>
       <p id="naveTxt"></p>
+      <p id="naveFeitas" class="dica" style="margin:4px 0 0"></p>
     </div>
   </header>
 
@@ -275,7 +276,7 @@
     <h4>A história</h4>
     <p>A Terra caiu. A Nave Orion pousou num planeta com pouquíssimo oxigênio, e o ar da nave está acabando. Você é um sobrevivente que acabou de acordar da hibernação.</p>
     <h4>O objetivo de todos</h4>
-    <p>Consertar a nave antes que o ar acabe. Cada minuto de conserto dá pontos para a barra da nave. A meta é 1 milhão de pontos, em etapas de 50 mil. Quem mais consertar ganha a chance de aparecer no RANKING.</p>
+    <p>Consertar a nave antes que o ar acabe. Cada minuto de conserto dá pontos para a barra da nave. A meta é 1 milhão de pontos, em etapas de 50 mil. Cada etapa tem tarefas curtas (a primeira é estabilizar o oxigênio da hibernação, com 2.000 pontos) e termina numa meta grande. Quem mais consertar ganha a chance de aparecer no RANKING.</p>
     <h4>Como ganhar moedas</h4>
     <ul>
       <li>Trabalhe com o site aberto. A barrinha em cima do seu sobrevivente enche uma parte a cada 15 segundos. A cada barrinha completa você ganha 1 moeda e 1 ponto de conserto da nave.</li>
@@ -1816,6 +1817,13 @@
     var pct = n.pontos / n.meta * 100, etapa = Math.floor(n.pontos / n.etapa) + 1, naEtapa = n.pontos % n.etapa;
     document.getElementById("barNave").style.width = Math.max(0.5, naEtapa / n.etapa * 100) + "%";
     document.getElementById("naveTxt").textContent = "Etapa " + etapa + ": " + naEtapa.toLocaleString("pt-BR") + " de " + n.etapa.toLocaleString("pt-BR") + " pontos · Nave " + pct.toLocaleString("pt-BR", { maximumFractionDigits: 3 }) + "% consertada (" + n.pontos.toLocaleString("pt-BR") + " de " + n.meta.toLocaleString("pt-BR") + ")";
+    var M = n.metas, fe = document.getElementById("naveFeitas");
+    if (M && M.proxima) {
+      var p = M.proxima, feito = n.pontos - p.desde, tam = p.alvo - p.desde;
+      document.getElementById("barNave").style.width = Math.max(0.5, feito / tam * 100) + "%";
+      document.getElementById("naveTxt").textContent = (p.grande ? "🚀 META GRANDE: " : "🔧 Próxima tarefa: ") + p.nome + " · " + n.pontos.toLocaleString("pt-BR") + " de " + p.alvo.toLocaleString("pt-BR") + " pontos (etapa " + M.etapa + ")";
+    }
+    fe.textContent = M && M.feitas.length ? "✅ Feito: " + M.feitas.join(" · ") : "";
   }
   function desenharRanking(rk) {
     document.getElementById("abaRanking").hidden = false;
