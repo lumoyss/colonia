@@ -49,7 +49,9 @@ const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
   C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43,
   C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47,
-  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56;
+  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56, C_CONSERTO_DIA = 57;
+// Depois de 4 horas de conserto no dia, as moedas passam a cair 1 vez por minuto em vez de a cada 15 s (1/4); os pontos continuam inteiros. Decisão do Lucas 14/11.
+const CONSERTO_CHEIO_MIN = 240;
 const PROTECAO_NOVATO_DIAS = 3; // quem acordou há menos de 3 dias não pode ser invadido
 const FERRAMENTA_DIAS = 7; // caixa de ferramentas e vassoura valem 7 dias
 // online_dia (col. 12) guarda o último minuto contado; online_minutos (col. 13) soma o tempo online total.
@@ -307,7 +309,7 @@ function resetarJogo() {
 
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador', 'conserto_dia']);
   colunas_(garantirAba_(ss, ABA_INVASOES), ['data', 'lote', 'invasor_numero', 'invasor', 'dono_numero', 'dono', 'levou']);
   colunas_(garantirAba_(ss, ABA_SEGURANCA), ['data', 'dono_numero', 'dono', 'guarda_numero', 'guarda', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
@@ -762,11 +764,15 @@ function trabalhar_(ss, d) {
   if (modo !== 'vigiar' && !boost) turno++;
   progresso++;
   if (!desemp) { fome++; if (!tem_(String(l[C_ITENS - 1] || ''), 'mochila') || progresso % 2 === 0) ar = Math.max(0, ar - 1); cel(C_FOME, fome); cel(C_AR, ar); cel(C_AR_TS, agora); }
-  let horaGuarda = 0;
+  let horaGuarda = 0, consertoHoje = 0;
   if (modo === 'consertar') {
     const caixa = temKit_(l);
     pontos = (funcao === 'mecanico' && caixa ? CONSERTO_PONTOS_MECANICO_CAIXA : CONSERTO_PONTOS) * TICKS_POR_MINUTO;
+    const hojeC = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd'), cd = String(l[C_CONSERTO_DIA - 1] || '').split('|');
+    consertoHoje = (cd[0] === hojeC ? Number(cd[1]) || 0 : 0) + 1;
+    cel(C_CONSERTO_DIA, hojeC + '|' + consertoHoje);
     if (!desemp) ganhou = (caixa ? CONSERTO_MOEDAS_COM_CAIXA : CONSERTO_MOEDAS_SEM_CAIXA) * TICKS_POR_MINUTO;
+    if (consertoHoje > CONSERTO_CHEIO_MIN) ganhou = Math.floor(ganhou / TICKS_POR_MINUTO);
     somarPontos_(s, l, pontos);
   } else if (modo === 'vigiar') {
     ganhou = GUARDA_MOEDAS_MIN;
@@ -797,7 +803,7 @@ function trabalhar_(ss, d) {
   }
   if (ganhou) { moedas += ganhou; cel(C_MOEDAS, moedas); }
   cel(C_ON_ULTIMO, agora); cel(C_TURNO, turno); cel(C_PROGRESSO, progresso);
-  return r(est, restante, { horaGuarda: horaGuarda, boostAte: boost ? Number(l[C_BOOST_ATE - 1]) : 0, temCaixa: modo === 'consertar' ? temKit_(l) : undefined });
+  return r(est, restante, { consertoHoje: consertoHoje, consertoCheio: CONSERTO_CHEIO_MIN, horaGuarda: horaGuarda, boostAte: boost ? Number(l[C_BOOST_ATE - 1]) : 0, temCaixa: modo === 'consertar' ? temKit_(l) : undefined });
 }
 function somarPontos_(s, l, n) {
   s.aba.getRange(s.linha, C_PONTOS).setValue((Number(l[C_PONTOS - 1]) || 0) + n);
@@ -2344,7 +2350,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 56)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 57)).getValues();
 }
 
 function gerarChave_() {

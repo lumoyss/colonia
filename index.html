@@ -288,7 +288,7 @@
       <li>Faça check-in todo dia: 20, 30, 40, 50, 60 e 80 moedas, e no 7º dia um baú especial com 150 moedas e um item exclusivo com o seu nome, que libera os títulos de nobreza (um por semana). Se faltar um dia, volta ao dia 1.</li>
       <li>Coma a cada 4 horas de trabalho e mantenha ar no tanque (veja as barras de ar e fome no seu INVENTÁRIO).</li>
       <li>Sem comida ou sem ar, você fica doente por 1 hora (ou pode pagar um médico para te curar).</li>
-      <li>Consertando a nave você ganha 1 moeda a cada 15 segundos (2 com a caixa de ferramentas). Depois de 1 hora seguida trabalhando, você cansa: sem casa, descansa 20 minutos na nave; com casa (própria ou alugada), 5 minutos em casa ou 10 minutos se preferir ficar fora explorando ou minerando. Um médico cura o cansaço na hora e você trabalha 30 minutos direto.</li>
+      <li>Consertando a nave você ganha 1 moeda a cada 15 segundos (2 com a caixa de ferramentas). Depois de 1 hora seguida trabalhando, você cansa: sem casa, descansa 20 minutos na nave; com casa (própria ou alugada), 5 minutos em casa ou 10 minutos se preferir ficar fora explorando ou minerando. Um médico cura o cansaço na hora e você trabalha 30 minutos direto. Depois de 4 horas de conserto no mesmo dia, as moedas passam a cair 1 vez por minuto (os pontos continuam iguais).</li>
     </ul>
     <h4>Explorar e construir</h4>
     <ul>
@@ -1934,6 +1934,7 @@
     }
     if (r.boostAte != null) eu.boostAte = r.boostAte;
     if (r.horaGuarda) mensagemMapa("Hora completa de guarda: +" + r.horaGuarda + " moedas!");
+    if (r.consertoHoje === r.consertoCheio + 1) mensagemMapa("Você já consertou 4 horas hoje! Pode continuar: os pontos para a nave seguem inteiros, mas as moedas agora caem 1 vez por minuto (não a cada 15 s). Amanhã volta ao normal.", 10000);
     if (r.estado === "cansado" || r.estado === "descansando") { pararMissao(); if (missao.modo !== "descansando") missao.emCasa = false; missao.modo = "descansando"; missao.descanso = r.descansoSeg; }
     else if (r.estado === "doente") { pararMissao(); missao.modo = "parado"; eu.doenteAte = Date.now() + r.descansoSeg * 1000; salvarEu(); }
     desenharMissao();
