@@ -245,6 +245,7 @@
     <h1 class="pix">NAVE ORION</h1>
     <p class="sub">A Terra caiu. A Nave Orion pousou num planeta com pouquíssimo oxigênio.<br>Todos a bordo dormem em hibernação, e o ar da nave está acabando.<br>Entre pelo link para acordar o seu sobrevivente.</p>
     <div class="contador pix"><b id="total">0</b> SOBREVIVENTES ACORDADOS</div>
+    <p id="cofreNave" hidden style="margin:8px 0 0;color:var(--apagado);font-size:15px">🏛️ Cofre da nave: <b id="cofreValor">0</b> moedas (impostos da colônia)</p>
     <div class="nave-meta" id="naveMeta" hidden>
       <div class="pix" style="font-size:10px;color:var(--verde2)">MISSÃO DE TODOS: CONSERTAR A NAVE ANTES DO AR ACABAR</div>
       <div class="barra"><span id="barNave"></span></div>
@@ -270,7 +271,7 @@
       <li>Para consertar a nave, você precisa do kit de ferramentas. Assim que um sobrevivente acorda, ele(a) tem direito a 1 dia de ferramentas grátis.</li>
       <li>Coma a cada 4 horas de trabalho e mantenha ar no tanque (veja as barras de ar e fome no seu INVENTÁRIO).</li>
       <li>Sem comida ou sem ar, você fica doente por 1 hora (ou pode pagar um médico para te curar).</li>
-      <li>Após 4 horas trabalhando, você fica cansado. Se tiver uma casa, o descanso é de 10 minutos. Sem casa, aguarde 1 hora na nave.</li>
+      <li>Consertando a nave você ganha 1 moeda a cada 15 segundos (2 com a caixa de ferramentas). Depois de 1 hora seguida trabalhando, você cansa: sem casa, descansa 20 minutos na nave; com casa (própria ou alugada), 5 minutos em casa ou 10 minutos se preferir ficar fora explorando ou minerando. Um médico cura o cansaço na hora e você trabalha 30 minutos direto.</li>
     </ul>
     <h4>Explorar e construir</h4>
     <ul>
@@ -851,6 +852,7 @@
     estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
+    if (d.mercado && d.mercado.cofre != null) { document.getElementById("cofreNave").hidden = false; document.getElementById("cofreValor").textContent = Number(d.mercado.cofre).toLocaleString("pt-BR"); }
     desenharServicos();
     estado.leilao = d.leilao || null; desenharLeilao(); desenharFaixaLeilao(); estado.bauzinhos = d.bauzinhos || [];
     calcularDonos(); desenharAlugueis(); desenharAnuncios(); desenharFiscal(); if (logado()) desenharExtras();
@@ -1135,7 +1137,7 @@
     desenharTorresMapa(tempo);
 
     var vivos = ordem.map(function (id) { return bonecos[id]; }), meu = meuBoneco();
-    if (meu && ((missao.modo === "consertando" && missao.trabalho === "consertar") || missao.modo === "descansando")) {
+    if (meu && ((missao.modo === "consertando" && missao.trabalho === "consertar") || (missao.modo === "descansando" && !descansoLivre()))) {
       var alvo = PONTO_CONSERTO;
       if (missao.modo === "descansando") {
         var casaDe = eu.nome; if (eu.mora) (estado.alugueis || []).forEach(function (a) { if (a.codigo === eu.mora) casaDe = a.dono; });
@@ -1433,7 +1435,7 @@
     if (ofTocada) { abrirOferta(ofTocada); return; }
     var meu = meuBoneco();
     if (!meu) { mensagemMapa("Acorde seu sobrevivente (ou entre com o seu código no Mercado) para explorar o mapa."); return; }
-    if (missao.modo === "descansando") { mensagemMapa("Seu sobrevivente está cansado. Espere o descanso terminar."); return; }
+    if (missao.modo === "descansando" && !descansoLivre()) { mensagemMapa(missao.emCasa ? "Seu sobrevivente está descansando em casa." : "Seu sobrevivente está cansado e sem casa: espere o descanso na nave (ou chame um médico)."); return; }
     if (missao.modo === "consertando" && (missao.trabalho === "consertar" || missao.trabalho === "torre")) { missao.modo = "parado"; pararMissao(); desenharMissao(); }
     var r = cena.getBoundingClientRect();
     meu.ax = cam.x + (ev.clientX - r.left) / r.width * VW;
@@ -1625,8 +1627,9 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
     if (r.avisos !== undefined) desenharSino();
+    if (typeof missao !== "undefined" && missao && Number(r.descansoAte) > Date.now() && missao.modo === "parado") { missao.modo = "descansando"; missao.descanso = Math.ceil((r.descansoAte - Date.now()) / 1000); missao.temBase = typeof temCasa === "function" ? temCasa() : missao.temBase; }
     if (r.veste !== undefined && typeof bonecos !== "undefined" && eu && bonecos[eu.nome]) bonecos[eu.nome].itens = eu.veste;
   }
   function atualizarPerfil() {
@@ -1699,9 +1702,12 @@
   var COMIDAS = { comida: "Comida", refeicao: "Refeição", racao: "Ração da nave" };
   function funcaoInfo(f) { return (estado.funcoes || []).filter(function (x) { return x.id === f; })[0]; }
   function minhaFuncao() { return eu && eu.funcao || "livre"; }
-  function modosDe(f) { var m = []; if (f === "guarda") m.push("vigiar"); if (f === "agricultor") m.push("cultivar"); if (f === "cozinheiro") m.push("cozinhar"); if (f !== "medico") m.push("consertar"); return m; }
+  function modosDe(f) { var m = []; if (f === "guarda") m.push("vigiar"); if (f === "agricultor") m.push("cultivar"); if (f === "agricultor" || f === "cozinheiro") m.push("cozinhar"); if (f !== "medico") m.push("consertar"); return m; }
   function semKit() { return logado() && eu.kitAte != null && eu.kitAte !== -1 && Date.now() > eu.kitAte; }
   function doente() { return logado() && eu.funcao !== "desempregado" && Number(eu.doenteAte) > Date.now(); }
+  function cansado() { return logado() && missao.modo === "descansando"; }
+  function comBoost() { return logado() && Number(eu.boostAte) > Date.now(); }
+  function descansoLivre() { return missao.modo === "descansando" && missao.temBase && !missao.emCasa; }
   function tempoTxt(seg) { seg = Math.max(0, Math.round(seg)); var h = Math.floor(seg / 3600), m = Math.floor(seg % 3600 / 60), s2 = ("0" + seg % 60).slice(-2); return (h ? h + ":" + ("0" + m).slice(-2) : m) + ":" + s2; }
   function mostrarMissao() {
     var R = regras(), V = vida(), box = document.getElementById("missao");
@@ -1711,8 +1717,8 @@
     document.getElementById("missaoTitulo").textContent = "TRABALHO: " + (info ? info.nome.toUpperCase() : "SOBREVIVENTE");
     document.getElementById("profInfo").textContent = info ? info.desc : "";
     var tempo = function (m) { return m >= 60 ? (m / 60) + (m === 60 ? " hora" : " horas") : m + (m === 1 ? " minuto" : " minutos"); };
-    document.getElementById("missaoRegra").textContent = "Fique com o site aberto trabalhando. Depois de " + tempo(R.turno) + " você cansa: quem tem casa (própria ou alugada) descansa " + tempo(R.descansoBase) +
-      " em casa; quem não tem espera " + tempo(R.descansoSemBase) + " na nave." + (V ? " Coma a cada " + tempo(V.fomeLimite) + " de trabalho e mantenha ar no tanque: sem comida ou sem ar você fica doente por " + tempo(V.doente) + " (ou chama um médico)." : "");
+    document.getElementById("missaoRegra").textContent = "Fique com o site aberto trabalhando. Consertando, você ganha " + (R.moedasSemCaixa || 1) + " moeda a cada 15 segundos (" + (R.moedasComCaixa || 2) + " com a caixa de ferramentas). Depois de " + tempo(R.turno) + " seguida você cansa: quem tem casa (própria ou alugada) descansa " + tempo(R.descansoCasa || 5) + " em casa ou " + tempo(R.descansoBase) +
+      " se ficar fora (explorando, minerando); quem não tem espera " + tempo(R.descansoSemBase) + " na nave. Um médico cura o cansaço na hora e você trabalha " + tempo(R.boost || 30) + " direto." + (V ? " Coma a cada " + tempo(V.fomeLimite) + " de trabalho e mantenha ar no tanque: sem comida ou sem ar você fica doente por " + tempo(V.doente) + " (ou chama um médico)." : "");
     // troca de profissão
     var sel = document.getElementById("trocaFuncao"), atual = sel.value;
     if (sel.options.length !== (estado.funcoes || []).length) {
@@ -1730,7 +1736,7 @@
   function desenharMissao() {
     var R = regras(), V = vida(); if (!R || !logado()) return;
     var f = minhaFuncao(), trabalhando = missao.modo === "consertando";
-    var energia = missao.modo === "descansando" ? 0 : 1 - (missao.turno + (trabalhando ? missao.seg / 60 : 0)) / R.turno;
+    var energia = missao.modo === "descansando" ? 0 : comBoost() ? 1 : 1 - (missao.turno + (trabalhando ? missao.seg / 60 : 0)) / R.turno;
     document.getElementById("barEnergia").style.width = Math.max(0, Math.min(1, energia)) * 100 + "%";
     var des = f === "desempregado";
     document.getElementById("rotFome").textContent = des ? "Fome (desempregado não fica doente)" : "Fome";
@@ -1741,24 +1747,29 @@
     document.getElementById("barAr").style.width = (des ? 100 : Math.max(0, Math.min(1, ar)) * 100) + "%";
     var st = document.getElementById("missaoStatus"), txt;
     if (doente()) txt = "Você está doente! Recupera em " + tempoTxt((eu.doenteAte - Date.now()) / 1000) + ". Garanta comida e ar, ou chame um médico para curar na hora.";
-    else if (missao.modo === "descansando") txt = (missao.temBase ? "Cansado! Descansando em casa: " : "Cansado e sem casa! Esperando na nave: ") + tempoTxt(missao.descanso);
+    else if (missao.modo === "descansando") txt = (!missao.temBase ? "Cansado e sem casa! Esperando na nave: " : missao.emCasa ? "Descansando em casa: " : "Cansado! Pode explorar e minerar enquanto descansa, ou ir para casa (descanso mais curto). Falta: ") + tempoTxt(missao.descanso) + ". Um médico cura na hora.";
     else if (missao.modo === "plantao") txt = missao.obra ? "Construindo a casa “" + missao.obra.nome + "” de " + missao.obra.dono + ": " + (missao.obra.progresso || 0) + " de " + missao.obra.total + " minutos." : f === "medico" ? "De plantão! Os doentes veem você na lista de médicos. Fique com o site aberto." : "De plantão! Aceite uma obra abaixo.";
     else if (trabalhando) txt = document.hidden ? "Pausado: volte para o site para continuar." : VERBO_TRAB[missao.trabalho] + "..." + (missao.trabalho === "construir" && missao.obra ? " (" + (missao.obra.progresso || 0) + " de " + missao.obra.total + " min)" : "");
     else txt = missao.aviso || "Seu sobrevivente está parado.";
+    if (comBoost() && !doente() && missao.modo !== "descansando") txt += " ⚡ Remédio do médico: sem cansaço por " + tempoTxt((eu.boostAte - Date.now()) / 1000) + ".";
     if (!des && !doente() && V) { if (fome >= 0.85) txt += " Você está com fome: coma algo!"; if (ar <= 0.1) txt += " O ar está acabando: encha o tanque no Mercado!"; }
     st.textContent = txt;
     // botões
     var modos = modosDe(f), plantao = f === "medico" || f === "engenheiro";
-    var assin = [f, missao.modo, missao.trabalho, semKit(), doente(), !!missao.obra].join("|");
+    var assin = [f, missao.modo, missao.trabalho, semKit(), doente(), !!missao.obra, !!missao.emCasa, !!missao.temBase].join("|");
     if (assin !== assinaturaBotoes) {
       assinaturaBotoes = assin;
       var box = document.getElementById("botoesTrabalho"); box.innerHTML = "";
       var botao = function (txt2, cls, fn) { var b = document.createElement("button"); b.type = "button"; b.className = "btn" + (cls ? " " + cls : ""); b.textContent = txt2; b.onclick = fn; box.appendChild(b); return b; };
       if (trabalhando || missao.modo === "plantao") botao("PARAR", "sec", pararTudo);
-      else if (missao.modo !== "descansando" && !doente()) {
+      else if (missao.modo === "descansando") {
+        if (missao.temBase && !missao.emCasa) botao("DESCANSAR EM CASA (MAIS RÁPIDO)", "", descansarEmCasa);
+        if (f !== "medico") botao("CHAMAR UM MÉDICO (CURA O CANSAÇO)", "sec", function () { irPara("servicos"); var sv = document.getElementById("painel-servicos"); if (sv) sv.scrollIntoView({ behavior: "smooth", block: "start" }); });
+      }
+      else if (!doente()) {
         modos.forEach(function (m) {
-          if (m === "consertar" && semKit()) botao("COMPRAR KIT DE FERRAMENTAS (CONSERTAR)", "sec", function () { irPara("mercado"); irSub("loja"); var k = document.querySelector('[data-item="ferramentas"]'); if (k) k.scrollIntoView({ behavior: "smooth", block: "center" }); });
-          else botao(BOTAO_TRAB[m], m === modos[0] ? "" : "sec", function () { comecar(m); });
+          botao(BOTAO_TRAB[m], m === modos[0] ? "" : "sec", function () { comecar(m); });
+          if (m === "consertar" && semKit()) botao("ADQUIRIR CAIXA DE FERRAMENTAS (GANHA O DOBRO)", "sec", function () { irPara("mercado"); irSub("loja"); var k = document.querySelector('[data-item="ferramentas"]'); if (k) k.scrollIntoView({ behavior: "smooth", block: "center" }); });
         });
         if (plantao) botao(f === "medico" ? "FICAR DE PLANTÃO (CURAR DOENTES)" : "FICAR DE PLANTÃO (CONSTRUIR CASAS)", "", comecarPlantao);
       }
@@ -1769,6 +1780,12 @@
     missao.trabalho = m; missao.modo = "consertando"; missao.seg = 0; missao.aviso = ""; pararMissao(); pararPlantao();
     missao.timer = setInterval(pingMissao, 60000);
     desenharMissao();
+  }
+  function descansarEmCasa() {
+    enviar(credenciais({ acao: "descansar_casa" })).then(function (r) {
+      if (!r.ok) { missao.aviso = r.erro; return desenharMissao(); }
+      missao.emCasa = true; missao.descanso = r.descansoSeg; assinaturaBotoes = ""; desenharMissao();
+    });
   }
   function pararTudo() { pararMissao(); pararPlantao(); missao.modo = "parado"; missao.obra = null; missao.aviso = ""; desenharMissao(); }
   function aplicarMissao(r) {
@@ -1789,7 +1806,9 @@
       missao.obra.progresso = (missao.obra.progresso || 0) + 1;
       if (missao.obra.progresso >= missao.obra.total) { mensagemMapa("Obra concluída! Você recebeu " + missao.obra.mao + " moedas de mão de obra."); missao.obra = null; pararMissao(); missao.modo = "parado"; atualizarPerfil(); carregar(); }
     }
-    if (r.estado === "cansado" || r.estado === "descansando") { pararMissao(); missao.modo = "descansando"; missao.descanso = r.descansoSeg; }
+    if (r.boostAte != null) eu.boostAte = r.boostAte;
+    if (r.horaGuarda) mensagemMapa("Hora completa de guarda: +" + r.horaGuarda + " moedas!");
+    if (r.estado === "cansado" || r.estado === "descansando") { pararMissao(); if (missao.modo !== "descansando") missao.emCasa = false; missao.modo = "descansando"; missao.descanso = r.descansoSeg; }
     else if (r.estado === "doente") { pararMissao(); missao.modo = "parado"; eu.doenteAte = Date.now() + r.descansoSeg * 1000; salvarEu(); }
     desenharMissao();
   }
@@ -1851,7 +1870,7 @@
     }
   }
   function desenharMedicos() {
-    var box = document.getElementById("medicosBox"), mostrar = doente();
+    var box = document.getElementById("medicosBox"), mostrar = doente() || (cansado() && minhaFuncao() !== "medico");
     box.hidden = !mostrar; if (!mostrar) return;
     var lista = (estado.medicos || []).filter(function (m) { return m.nome !== eu.nome; });
     var assin = JSON.stringify(lista); if (box.dataset.assin === assin) return; box.dataset.assin = assin;
@@ -1868,7 +1887,7 @@
         enviar(credenciais({ acao: "chamar_medico", numero: m.numero })).then(function (r) {
           b.disabled = false;
           if (!r.ok) { delete b.dataset.confirmar; b.textContent = "CHAMAR"; return mensagem("msgMercado", r.erro || "Não deu certo."); }
-          aplicarPerfil(r); eu.doenteAte = 0; salvarEu(); missao.aviso = "Curado por " + r.curadoPor + "! Pode voltar ao trabalho."; box.dataset.assin = ""; desenharMissao();
+          aplicarPerfil(r); eu.doenteAte = 0; salvarEu(); curadoPeloMedico(r); box.dataset.assin = ""; desenharMissao();
         });
       };
       li.appendChild(t); li.appendChild(b); ul.appendChild(li);
@@ -1891,11 +1910,11 @@
     var on = logado(), meuNome = on ? eu.nome : "";
     var meds = (estado.medicos || []).filter(function (m) { return m.nome !== meuNome; });
     var engs = estado.engenheiros, minhas = on ? (estado.obras || []).filter(function (o) { return o.dono === eu.nome; }) : [];
-    var assin = JSON.stringify([meds, engs, minhas, on, on && doente()]);
+    var assin = JSON.stringify([meds, engs, minhas, on, on && doente(), on && cansado()]);
     if (ulM.dataset.assin === assin) return; ulM.dataset.assin = assin;
     var dM = document.getElementById("servMedDica"), dE = document.getElementById("servEngDica");
-    var estouDoente = on && doente();
-    dM.textContent = !on ? "Entre com o seu sobrevivente para chamar um médico." : estouDoente ? "Você está doente. Chame um médico para ser curado na hora." : "Você está com saúde. O médico só pode ser chamado quando você ficar doente (sem ar ou sem comida).";
+    var estouDoente = on && (doente() || cansado());
+    dM.textContent = !on ? "Entre com o seu sobrevivente para chamar um médico." : doente() ? "Você está doente. Chame um médico para ser curado na hora." : cansado() ? "Você está cansado. O médico cura na hora e você trabalha 30 minutos direto sem cansar." : "Você está bem. O médico pode ser chamado quando você ficar doente (sem ar ou sem comida) ou cansado (depois de 1 hora de trabalho).";
     ulM.innerHTML = "";
     if (!meds.length) { var v = document.createElement("li"); v.textContent = "Nenhum médico de plantão agora."; ulM.appendChild(v); }
     meds.forEach(function (m) {
@@ -1905,8 +1924,8 @@
         enviar(credenciais({ acao: "chamar_medico", numero: m.numero })).then(function (r) {
           b.disabled = false; delete b.dataset.confirmar; b.textContent = "CHAMAR";
           if (!r.ok) return mensagem("msgServ", r.erro || "Não deu certo.");
-          aplicarPerfil(r); eu.doenteAte = 0; salvarEu(); mensagem("msgServ", "Curado por " + r.curadoPor + "! Pode voltar ao trabalho.", true);
-          missao.aviso = ""; ulM.dataset.assin = ""; desenharConta();
+          aplicarPerfil(r); eu.doenteAte = 0; salvarEu(); curadoPeloMedico(r); mensagem("msgServ", missao.aviso, true);
+          ulM.dataset.assin = ""; desenharConta();
         });
       }));
     });
@@ -1927,6 +1946,12 @@
         });
       }));
     });
+  }
+  function curadoPeloMedico(r) {
+    if (missao.modo === "descansando") { missao.modo = "parado"; missao.descanso = 0; missao.emCasa = false; missao.turno = 0; }
+    if (r.boostAte) eu.boostAte = r.boostAte;
+    missao.aviso = "Curado por " + r.curadoPor + "!" + (r.boostAte ? " ⚡ Você pode trabalhar " + Math.round((r.boostAte - Date.now()) / 60000) + " minutos direto sem cansar." : " Pode voltar ao trabalho.");
+    assinaturaBotoes = "";
   }
   function desenharComidas() {
     var box = document.getElementById("comidasBox"), cont = contarItens(eu.itens), tem2 = Object.keys(COMIDAS).filter(function (k) { return cont[k]; });
@@ -1962,7 +1987,7 @@
     if (missao.modo === "consertando" && !document.hidden) missao.seg = Math.min(59, missao.seg + 1);
     if (missao.modo === "descansando") {
       missao.descanso--;
-      if (missao.descanso <= 0) { missao.modo = "parado"; pararMissao(); }
+      if (missao.descanso <= 0) { missao.modo = "parado"; missao.emCasa = false; pararMissao(); }
     }
     if (!document.getElementById("missao").hidden) desenharMissao();
   }, 1000);
@@ -2050,7 +2075,8 @@
   /* ---------------- inventário (grade com espaços) ---------------- */
   var ICONES = { base: "🏠", base_grande: "🏢", outdoor: "🪧", outdoor_guardado: "🪧", gas: "🧪", racao: "🥫", comida: "🥕", refeicao: "🍲", bone: "🧢", calca: "👖", chapeu: "🤠", colete: "🦺", vestido: "👗",
     capacete_dourado: "⛑️", bota_dourada: "👢", calca_dourada: "👖", blusa_dourada: "👕", traje_dourado: "✨", mochila: "🎒", picareta: "⛏️", ferramentas: "🧰",
-    ficha_item: "🎟️", ficha_empresa: "🏭", cristal: "💎", peca: "⚙️", minerio: "🪨", semente: "🌱", fossil: "🦴" };
+    ficha_item: "🎟️", ficha_empresa: "🏭", cristal: "💎", peca: "⚙️", minerio: "🪨", semente: "🌱", fossil: "🦴",
+    sucata: "🔩", parafusos: "🔧", garrafa: "🍾", relogio: "⌚", radio_velho: "📻", moeda_antiga: "🪙", espada_alien: "🗡️", armadura_alien: "🛡️", peca_nave: "🛠️" };
   var COMIVEIS = { comida: "sacia 4h de trabalho", refeicao: "sacia 8h de trabalho", racao: "sacia 4h de trabalho" };
   function icone(id) { return ICONES[id] || (/^lote_/.test(id) ? "🗺️" : /^empresa_/.test(id) ? "🏭" : "📦"); }
   function ehRoupa(id) { return id === "traje_dourado" || (estado.mercado && estado.mercado.itens.some(function (i) { return i.id === id && i.slot; })); }
@@ -2144,6 +2170,9 @@
     }));
     if (id === "outdoor_guardado") ac.appendChild(acaoInv("MONTAR NO TERRENO", false, function () {
       irSub("imoveis"); setTimeout(function () { var o = document.querySelector('[data-item="outdoor"]'); if (o) { o.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }); var i = o.querySelector("input"); if (i) i.focus(); } }, 150);
+    }));
+    if (id === "peca_nave") ac.appendChild(acaoInv("INSTALAR NA NAVE (+30 A 50 PONTOS)", false, function (b) {
+      b.disabled = true; enviar(credenciais({ acao: "usar_peca" })).then(function (r) { b.disabled = false; depoisInv(r, "Peça instalada! +" + (r.pontosPeca || "") + " pontos para a nave."); if (r.ok) carregar(); });
     }));
     if (id === "picareta") { var dp = document.createElement("p"); dp.className = "dica"; dp.textContent = "Para usar: leve o bonequinho para a borda pedregosa do mapa e toque em MINERAR."; d.appendChild(dp); }
     if (!vendivel(id)) return;
