@@ -406,6 +406,9 @@
         <label for="historia">Sua história <span class="dica">(opcional)</span></label>
         <textarea id="historia" maxlength="400" placeholder="Quem você era na Terra? Como entrou na nave? O que você quer fazer aqui?"></textarea>
         <div class="dica"><span id="contaHist">0</span>/400</div>
+        <label for="emailCad">Seu e-mail <span class="dica">(opcional, para avisos importantes)</span></label>
+        <input id="emailCad" type="email" maxlength="120" placeholder="voce@email.com" autocomplete="email">
+        <label class="dica" style="display:flex;gap:8px;align-items:flex-start;margin-top:6px"><input type="checkbox" id="aceitaEmailCad" style="width:auto;margin-top:3px"> Aceito receber e-mails da Nave Orion (no máximo 1 por dia, só avisos importantes como invasão do terreno e obra pronta). Dá para sair a qualquer momento.</label>
         <input name="site" id="site" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
         <button class="btn" type="submit" id="btnCadastro">ACORDAR DA HIBERNAÇÃO</button>
         <div class="msg" id="msgCadastro" role="status"></div>
@@ -425,6 +428,9 @@
         <div id="roupasBox"><h3 class="pix cat">SUAS ROUPAS</h3><p class="dica" style="margin:0">Toque para vestir ou tirar.</p><div class="guarda" id="guardaRoupa"></div></div>
         <label for="objetivoEu">Seu objetivo</label>
         <div class="linha"><input id="objetivoEu" maxlength="120" placeholder="Qual é o seu objetivo na colônia?"><button class="btn sec mini" type="button" id="btnObjetivo">SALVAR</button></div>
+        <label for="emailEu">E-mail para avisos importantes <span class="dica">(opcional)</span></label>
+        <div class="linha"><input id="emailEu" type="email" maxlength="120" placeholder="voce@email.com" autocomplete="email"><button class="btn sec mini" type="button" id="btnEmail">SALVAR</button></div>
+        <label class="dica" style="display:flex;gap:8px;align-items:flex-start;margin-top:6px"><input type="checkbox" id="aceitaEmailEu" style="width:auto;margin-top:3px"> Aceito receber e-mails da Nave Orion (no máximo 1 por dia). Para sair, apague o e-mail e salve.</label>
         <p id="cartaoCla" hidden></p>
         <div id="criarBox" hidden></div>
         <h3 class="pix cat">AMIGOS</h3>
@@ -1662,8 +1668,10 @@
     var dados = {
       acao: "cadastrar", nome: elNome.value.trim(), instagram: document.getElementById("instagram").value.trim(),
       profissao: prof, historia: elHist.value.trim(), visual: visualTexto(visual), site: document.getElementById("site").value,
-      objetivo: document.getElementById("objetivo").value.trim()
+      objetivo: document.getElementById("objetivo").value.trim(),
+      email: document.getElementById("emailCad").value.trim(), aceitaEmail: document.getElementById("aceitaEmailCad").checked
     };
+    if (dados.email && !dados.aceitaEmail) return mensagem("msgCadastro", "Marque a caixinha para aceitar os avisos por e-mail (ou deixe o e-mail em branco).");
     if (dados.nome.length < 2) return mensagem("msgCadastro", "Escolha um nome com pelo menos 2 letras.");
     if (!prof) return mensagem("msgCadastro", "Escolha uma profissão.");
     var btn = document.getElementById("btnCadastro"); btn.disabled = true; btn.textContent = "ACORDANDO...";
@@ -1750,7 +1758,7 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias", "mineracaoAte"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias", "mineracaoAte", "email"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
     if (r.avisos !== undefined) desenharSino();
     if (r.reliquias) registrarReliquias(r.reliquias);
     if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(fazerCheckin, 1500); }
@@ -2721,6 +2729,7 @@
     cc.hidden = !meuCla; if (meuCla) cc.textContent = "Seu clã: “" + meuCla.nomeCla + "” (" + meuCla.nome + ")" + (meuCla.dono === eu.nome ? ", você é o dono." : ", dono: " + meuCla.dono + ".");
     desenharCriar();
     var ob = document.getElementById("objetivoEu"); if (document.activeElement !== ob) ob.value = eu.objetivo || "";
+    var em = document.getElementById("emailEu"); if (document.activeElement !== em) { em.value = eu.email || ""; if (eu.email) document.getElementById("aceitaEmailEu").checked = true; }
     var al = document.getElementById("amigosLista"), ids = String(eu.amigos || "").split(",").filter(String);
     if (ids.length) {
       al.innerHTML = "";
@@ -2771,6 +2780,15 @@
     });
   });
 
+  document.getElementById("btnEmail").addEventListener("click", function () {
+    var bt = this, v = document.getElementById("emailEu").value.trim(), ac = document.getElementById("aceitaEmailEu").checked;
+    if (v && !ac) { bt.textContent = "MARQUE A CAIXINHA"; setTimeout(function () { bt.textContent = "SALVAR"; }, 2000); return; }
+    bt.disabled = true;
+    enviar(credenciais({ acao: "email", email: v, aceitaEmail: ac })).then(function (r) {
+      bt.disabled = false; if (!r.ok) { bt.textContent = "E-MAIL INVÁLIDO"; setTimeout(function () { bt.textContent = "SALVAR"; }, 2000); return; }
+      eu.email = r.email; salvarEu(); bt.textContent = r.email ? "SALVO!" : "REMOVIDO"; setTimeout(function () { bt.textContent = "SALVAR"; }, 1500);
+    });
+  });
   /* ---------------- perfil de outro jogador ---------------- */
   var perfilAberto = null;
   function abrirPerfil(numero) {

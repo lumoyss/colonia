@@ -49,7 +49,10 @@ const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
   C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43,
   C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47,
-  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56, C_CONSERTO_DIA = 57;
+  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56, C_CONSERTO_DIA = 57, C_EMAIL = 58, C_EMAIL_DIA = 59;
+// E-MAIL (opcional, com consentimento no cadastro): só avisos importantes, no máximo 1 por pessoa por dia.
+// A conta gratuita do Google manda para no máximo 100 pessoas por dia; paramos com folga.
+const EMAIL_FOLGA = 10, EMAIL_NOME = 'Nave Orion';
 // Depois de 4 horas de conserto no dia, as moedas passam a cair 1 vez por minuto em vez de a cada 15 s (1/4); os pontos continuam inteiros. Decisão do Lucas 14/11.
 const CONSERTO_CHEIO_MIN = 240;
 const PROTECAO_NOVATO_DIAS = 3; // quem acordou há menos de 3 dias não pode ser invadido
@@ -309,7 +312,7 @@ function resetarJogo() {
 
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador', 'conserto_dia']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador', 'conserto_dia', 'email', 'email_enviado_dia']);
   colunas_(garantirAba_(ss, ABA_INVASOES), ['data', 'lote', 'invasor_numero', 'invasor', 'dono_numero', 'dono', 'levou']);
   colunas_(garantirAba_(ss, ABA_SEGURANCA), ['data', 'dono_numero', 'dono', 'guarda_numero', 'guarda', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
@@ -342,6 +345,7 @@ function setup() {
 function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.chat) return json_(lerChat_());
+  if (p.sairemail) return ContentService.createTextOutput(sairEmail_(p.sairemail, p.t));
   if (p.perfil) return json_(perfilPublico_(p.perfil));
 
   const cache = CacheService.getScriptCache();
@@ -418,7 +422,7 @@ function doPost(e) {
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_, outdoor_oferta: outdoorOferta_,
-      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, pesquisar: pesquisar_, titulo: pegarTitulo_, checkin: checkin_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
+      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, email: mudarEmail_, pesquisar: pesquisar_, titulo: pegarTitulo_, checkin: checkin_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
@@ -438,6 +442,9 @@ function cadastrar_(ss, d) {
   const historia = limpar_(d.historia, 400);
   const visual = String(d.visual || '').replace(/[^0-9,]/g, '').slice(0, 20);
   const objetivo = limpar_(d.objetivo, 120);
+  const email = emailValido_(d.email);
+  if (d.email && String(d.email).trim() && !email) return { ok: false, erro: 'Esse e-mail não parece certo.' };
+  if (email && !d.aceitaEmail) return { ok: false, erro: 'Marque a caixinha para aceitar receber avisos por e-mail (ou deixe o e-mail em branco).' };
 
   if (nome.length < 2) return { ok: false, erro: 'Escolha um nome com pelo menos 2 letras.' };
   if (!profissao) return { ok: false, erro: 'Escolha uma profissão.' };
@@ -465,6 +472,7 @@ function cadastrar_(ss, d) {
     return { ok: false, erro: 'Não há vagas de ' + FUNCOES[fv].nome + ' agora. Escolha outra profissão (dá para trocar depois).' };
   linha[C_FUNCAO_DATA - 1] = Date.now();
   linha[C_OBJETIVO - 1] = texto_(objetivo);
+  if (email) { while (linha.length < C_EMAIL) linha.push(''); linha[C_EMAIL - 1] = email; }
   aba.appendRow(linha);
   return { ok: true, numero: numero, chave: chave, moedas: 0, itens: ticketsTexto_(), gas: GAS_GRATIS_NO_CADASTRO, objetivo: objetivo };
 }
@@ -516,7 +524,7 @@ function perfil_(ss, d) {
   }
   p.horasOnline = Math.floor((Number(s.dados[C_ON_MIN - 1]) || 0) / 60); p.assembleias = assembleiasDe_(ss, p.numero);
   p.titulo = String(s.dados[C_TITULO - 1] || '');
-  p.vassouraAte = Number(s.dados[C_VASSOURA_ATE - 1]) || 0; p.checkin = checkinEstado_(s.dados); p.reliquias = nomesReliquias_(ss, p.itens);
+  p.email = String(s.dados[C_EMAIL - 1] || ''); p.vassouraAte = Number(s.dados[C_VASSOURA_ATE - 1]) || 0; p.checkin = checkinEstado_(s.dados); p.reliquias = nomesReliquias_(ss, p.itens);
   return p;
 }
 
@@ -969,7 +977,7 @@ function avancarObra_(ss, o, l) {
   o.aba.getRange(o.linha, 11).setValue(prog); o.aba.getRange(o.linha, 12).setValue(Date.now());
   if (prog >= OBRA_MINUTOS) {
     concluirObra_(ss, o, 'pronta'); creditar_(ss, l[0], o.mao);
-    avisar_(ss, o.dono, '🏠 Sua obra “' + o.nome + '” ficou pronta! Construída por ' + l[2] + '.');
+    avisar_(ss, o.dono, '🏠 Sua obra “' + o.nome + '” ficou pronta! Construída por ' + l[2] + '.', true);
     avisar_(ss, l[0], '💰 Obra “' + o.nome + '” terminada: +' + o.mao + ' moedas de mão de obra.');
   }
 }
@@ -1224,7 +1232,8 @@ function conselheiro_(ss, numero) {
 }
 
 /* ---------- Sininho: avisos para cada jogador ---------- */
-function avisar_(ss, numero, texto) {
+function avisar_(ss, numero, texto, importante) {
+  if (importante) emailAviso_(ss, numero, texto);
   try {
     if (!numero) return;
     let aba = ss.getSheetByName(ABA_AVISOS);
@@ -1335,7 +1344,7 @@ function liberarLote_(ss, dono, n) {
   [C_OUTDOOR, C_OUT_PRECO, C_OUT_ANUNCIO, C_OUT_AUTOR, C_OUT_ATE].forEach(function (c) { dono.aba.getRange(dono.linha, c).setValue(''); });
   const t = ss.getSheetByName(ABA_TERRENOS), ts = linhas_(t);
   ts.forEach(function (l, i) { if (String(l[10]) === String(dono.dados[0]) && /^B/.test(String(l[0])) && String(l[7]) === 'pago') t.getRange(i + 2, 8).setValue('perdida (abandono)'); });
-  avisar_(ss, dono.dados[0], '🏚️ Você ficou ' + ABANDONO_DIAS + ' dias sem aparecer e perdeu o Terreno ' + n + ' (e o que estava construído nele).');
+  avisar_(ss, dono.dados[0], '🏚️ Você ficou ' + ABANDONO_DIAS + ' dias sem aparecer e perdeu o Terreno ' + n + ' (e o que estava construído nele).', true);
 }
 // O site manda 1 sinal por minuto enquanto o bonequinho está parado no terreno de outra pessoa.
 function invadir_(ss, d) {
@@ -1363,7 +1372,7 @@ function invadir_(ss, d) {
   let inicio = Number(at[1]) || 0;
   if (Number(at[0]) !== n || agora - (Number(at[2]) || 0) > 150000) {
     inicio = agora;
-    avisar_(ss, dono.dados[0], '🚨 ' + s.dados[2] + ' está invadindo o seu Terreno ' + n + '! Contrate um guarda em Serviços para proteger.');
+    avisar_(ss, dono.dados[0], '🚨 ' + s.dados[2] + ' está invadindo o seu Terreno ' + n + '! Contrate um guarda em Serviços para proteger.', true);
   }
   const passou = Math.floor((agora - inicio) / 60000);
   if (agora - inicio < INVASAO_MINUTOS * 60000 - 30000) { cel(n + '|' + inicio + '|' + agora); return { ok: true, lote: n, minutos: passou, total: INVASAO_MINUTOS }; }
@@ -1419,6 +1428,40 @@ function pegarTitulo_(ss, d) {
   avisoRadio_(ss, '👑 ' + p.nome + ' recebeu um título de nobreza!');
   p.titulo = t.id; p.horasOnline = horas; p.assembleias = ass;
   return p;
+}
+
+/* ---------- E-mail de avisos ---------- */
+function emailValido_(e) { const v = String(e || '').trim().toLowerCase().slice(0, 120); return /^[^\s@,;]+@[^\s@,;]+\.[a-z]{2,}$/.test(v) ? v : ''; }
+function tokenEmail_(numero, chave) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(numero) + '|' + String(chave)).slice(0, 6)
+    .map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join('');
+}
+function emailAviso_(ss, numero, texto) {
+  try {
+    const l = linhaPorNumero_(ss, numero); if (!l) return;
+    const email = String(l.dados[C_EMAIL - 1] || ''), hoje = diaHoje_();
+    if (!email || String(l.dados[C_EMAIL_DIA - 1] || '') === hoje) return;
+    if (MailApp.getRemainingDailyQuota() <= EMAIL_FOLGA) return;
+    const sair = ScriptApp.getService().getUrl() + '?sairemail=' + numero + '&t=' + tokenEmail_(numero, l.dados[C_CHAVE - 1]);
+    MailApp.sendEmail({ to: email, name: EMAIL_NOME, subject: 'Nave Orion: ' + String(texto).replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu, '').trim().slice(0, 70),
+      body: 'Olá, ' + l.dados[2] + '!\n\n' + texto + '\n\nEntre na nave: ' + SITE_URL + '\n\nPara não receber mais e-mails da Nave Orion: ' + sair });
+    l.aba.getRange(l.linha, C_EMAIL_DIA).setValue(hoje);
+  } catch (e) { /* e-mail nunca pode quebrar o jogo */ }
+}
+function sairEmail_(numero, t) {
+  const ss = planilha_(), l = linhaPorNumero_(ss, numero);
+  if (!l || String(t) !== tokenEmail_(numero, l.dados[C_CHAVE - 1])) return 'Link inválido.';
+  l.aba.getRange(l.linha, C_EMAIL).setValue('');
+  return 'Pronto! Você não vai mais receber e-mails da Nave Orion. Dá para cadastrar de novo no seu cartão, no site.';
+}
+function mudarEmail_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const email = emailValido_(d.email);
+  if (d.email && String(d.email).trim() && !email) return { ok: false, erro: 'Esse e-mail não parece certo.' };
+  if (email && !d.aceitaEmail) return { ok: false, erro: 'Marque a caixinha para aceitar receber avisos por e-mail.' };
+  s.aba.getRange(s.linha, C_EMAIL).setValue(email);
+  return { ok: true, email: email };
 }
 
 /* ---------- Check-in e itens exclusivos ---------- */
@@ -2350,7 +2393,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 57)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 59)).getValues();
 }
 
 function gerarChave_() {
