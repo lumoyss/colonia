@@ -3011,13 +3011,15 @@
     ul.innerHTML = "";
     lista.forEach(function (t, i) {
       var li = document.createElement("li"), sp = document.createElement("span");
-      sp.textContent = (i <= idx ? "✅ " : "👑 ") + (fem ? t.fem : t.nome + " / " + t.fem) + " · " + t.horas + "h online, " + t.assembleias + " Assembleias, " + t.preco.toLocaleString("pt-BR") + " moedas" + (t.item ? " + item exclusivo (" + i + "ª semana de check-in)" : "");
+      sp.textContent = (i <= idx ? "✅ " : "👑 ") + (fem ? t.fem : t.nome + " / " + t.fem) + " · " + t.horas + "h online, " + t.assembleias + " Assembleias, " + t.preco.toLocaleString("pt-BR") + " moedas" + (t.item ? " + item exclusivo (" + i + "ª semana de check-in; comprado de outro jogador, o título custa 3x)" : "");
       li.appendChild(sp);
       if (on && i === idx + 1) {
-        var pronto = (eu.horasOnline || 0) >= t.horas && (eu.assembleias || 0) >= t.assembleias && (!t.item || tem(eu.itens, "reliquia_" + t.id + "_" + eu.numero));
+        var proprio = tem(eu.itens, "reliquia_" + t.id + "_" + eu.numero), comprado = !proprio && String(eu.itens || "").split(",").some(function (x) { return x.indexOf("reliquia_" + t.id + "_") === 0; });
+        var precoT = t.preco * (comprado ? 3 : 1);
+        var pronto = (eu.horasOnline || 0) >= t.horas && (eu.assembleias || 0) >= t.assembleias && (!t.item || proprio || comprado);
         var b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = pronto ? "RECEBER" : "AINDA NÃO"; b.disabled = !pronto;
         b.onclick = function () {
-          if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + t.preco + ")"; return; }
+          if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + precoT + ")"; return; }
           b.disabled = true;
           enviar(credenciais({ acao: "titulo", id: t.id })).then(function (r) {
             if (!r.ok) { b.disabled = false; delete b.dataset.confirmar; b.textContent = "RECEBER"; return mensagem("msgTit", r.erro || "Não deu certo."); }

@@ -64,7 +64,7 @@ const TITULOS = [
   { id: 'duque', nome: 'Duque', fem: 'Duquesa', horas: 200, assembleias: 60, preco: 2000, item: true }
 ];
 // Itens exclusivos com o nome da pessoa (id: reliquia_<titulo>_<numero>). Podem ser vendidos como item de colecionador,
-// mas só o dono original usa para pegar o título.
+// e quem comprar também pode pegar o título, pagando mais caro.
 const RELIQUIAS = {
   cavaleiro: { masc: 'Espada de Cavaleiro de ', fem: 'Espada de Princesa de ' },
   barao: { masc: 'Pistola laser do Barão ', fem: 'Pistola laser da Baronesa ' },
@@ -72,6 +72,8 @@ const RELIQUIAS = {
   duque: { masc: 'Miniatura da Nave Orion do Duque ', fem: 'Miniatura da Nave Orion da Duquesa ' }
 };
 const ORDEM_RELIQUIAS = ['cavaleiro', 'barao', 'conde', 'duque'];
+const TITULO_ITEM_COMPRADO_X = 3; // com item exclusivo comprado de outra pessoa, o título custa 3x
+// Quem compra o item de outra pessoa também pode usar para o título, pagando TITULO_ITEM_COMPRADO_X vezes o preço.
 /* ---------- CHECK-IN DIÁRIO (7 dias seguidos; faltou um dia, volta ao dia 1) ---------- */
 const CHECKIN_MOEDAS = [20, 30, 40, 50, 60, 80, 150]; // dia 7 = baú especial (+ item exclusivo da semana)
 
@@ -1372,13 +1374,16 @@ function pegarTitulo_(ss, d) {
   if (!t) return { ok: false, erro: 'Você já tem o título mais alto.' };
   if (d.id && d.id !== t.id) return { ok: false, erro: 'Os títulos vêm em ordem. O próximo é ' + t.nome + '.' };
   const horas = Math.floor((Number(s.dados[C_ON_MIN - 1]) || 0) / 60), ass = assembleiasDe_(ss, s.dados[0]);
-  if (t.item && !tem_(String(s.dados[C_ITENS - 1] || ''), 'reliquia_' + t.id + '_' + s.dados[0]))
-    return { ok: false, erro: 'Para ' + (feminino_(s.dados) ? t.fem : t.nome) + ' você precisa do item exclusivo com o seu nome. Ele vem no baú especial do check-in (7 dias seguidos).' };
+  const meusItens = String(s.dados[C_ITENS - 1] || ''), proprio = tem_(meusItens, 'reliquia_' + t.id + '_' + s.dados[0]);
+  const comprado = !proprio && meusItens.split(',').some(function (i) { return i.indexOf('reliquia_' + t.id + '_') === 0; });
+  const precoT = t.preco * (comprado ? TITULO_ITEM_COMPRADO_X : 1);
+  if (t.item && !proprio && !comprado)
+    return { ok: false, erro: 'Para ' + (feminino_(s.dados) ? t.fem : t.nome) + ' você precisa do item exclusivo do título. Ele vem no baú especial do check-in (7 dias seguidos) ou pode ser comprado de outro jogador (aí o título custa 3x).' };
   if (horas < t.horas || ass < t.assembleias) return { ok: false, erro: 'Para ' + t.nome + ' você precisa de ' + t.horas + ' horas online (tem ' + horas + ') e ' + t.assembleias + ' Assembleias (tem ' + ass + ').' };
   const p = perfilDe_(s);
-  if (p.moedas < t.preco) return { ok: false, erro: 'O título custa ' + t.preco + ' moedas e você tem ' + p.moedas + '.' };
-  p.moedas -= t.preco; salvarPerfil_(s, p); s.aba.getRange(s.linha, C_TITULO).setValue(t.id);
-  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Título: ' + t.nome, t.preco]);
+  if (p.moedas < precoT) return { ok: false, erro: 'O título custa ' + precoT + ' moedas' + (comprado ? ' (3x, porque o item exclusivo é de outra pessoa)' : '') + ' e você tem ' + p.moedas + '.' };
+  p.moedas -= precoT; salvarPerfil_(s, p); s.aba.getRange(s.linha, C_TITULO).setValue(t.id);
+  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Título: ' + t.nome, precoT]);
   avisoRadio_(ss, '👑 ' + p.nome + ' recebeu um título de nobreza!');
   p.titulo = t.id; p.horasOnline = horas; p.assembleias = ass;
   return p;
