@@ -37,7 +37,7 @@ const C_ON_DIA = 12, C_ON_MIN = 13, C_ON_ULTIMO = 14, C_TURNO = 15, C_PROGRESSO 
 const C_VESTE = 20, C_GAS = 21, C_OBJETIVO = 22, C_AMIGOS = 23, C_MINERAR = 24, C_DATA = 2, C_HIST = 6;
 const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
-  C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41;
+  C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43;
 
 /* ---------- MISSÃO: consertar a nave (ganha moedas com o site aberto) ---------- */
 const MINUTOS_POR_MOEDA = 1;    // 1 moeda a cada 1 minuto consertando
@@ -211,7 +211,7 @@ const SLOTS_ANTIGOS = { traje_dourado: 'tronco,pernas' };
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
   colunas_(garantirAba_(ss, ABA_TERRENOS), ['codigo', 'data', 'nome_do_lugar', 'dono', 'instagram', 'plano', 'valor', 'status', 'ref', 'aluguel_semana', 'dono_numero', 'item']);
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
@@ -307,7 +307,7 @@ function doPost(e) {
     const ss = planilha_();
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
-      reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_,
+      reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_, outdoor_oferta: outdoorOferta_,
       curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
@@ -878,7 +878,8 @@ function cobrarTaxa_(ss, valor, motivo) {
 function outdoorDe_(l) {
   const ate = Number(l[C_OUT_ATE - 1]) || 0, ativo = ate > Date.now() && String(l[C_OUT_ANUNCIO - 1] || '');
   return { numero: l[0], dono: String(l[2]), texto: String(l[C_OUTDOOR - 1] || ''), preco: Number(l[C_OUT_PRECO - 1]) || 0,
-    anuncio: ativo ? { texto: String(l[C_OUT_ANUNCIO - 1]), autor: String(l[C_OUT_AUTOR - 1] || ''), ate: ate } : null };
+    oferta: String(l[C_OUT_OFERTA - 1] || ''),
+    anuncio: ativo ? { texto: String(l[C_OUT_ANUNCIO - 1]), autor: String(l[C_OUT_AUTOR - 1] || ''), ate: ate, oferta: String(l[C_ANUNCIO_OFERTA - 1] || '') } : null };
 }
 function precoOutdoor_(ss, d) {
   const s = acharSobrevivente_(ss, d);
@@ -896,7 +897,7 @@ function tirarOutdoor_(ss, d) {
   if (!tirarItem_(lista, 'outdoor')) return { ok: false, erro: 'Você não tem outdoor.' };
   if (Number(s.dados[C_OUT_ATE - 1]) > Date.now()) return { ok: false, erro: 'Tem um anúncio pago no seu outdoor até ' + Utilities.formatDate(new Date(Number(s.dados[C_OUT_ATE - 1])), 'America/Sao_Paulo', 'dd/MM HH:mm') + '. Espere ele acabar.' };
   p.itens = lista.join(','); salvarPerfil_(s, p);
-  [C_OUTDOOR, C_OUT_PRECO, C_OUT_ANUNCIO, C_OUT_AUTOR, C_OUT_ATE].forEach(function (c) { s.aba.getRange(s.linha, c).setValue(''); });
+  [C_OUTDOOR, C_OUT_PRECO, C_OUT_ANUNCIO, C_OUT_AUTOR, C_OUT_ATE, C_OUT_OFERTA, C_ANUNCIO_OFERTA].forEach(function (c) { s.aba.getRange(s.linha, c).setValue(''); });
   p.outdoor = '';
   return p;
 }
@@ -912,6 +913,8 @@ function anunciar_(ss, d) {
   const texto = limpar_(d.texto, 40);
   if (!texto) return { ok: false, erro: 'Escreva a mensagem do anúncio.' };
   const proib = regraOutdoor_(s.dados, texto); if (proib) return proib;
+  const ofertaId = d.oferta ? String(d.oferta) : '';
+  if (ofertaId && !ofertaMinhaAberta_(ss, ofertaId, s.dados[0])) return { ok: false, erro: 'Esse item não está mais à venda.' };
   const p = perfilDe_(s);
   if (p.moedas < o.preco) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + o.preco + '.' };
   p.moedas -= o.preco; salvarPerfil_(s, p);
@@ -921,6 +924,7 @@ function anunciar_(ss, d) {
   fresco.aba.getRange(fresco.linha, C_OUT_ANUNCIO).setValue(texto_(texto));
   fresco.aba.getRange(fresco.linha, C_OUT_AUTOR).setValue(texto_(String(p.nome)));
   fresco.aba.getRange(fresco.linha, C_OUT_ATE).setValue(ate);
+  fresco.aba.getRange(fresco.linha, C_ANUNCIO_OFERTA).setValue(ofertaId);
   ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Anúncio no outdoor de ' + o.dono + ': ' + texto, o.preco]);
   cobrarTaxa_(ss, taxa, 'Taxa de anúncio (outdoor de ' + o.dono + ')');
   p.anuncioAte = ate;
@@ -1514,6 +1518,21 @@ function torresPublicas_(ss, todas) {
   });
 }
 
+/* ---------- Outdoor: divulgar um item à venda (tocar no outdoor abre a oferta) ---------- */
+function ofertaMinhaAberta_(ss, id, numero) {
+  const o = acharOferta_(ss, id);
+  return !!o && o.dados[6] === 'aberta' && String(o.dados[2]) === String(numero);
+}
+function outdoorOferta_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  if (!tem_(String(s.dados[C_ITENS - 1] || ''), 'outdoor')) return { ok: false, erro: 'Você não tem outdoor.' };
+  const id = d.oferta ? String(d.oferta) : '';
+  if (id && !ofertaMinhaAberta_(ss, id, s.dados[0])) return { ok: false, erro: 'Esse item não está mais à venda.' };
+  s.aba.getRange(s.linha, C_OUT_OFERTA).setValue(id);
+  return { ok: true, oferta: id };
+}
+
 /* ---------- Outdoor: mesmas regras do rádio ---------- */
 function regraOutdoor_(l, texto) {
   if ((Number(l[C_MUDO_ATE - 1]) || 0) > Date.now() || CacheService.getScriptCache().get('mudoauto_' + l[0])) return { ok: false, erro: 'Você está sem rádio agora, e as mesmas regras valem para o outdoor. Espere o tempo acabar.' };
@@ -1532,8 +1551,8 @@ function censurarOutdoor_(ss, d) {
   if (o.anuncio) { texto = o.anuncio.texto; autor = linhas_(ss.getSheetByName(ABA_SOBREVIVENTES)).filter(function (l) { return String(l[2]) === o.anuncio.autor; })[0]; }
   else { if (!o.texto) return { ok: false, erro: 'Esse outdoor está sem frase.' }; texto = o.texto; autor = dono.dados; }
   if (autor && String(autor[0]) === String(s.dados[0])) return { ok: false, erro: 'A frase é sua: troque você mesmo.' };
-  if (o.anuncio) { dono.aba.getRange(dono.linha, C_OUT_ANUNCIO).setValue(''); dono.aba.getRange(dono.linha, C_OUT_ATE).setValue(0); }
-  else dono.aba.getRange(dono.linha, C_OUTDOOR).setValue('');
+  if (o.anuncio) { dono.aba.getRange(dono.linha, C_OUT_ANUNCIO).setValue(''); dono.aba.getRange(dono.linha, C_OUT_ATE).setValue(0); dono.aba.getRange(dono.linha, C_ANUNCIO_OFERTA).setValue(''); }
+  else { dono.aba.getRange(dono.linha, C_OUTDOOR).setValue(''); dono.aba.getRange(dono.linha, C_OUT_OFERTA).setValue(''); }
   if (autor) { const a = linhaPorNumero_(ss, autor[0]); if (a) a.aba.getRange(a.linha, C_MUDO_ATE).setValue(Date.now() + SILENCIO_MINUTOS * 60000); }
   const id = 'S' + Date.now().toString(36).toUpperCase();
   ss.getSheetByName(ABA_SILENCIO).appendRow([id, new Date(), s.dados[0], texto_(String(s.dados[2])), autor ? autor[0] : '', texto_(String(autor ? autor[2] : o.anuncio.autor)), texto_('OUTDOOR de ' + o.dono + ': ' + texto), '', '', '']);
@@ -1733,7 +1752,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 41)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 43)).getValues();
 }
 
 function gerarChave_() {

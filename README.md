@@ -170,3 +170,9 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - Se um guarda silenciar a pessoa nesses 2 minutos, é FLAGRA: a mensagem some, o guarda ganha o bônus na hora (sem você precisar decidir) e o rádio anuncia.
 - O e-mail diário traz a lista "FLAGRAS DOS GUARDAS" para você usar como notícia no vídeo.
 - Quem insiste (3 mensagens ofensivas) continua ficando 10 minutos sem rádio.
+
+## Outdoor que vende item
+
+- O dono do outdoor (em Mercado → IMÓVEIS) pode ligar o outdoor a um item que ele está vendendo. Quem paga anúncio também pode escolher um item seu à venda.
+- No mapa, o outdoor mostra "(TOQUE E COMPRE)". Quem toca nele vai direto para a oferta, em ENTRE JOGADORES.
+- Duas colunas novas na aba Sobreviventes: outdoor_oferta e anuncio_oferta (rode o setup).

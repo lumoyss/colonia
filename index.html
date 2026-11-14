@@ -244,6 +244,27 @@
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
     <div class="zoom"><button type="button" id="zoomMais" aria-label="Aproximar">+</button><button type="button" id="zoomMenos" aria-label="Afastar">−</button><button type="button" id="zoomCentro" aria-label="Voltar para o meu bonequinho" style="font-size:12px">◎</button></div></div>
+      <div class="missao" id="missao" hidden style="margin:0 0 12px">
+        <h2 class="pix" id="missaoTitulo">TRABALHO</h2>
+        <p id="missaoStatus">Seu sobrevivente está parado.</p>
+        <div class="trab" id="botoesTrabalho"></div>
+        <p class="dica" id="profInfo" style="margin-top:0"></p>
+        <div class="rot">Energia</div><div class="barra"><span id="barEnergia"></span></div>
+        <div class="rot" id="rotFome">Fome</div><div class="barra fome"><span id="barFome"></span></div>
+        <div class="rot" id="rotAr">Ar no tanque</div><div class="barra ar"><span id="barAr"></span></div>
+        <button class="btn" type="button" id="btnConsertar" hidden>CONSERTAR A NAVE</button>
+        <div id="plantaoBox" hidden></div>
+        <div id="medicosBox" hidden></div>
+        <div id="comidasBox" hidden><h3 class="pix cat">SUA COMIDA</h3><ul class="lista-mini" id="comidas"></ul></div>
+        <details style="margin-top:12px"><summary class="dica" style="cursor:pointer;color:var(--verde2)">Regras do trabalho e trocar de profissão</summary>
+        <p class="dica" id="missaoRegra"></p>
+        <div id="trocaBox" style="margin-top:14px">
+          <label for="trocaFuncao">Trocar de profissão <span class="dica">(1 vez por semana)</span></label>
+          <div class="linha"><select id="trocaFuncao"></select><button class="btn sec mini" type="button" id="btnTrocaFuncao">TROCAR</button></div>
+          <p class="dica" id="trocaInfo" style="margin:4px 0 0"></p>
+        </div>
+        </details>
+      </div>
   <button class="btn" type="button" id="btnBau" hidden style="margin:0 0 8px">ABRIR O BAÚ DO DIA!</button>
   <button class="btn sec" type="button" id="btnBauzinho" hidden style="margin:0 0 8px">ABRIR O BAÚ PEQUENO</button>
   <button class="btn sec" type="button" id="btnMinerar" hidden style="margin:0 0 8px">MINERAR AQUI</button>
@@ -330,25 +351,6 @@
         <div id="criarBox" hidden></div>
         <h3 class="pix cat">AMIGOS</h3>
         <p class="dica" id="amigosLista" style="margin:0">Você ainda não adicionou amigos. Toque no nome de alguém no Rádio para ver o perfil.</p>
-      </div>
-      <div class="missao" id="missao" hidden>
-        <h2 class="pix" id="missaoTitulo">TRABALHO</h2>
-        <p class="dica" id="profInfo" style="margin-top:0"></p>
-        <p class="dica" id="missaoRegra"></p>
-        <div class="rot">Energia</div><div class="barra"><span id="barEnergia"></span></div>
-        <div class="rot" id="rotFome">Fome</div><div class="barra fome"><span id="barFome"></span></div>
-        <div class="rot" id="rotAr">Ar no tanque</div><div class="barra ar"><span id="barAr"></span></div>
-        <p id="missaoStatus">Seu sobrevivente está parado.</p>
-        <div class="trab" id="botoesTrabalho"></div>
-        <button class="btn" type="button" id="btnConsertar" hidden>CONSERTAR A NAVE</button>
-        <div id="plantaoBox" hidden></div>
-        <div id="medicosBox" hidden></div>
-        <div id="comidasBox" hidden><h3 class="pix cat">SUA COMIDA</h3><ul class="lista-mini" id="comidas"></ul></div>
-        <div id="trocaBox" style="margin-top:14px">
-          <label for="trocaFuncao">Trocar de profissão <span class="dica">(1 vez por semana)</span></label>
-          <div class="linha"><select id="trocaFuncao"></select><button class="btn sec mini" type="button" id="btnTrocaFuncao">TROCAR</button></div>
-          <p class="dica" id="trocaInfo" style="margin:4px 0 0"></p>
-        </div>
       </div>
       <button class="btn" type="button" data-ir="mercado">IR AO MERCADO</button>
       <button class="btn sec" type="button" data-ir="ideias">MANDAR UMA IDEIA PARA A HISTÓRIA</button>
@@ -819,9 +821,14 @@
     var d = {}, v = {}, porNome = {};
     estado.sobreviventes.forEach(function (s) { String(s.itens || "").split(",").forEach(function (i) { var m = /^lote_(\d+)$/.exec(i); if (m) { d[m[1]] = s.nome; if (!porNome[s.nome]) porNome[s.nome] = +m[1]; } }); });
     (estado.ofertas || []).forEach(function (o) { var m = /^lote_(\d+)$/.exec(o.item); if (m) { d[m[1]] = o.vendedor; v[m[1]] = 1; } });
-    var od = {};
-    (estado.outdoorsLista || []).forEach(function (o) { var n = porNome[o.dono]; if (!n) return; var t = o.anuncio ? o.anuncio.texto + " · " + o.anuncio.autor : o.texto; if (t) od[n] = t; });
-    estado.donos = d; estado.aVenda = v; estado.lotePorNome = porNome; estado.outdoors = od;
+    var od = {}, oo = {}, abertas = {};
+    (estado.ofertas || []).forEach(function (o) { abertas[o.id] = 1; });
+    (estado.outdoorsLista || []).forEach(function (o) {
+      var n = porNome[o.dono]; if (!n) return; var t = o.anuncio ? o.anuncio.texto + " · " + o.anuncio.autor : o.texto, of = o.anuncio ? o.anuncio.oferta : o.oferta;
+      if (of && abertas[of]) { oo[n] = of; t = (t || "") + " (TOQUE E COMPRE)"; }
+      if (t) od[n] = t;
+    });
+    estado.donos = d; estado.aVenda = v; estado.lotePorNome = porNome; estado.outdoors = od; estado.outdoorOferta = oo;
   }
   function posBase(t, i) {
     var n = lotesCfg() && estado.lotePorNome && estado.lotePorNome[t.dono];
@@ -1270,6 +1277,9 @@
     var rr = cena.getBoundingClientRect(), wx = cam.x + (ev.clientX - rr.left) / rr.width * VW, wy = cam.y + (ev.clientY - rr.top) / rr.height * VH, alvoP = null;
     ordem.forEach(function (id) { var b = bonecos[id]; if (b && b !== meuBoneco() && b.numero && wx > b.x - 7 && wx < b.x + 7 && wy > b.y - 17 && wy < b.y + 9) alvoP = b; });
     if (alvoP) { abrirPerfil(alvoP.numero); return; }
+    var ofTocada = null;
+    if (lotesCfg()) Object.keys(estado.outdoorOferta || {}).forEach(function (n) { var A = areaOutdoor(+n); if (wx >= A.x && wx <= A.x + A.w && wy >= A.y && wy <= A.y + A.h) ofTocada = estado.outdoorOferta[n]; });
+    if (ofTocada) { abrirOferta(ofTocada); return; }
     var meu = meuBoneco();
     if (!meu) { mensagemMapa("Acorde seu sobrevivente (ou entre com o seu código no Mercado) para explorar o mapa."); return; }
     if (missao.modo === "descansando") { mensagemMapa("Seu sobrevivente está cansado. Espere o descanso terminar."); return; }
@@ -1765,7 +1775,7 @@
       if (!minha && q > 1) {
         var ps = passo(q, function (v) { quero = v; rotulo(); }); c.el.insertBefore(ps, c.botao);
       }
-      rotulo();
+      rotulo(); c.el.dataset.oferta = o.id;
       c.botao.onclick = function () {
         var total = quero * o.preco;
         if (!minha && (Number(eu.moedas) || 0) < total) return mensagem("msgVenda", "Moedas insuficientes para essa compra.");
@@ -1782,6 +1792,23 @@
     });
     document.getElementById("formVender").hidden = !logado();
   }
+  function abrirOferta(id) {
+    irPara("mercado"); irSub("sobreviventes");
+    setTimeout(function () {
+      var el = document.querySelector('#ofertas [data-oferta="' + id + '"]'); if (!el) return mensagem("msgVenda", "Esse item já foi vendido.");
+      el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      el.style.outline = "3px solid var(--laranja)"; setTimeout(function () { el.style.outline = ""; }, 3000);
+    }, 250);
+  }
+  function seletorMinhasOfertas(atual) {
+    var sel = document.createElement("select"), op = document.createElement("option"); op.value = ""; op.textContent = "Nenhum item (só a frase)"; sel.appendChild(op);
+    (estado.ofertas || []).filter(function (o) { return logado() && o.vendedor === eu.nome; }).forEach(function (o) {
+      var x = document.createElement("option"); x.value = o.id; x.textContent = (nomeItem(o.item) || o.item) + ((Number(o.qtd) || 1) > 1 ? " x" + o.qtd : "") + " · " + o.preco + " moedas"; sel.appendChild(x);
+    });
+    sel.value = atual || ""; if (sel.value !== (atual || "")) sel.value = "";
+    return sel;
+  }
+
   /* ---------------- inventário (grade com espaços) ---------------- */
   var ICONES = { base: "🏠", base_grande: "🏢", outdoor: "🪧", gas: "🧪", racao: "🥫", comida: "🥕", refeicao: "🍲", bone: "🧢", calca: "👖", chapeu: "🤠", colete: "🦺", vestido: "👗",
     capacete_dourado: "⛑️", bota_dourada: "👢", calca_dourada: "👖", blusa_dourada: "👕", traje_dourado: "✨", mochila: "🎒", picareta: "⛏️", ferramentas: "🧰",
@@ -1978,7 +2005,7 @@
       if (el.dataset.item === "racao") { b.disabled = !on; if (!b.dataset.confirmar) b.textContent = "ADQUIRIR"; return; }
       if (on && eu.obra && eu.obra.item === el.dataset.item) { b.disabled = true; b.textContent = eu.obra.status === "em obra" ? "EM OBRA (" + (eu.obra.engenheiro || "engenheiro") + ")" : "AGUARDANDO ENGENHEIRO"; if (i) i.hidden = true; delete b.dataset.confirmar; return; }
       var semTerreno = !!i && lotesCfg() && !meus.some(function (x) { return /^lote_/.test(x); });
-      var dono = el.querySelector(".outdoor-dono"); if (dono) dono.hidden = !ja;
+      var dono = el.querySelector(".outdoor-dono"); if (dono) { dono.hidden = !ja; if (ja && dono.desenharOferta) dono.desenharOferta(); }
       if (ja && el.dataset.item === "outdoor") {
         b.disabled = false; b.textContent = "TROCAR A FRASE"; delete b.dataset.confirmar; i.hidden = false;
         if (document.activeElement !== i) i.value = eu.outdoor || "";
@@ -2057,7 +2084,24 @@
         aplicarPerfil(r); salvarEu(); mensagem("msgMercado", "Outdoor retirado. Seu terreno está livre para construir.", true); carregar();
       });
     };
-    linha.appendChild(inp); linha.appendChild(bt); w.appendChild(d); w.appendChild(linha); w.appendChild(tirar);
+    var lo = document.createElement("label"); lo.textContent = "Divulgar um item seu à venda no outdoor"; lo.style.marginTop = "12px";
+    var caixaSel = document.createElement("div"), btO = document.createElement("button"); btO.type = "button"; btO.className = "btn sec mini"; btO.textContent = "LIGAR AO OUTDOOR";
+    var dO = document.createElement("p"); dO.className = "dica"; dO.style.margin = "4px 0"; dO.textContent = "Quem tocar no seu outdoor no mapa vai direto para a oferta. Dica: escreva na frase o que está vendendo. Coloque o item à venda pelo Inventário.";
+    w.desenharOferta = function () {
+      var meu = (estado.outdoorsLista || []).filter(function (o) { return logado() && o.dono === eu.nome; })[0];
+      if (document.activeElement && caixaSel.contains(document.activeElement)) return;
+      caixaSel.innerHTML = ""; caixaSel.appendChild(seletorMinhasOfertas(meu && meu.oferta));
+    };
+    btO.onclick = function () {
+      btO.disabled = true;
+      enviar(credenciais({ acao: "outdoor_oferta", oferta: caixaSel.querySelector("select").value })).then(function (r) {
+        btO.disabled = false;
+        if (!r.ok) return mensagem("msgMercado", r.erro || "Não deu certo.");
+        mensagem("msgMercado", r.oferta ? "Pronto! Quem tocar no seu outdoor vai direto para comprar o item." : "O outdoor não divulga mais nenhum item.", true); carregar();
+      });
+    };
+    linha.appendChild(inp); linha.appendChild(bt); w.appendChild(d); w.appendChild(linha);
+    w.appendChild(lo); w.appendChild(caixaSel); w.appendChild(dO); w.appendChild(btO); w.appendChild(tirar);
     return w;
   }
   function desenharLeilao() {
@@ -2108,13 +2152,15 @@
       var c = cartaoLoja("Outdoor de " + o.dono + (n ? " (Terreno " + n + ")" : ""), o.preco.toLocaleString("pt-BR") + " moedas / " + horas + "h", desc, meu ? "É SEU" : "ANUNCIAR");
       var inp = document.createElement("input"); inp.maxLength = 40; inp.placeholder = "Sua mensagem (até 40 letras)"; inp.hidden = !!o.anuncio || meu;
       c.el.insertBefore(inp, c.botao);
+      var selA = seletorMinhasOfertas(""), lA = document.createElement("small"); lA.textContent = "Divulgar um item seu à venda (quem tocar no outdoor vai direto para comprar):";
+      if (!o.anuncio && !meu && selA.options.length > 1) { c.el.insertBefore(lA, c.botao); c.el.insertBefore(selA, c.botao); }
       c.botao.disabled = !logado() || meu || !!o.anuncio;
       c.botao.onclick = function () {
         var t = inp.value.trim(); if (!t) { inp.focus(); return mensagem("msgAnuncio", "Escreva a mensagem do anúncio."); }
         if ((Number(eu.moedas) || 0) < o.preco) return mensagem("msgAnuncio", "Moedas insuficientes para esse anúncio.");
         if (!c.botao.dataset.confirmar) { c.botao.dataset.confirmar = "1"; c.botao.textContent = "CONFIRMAR (" + o.preco + ")"; return; }
         c.botao.disabled = true;
-        enviar(credenciais({ acao: "anunciar", numero: o.numero, texto: t })).then(function (r) {
+        enviar(credenciais({ acao: "anunciar", numero: o.numero, texto: t, oferta: selA.value })).then(function (r) {
           if (!r.ok) { mensagem("msgAnuncio", r.erro || "Não deu certo."); carregar(); return; }
           aplicarPerfil(r); salvarEu(); mensagem("msgAnuncio", "Seu anúncio está no outdoor de " + o.dono + "!", true); carregar();
         });
@@ -2454,33 +2500,44 @@
     function ler(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
     function gravar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
     vol.value = ler("musica_vol", "40");
-    var ESCALA = [220, 246.94, 261.63, 329.63, 392, 440, 493.88, 523.25, 659.25, 783.99]; // lá menor, clima de espaço
+    // dó maior: clima espacial, mas alegre e tranquilo (pensando nas crianças)
+    var ACORDES = [[261.63, 329.63, 392], [196, 246.94, 293.66], [220, 261.63, 329.63], [174.61, 220, 261.63]]; // C, G, Am, F
+    var BRILHOS = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+    var passoArp = 0, acordeAtual = 0;
     function montar() {
       ac = new (window.AudioContext || window.webkitAudioContext)();
       mestre = ac.createGain(); mestre.gain.value = 0;
       var eco = ac.createDelay(2), volta = ac.createGain(), filtroEco = ac.createBiquadFilter();
-      eco.delayTime.value = 0.75; volta.gain.value = 0.45; filtroEco.type = "lowpass"; filtroEco.frequency.value = 1800;
+      eco.delayTime.value = 0.5; volta.gain.value = 0.3; filtroEco.type = "lowpass"; filtroEco.frequency.value = 2500;
       eco.connect(filtroEco); filtroEco.connect(volta); volta.connect(eco); filtroEco.connect(mestre);
       mestre.connect(ac.destination); ac.eco = eco;
-      // fundo grave contínuo, com filtro que "respira"
-      var f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 400; f.Q.value = 4;
-      var lfo = ac.createOscillator(), lfoG = ac.createGain(); lfo.frequency.value = 0.05; lfoG.gain.value = 250; lfo.connect(lfoG); lfoG.connect(f.frequency); lfo.start();
-      var gd = ac.createGain(); gd.gain.value = 0.16; f.connect(gd); gd.connect(mestre);
-      [55, 82.41, 110.3].forEach(function (hz, i) { var o = ac.createOscillator(); o.type = i === 1 ? "triangle" : "sawtooth"; o.frequency.value = hz; o.detune.value = (i - 1) * 6; o.connect(f); o.start(); });
     }
-    function nota(hz, dur, alto, onda) {
+    function nota(hz, dur, alto, onda, ataque) {
       var t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
       o.type = onda || "sine"; o.frequency.value = hz; g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(alto, t + dur * 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      g.gain.linearRampToValueAtTime(alto, t + (ataque || dur * 0.35)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(g); g.connect(mestre); g.connect(ac.eco); o.start(t); o.stop(t + dur + 0.1);
     }
-    function acorde() { if (!ligada) return; var b = Math.floor(Math.random() * 5); [0, 2, 4].forEach(function (k) { nota(ESCALA[b + k] / 2, 9, 0.05, "triangle"); }); timers.push(setTimeout(acorde, 8000 + Math.random() * 4000)); }
-    function brilho() { if (!ligada) return; nota(ESCALA[Math.floor(Math.random() * ESCALA.length)] * 2, 2.5, 0.035); timers.push(setTimeout(brilho, 1800 + Math.random() * 4200)); }
+    // a cada 4 segundos troca o acorde (pad suave) e o baixo
+    function acorde() {
+      if (!ligada) return; var a = ACORDES[acordeAtual];
+      a.forEach(function (hz) { nota(hz, 4.4, 0.035, "sine", 0.8); });
+      nota(a[0] / 2, 4.2, 0.07, "triangle", 0.05);
+      timers.push(setTimeout(function () { acordeAtual = (acordeAtual + 1) % ACORDES.length; acorde(); }, 4000));
+    }
+    // arpejo animado (colcheias, uns 100 batidas por minuto), tipo caixinha de música espacial
+    function arpejo() {
+      if (!ligada) return; var a = ACORDES[acordeAtual], ordem = [0, 1, 2, 1, 0, 2, 1, 2];
+      var hz = a[ordem[passoArp % 8]] * 2; passoArp++;
+      if (Math.random() > 0.12) nota(hz, 0.45, 0.045, "triangle", 0.01);
+      timers.push(setTimeout(arpejo, 300));
+    }
+    function brilho() { if (!ligada) return; nota(BRILHOS[Math.floor(Math.random() * BRILHOS.length)] * 2, 1.2, 0.02, "sine", 0.02); timers.push(setTimeout(brilho, 2500 + Math.random() * 4000)); }
     function volume() { if (mestre) mestre.gain.setTargetAtTime(ligada ? (Number(vol.value) / 100) * 0.6 : 0, ac.currentTime, 0.4); }
     function ligar(sim) {
       ligada = sim; gravar("musica_on", sim ? "1" : "0");
       timers.forEach(clearTimeout); timers = [];
-      if (sim) { if (!ac) montar(); if (ac.state === "suspended") ac.resume(); acorde(); brilho(); }
+      if (sim) { if (!ac) montar(); if (ac.state === "suspended") ac.resume(); acorde(); arpejo(); brilho(); }
       volume(); vol.hidden = !sim; btn.textContent = sim ? "🔊" : "🎵";
       btn.setAttribute("aria-label", sim ? "Desligar música" : "Ligar música ambiente");
     }
