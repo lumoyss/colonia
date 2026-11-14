@@ -17,7 +17,15 @@ window.COLONIA = {
 
   // ---- AO VIVO (Firebase) ----
   // Cole aqui o firebaseConfig do seu projeto Firebase. Vazio (null) = sem mapa ao vivo.
-  FIREBASE: null,
+  FIREBASE: {
+    apiKey: "AIzaSyCNLBsCZbcGajx3FCi0xPyoNGk2po8Gk_8",
+    authDomain: "nave-orion.firebaseapp.com",
+    databaseURL: "https://nave-orion-default-rtdb.firebaseio.com",
+    projectId: "nave-orion",
+    storageBucket: "nave-orion.firebasestorage.app",
+    messagingSenderId: "436980950233",
+    appId: "1:436980950233:web:1528b45b685e463134cac8"
+  },
 
   // Quando a colônia conseguir produzir oxigênio, mude para true:
   // os capacetes saem (só fica de capacete quem quiser).
