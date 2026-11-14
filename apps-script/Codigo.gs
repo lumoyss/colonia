@@ -70,7 +70,7 @@ const FUNCOES = {
 };
 const MAPA_PROFISSAO = { 'Mecânica(o)': 'mecanico', 'Engenheira(o)': 'engenheiro', 'Agricultor(a)': 'agricultor', 'Cozinheira(o)': 'cozinheiro',
   'Minerador(a)': 'minerador', 'Explorador(a)': 'explorador', 'Médica(o)': 'medico', 'Guarda': 'guarda', 'Desempregado(a)': 'desempregado' };
-const TROCA_FUNCAO_DIAS = 7;
+const TROCA_FUNCAO_DIAS = 0;        // TESTE (Lucas 13/11): troca de profissão liberada a qualquer momento. Para voltar ao limite, ponha 7.
 const KIT_TEMPORARIO_HORAS = 24; // quem acorda ganha um kit de ferramentas temporário; depois precisa comprar o kit
 const VAGAS = { medico: 20, guarda: 10 };   // 1 vaga para cada N sobreviventes
 const MEDICO_MIN = 50;          // preço mínimo da consulta
