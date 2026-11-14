@@ -103,6 +103,13 @@
   .moedas::before{content:"";display:inline-block;width:10px;height:10px;background:#E8C25A;border:2px solid #9c7a26;border-radius:50%;margin-right:8px;vertical-align:-1px}
   .conta .inv{flex-basis:100%;font-size:14px;color:var(--apagado)}
   .loja{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+  .loja.fila{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+  .loja.fila .loja-item{flex:0 0 min(78%,300px);scroll-snap-align:start}
+  .deslize{font-size:12px;color:var(--apagado);text-align:right;margin:2px 0 0}
+  nav.subabas{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 6px}
+  nav.subabas button{flex:1 1 30%;font-family:"Press Start 2P",monospace;font-size:8px;padding:10px 4px;background:var(--fundo2);color:var(--apagado);border:2px solid var(--fundo3);cursor:pointer}
+  nav.subabas button[aria-pressed=true]{background:var(--fundo3);color:var(--creme);border-color:var(--verde)}
+  .sub{display:none}.sub.ativo{display:block}
   .loja-item{background:var(--fundo);border:3px solid var(--fundo2);padding:12px;display:flex;flex-direction:column;gap:6px}
   .loja-item .preco{font-family:"Press Start 2P",monospace;color:var(--laranja);font-size:12px}
   .loja-item small{color:var(--apagado);font-size:14px;flex:1}
@@ -365,29 +372,51 @@
         <button class="btn sec" type="submit" id="btnLogin">ENTRAR</button>
       </form>
       <div class="msg" id="msgMercado" role="status"></div>
-      <h3 class="pix cat" style="margin-top:20px">TERRENO</h3>
-      <div class="loja" id="registroTerreno"></div>
-      <h3 class="pix cat" style="margin-top:20px">MOEDAS</h3>
-      <div class="loja" id="pacotes"></div>
-      <p class="dica" style="margin-top:8px">As moedas só valem dentro da Nave Orion e não podem ser trocadas de volta por dinheiro.</p>
-      <div class="loja" id="itens"></div>
-      <h3 class="pix cat" style="margin-top:26px">LEILÃO DO VÍDEO</h3>
-      <p class="dica">Quer que o seu @ (ou o seu produto) seja divulgado no próximo vídeo da Nave Orion? Dê um lance em moedas. Se alguém der mais, as suas moedas voltam na hora. Quem tiver o maior lance quando o leilão fechar ganha a divulgação e escreve o que quer divulgar.</p>
-      <div class="msg" id="msgLeilao" role="status"></div>
-      <div id="leilaoBox"></div>
-      <h3 class="pix cat" style="margin-top:26px">ANUNCIE NUM OUTDOOR</h3>
-      <p class="dica">Pague ao dono de um outdoor para a sua mensagem aparecer no mapa. A colônia fica com uma pequena taxa.</p>
-      <div class="msg" id="msgAnuncio" role="status"></div>
-      <div class="loja" id="anuncios"></div>
-      <h3 class="pix cat" style="margin-top:26px">ALUGUÉIS</h3>
-      <p class="dica">Sem casa? Alugue uma casa ou um apartamento de outro sobrevivente. Quem mora de aluguel descansa como quem tem casa.</p>
-      <div class="msg" id="msgAluguel" role="status"></div>
-      <div class="loja" id="alugueis"></div>
-      <div id="meusImoveis"></div>
-      <h3 class="pix cat" style="margin-top:26px">MERCADO DOS SOBREVIVENTES</h3>
+      <nav class="subabas" id="subabas">
+        <button type="button" data-sub="terreno" aria-pressed="true">TERRENO</button>
+        <button type="button" data-sub="moedas" aria-pressed="false">MOEDAS</button>
+        <button type="button" data-sub="vida" aria-pressed="false">AR E COMIDA</button>
+        <button type="button" data-sub="ferramentas" aria-pressed="false">FERRAMENTAS</button>
+        <button type="button" data-sub="roupas" aria-pressed="false">ROUPAS</button>
+        <button type="button" data-sub="leilao" aria-pressed="false">LEILÃO</button>
+        <button type="button" data-sub="alugueis" aria-pressed="false">ALUGUÉIS</button>
+        <button type="button" data-sub="sobreviventes" aria-pressed="false">ENTRE JOGADORES</button>
+      </nav>
+      <div class="sub ativo" data-sub="terreno">
+        <h3 class="pix cat">TERRENO, CASA E OUTDOOR</h3>
+        <div class="loja fila"><div id="registroTerreno" style="display:contents"></div><div id="loja-terreno" style="display:contents"></div></div>
+        <p class="deslize">deslize para o lado →</p>
+        <h3 class="pix cat" style="margin-top:20px">ANUNCIE NUM OUTDOOR</h3>
+        <p class="dica">Pague ao dono de um outdoor para a sua mensagem aparecer no mapa. A colônia fica com uma pequena taxa.</p>
+        <div class="msg" id="msgAnuncio" role="status"></div>
+        <div class="loja fila" id="anuncios"></div>
+      </div>
+      <div class="sub" data-sub="moedas">
+        <h3 class="pix cat">MOEDAS</h3>
+        <div class="loja fila" id="pacotes"></div>
+        <p class="dica" style="margin-top:8px">As moedas só valem dentro da Nave Orion e não podem ser trocadas de volta por dinheiro.</p>
+      </div>
+      <div class="sub" data-sub="vida"><h3 class="pix cat">OXIGÊNIO E COMIDA</h3><div class="loja fila" id="loja-vida"></div><p class="deslize">deslize para o lado →</p></div>
+      <div class="sub" data-sub="ferramentas"><h3 class="pix cat">FERRAMENTAS</h3><div class="loja fila" id="loja-ferramentas"></div><p class="deslize">deslize para o lado →</p></div>
+      <div class="sub" data-sub="roupas"><h3 class="pix cat">ROUPAS E ACESSÓRIOS</h3><div class="loja fila" id="loja-roupas"></div><p class="deslize">deslize para o lado →</p></div>
+      <div class="sub" data-sub="leilao">
+        <h3 class="pix cat">LEILÃO DO VÍDEO</h3>
+        <p class="dica">Quer que o seu @ (ou o seu produto) seja divulgado no próximo vídeo da Nave Orion? Dê um lance em moedas. Se alguém der mais, as suas moedas voltam na hora. Quem tiver o maior lance quando o leilão fechar ganha a divulgação e escreve o que quer divulgar.</p>
+        <div class="msg" id="msgLeilao" role="status"></div>
+        <div id="leilaoBox"></div>
+      </div>
+      <div class="sub" data-sub="alugueis">
+        <h3 class="pix cat">ALUGUÉIS</h3>
+        <p class="dica">Sem casa? Alugue uma casa ou um apartamento de outro sobrevivente. Quem mora de aluguel descansa como quem tem casa.</p>
+        <div class="msg" id="msgAluguel" role="status"></div>
+        <div class="loja fila" id="alugueis"></div>
+        <div id="meusImoveis"></div>
+      </div>
+      <div class="sub" data-sub="sobreviventes">
+        <h3 class="pix cat">MERCADO DOS SOBREVIVENTES</h3>
       <p class="dica">Compre e venda recursos e itens com outros sobreviventes, em moedas. Terrenos também podem ser vendidos aqui. Bases não.</p>
       <div class="msg" id="msgVenda" role="status"></div>
-      <div class="loja" id="ofertas" style="margin-top:8px"></div>
+      <div class="loja fila" id="ofertas" style="margin-top:8px"></div><p class="deslize">deslize para o lado →</p>
       <form id="formVender" autocomplete="off" hidden>
         <h3 class="pix cat" style="margin-top:18px">VENDER UM ITEM</h3>
         <p class="dica" id="venderVazio">Você ainda não tem nada para vender. Explore o mapa e procure o baú do dia!</p>
@@ -399,6 +428,7 @@
           <button class="btn sec" type="submit" id="btnVender">COLOCAR À VENDA</button>
         </div>
       </form>
+      </div>
     </div>
   </section>
 
@@ -829,7 +859,7 @@
   setInterval(verTerreno, 1000);
   document.getElementById("btnTerreno").addEventListener("click", function () {
     var bt = this;
-    if (bt.dataset.acao === "mercado") { irPara("mercado"); document.getElementById("registroTerreno").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    if (bt.dataset.acao === "mercado") { irPara("mercado"); irSub("terreno"); (document.getElementById("cartaoRegistro") || document.getElementById("subabas")).scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if (bt.dataset.acao !== "reivindicar") return;
     var n = Number(bt.dataset.lote);
     recon = { lote: n, inicio: Date.now(), pronto: false, enviando: true }; bt.hidden = true;
@@ -1474,7 +1504,7 @@
       if (trabalhando || missao.modo === "plantao") botao("PARAR", "sec", pararTudo);
       else if (missao.modo !== "descansando" && !doente()) {
         modos.forEach(function (m) {
-          if (m === "consertar" && semKit()) botao("COMPRAR KIT DE FERRAMENTAS (CONSERTAR)", "sec", function () { irPara("mercado"); var k = document.querySelector('[data-item="ferramentas"]'); if (k) k.scrollIntoView({ behavior: "smooth", block: "center" }); });
+          if (m === "consertar" && semKit()) botao("COMPRAR KIT DE FERRAMENTAS (CONSERTAR)", "sec", function () { irPara("mercado"); irSub("ferramentas"); var k = document.querySelector('[data-item="ferramentas"]'); if (k) k.scrollIntoView({ behavior: "smooth", block: "center" }); });
           else botao(BOTAO_TRAB[m], m === modos[0] ? "" : "sec", function () { comecar(m); });
         });
         if (plantao) botao(f === "medico" ? "FICAR DE PLANTÃO (CURAR DOENTES)" : "FICAR DE PLANTÃO (CONSTRUIR CASAS)", "", comecarPlantao);
@@ -1706,6 +1736,11 @@
     el.appendChild(b); el.appendChild(p); el.appendChild(d); el.appendChild(bt);
     return { el: el, botao: bt };
   }
+  function irSub(nome) {
+    document.querySelectorAll("#subabas button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.sub === nome)); });
+    document.querySelectorAll(".sub").forEach(function (d) { d.classList.toggle("ativo", d.dataset.sub === nome); });
+  }
+  document.querySelectorAll("#subabas button").forEach(function (b) { b.onclick = function () { irSub(b.dataset.sub); }; });
   function montarMercado() {
     if (mercadoPronto || !estado.mercado) return;
     mercadoPronto = true;
@@ -1718,10 +1753,10 @@
       c.botao.onclick = function () { adquirirMoedas(p, c.botao); };
       pac.appendChild(c.el);
     });
-    var lista = document.getElementById("itens"), cat = "";
+    var SUB_DA_CAT = { "Residência": "terreno", "Oxigênio e comida": "vida", "Roupas": "roupas", "Roupa dourada": "roupas", "Acessórios": "roupas", "Ferramentas": "ferramentas" };
     estado.mercado.itens.forEach(function (it) {
       if (it.oculto) return;
-      if (it.cat !== cat) { cat = it.cat; var h = document.createElement("h3"); h.className = "pix cat"; h.textContent = cat.toUpperCase(); lista.appendChild(h); }
+      var lista = document.getElementById("loja-" + (SUB_DA_CAT[it.cat] || "ferramentas"));
       var c = cartaoLoja(it.nome, it.preco.toLocaleString("pt-BR") + " moedas" + (it.maoDeObra ? " + " + it.maoDeObra + " de mão de obra" : ""), it.desc + (it.maoDeObra ? " Um engenheiro online constrói a sua casa; se nenhum aceitar a obra em 24 horas, a nave constrói sozinha." : ""), "TROCAR");
       c.el.dataset.item = it.id;
       if (it.base || it.terreno) { var inp = document.createElement("input"); inp.maxLength = it.base ? 28 : 40; inp.placeholder = it.base ? "Nome da sua base" : "Frase do outdoor (até 40 letras)"; c.el.insertBefore(inp, c.botao); }
