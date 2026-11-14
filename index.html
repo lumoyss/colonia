@@ -1051,10 +1051,14 @@
     vivos.forEach(function (b) {
       b.t++;
       if (b.explorando) { b.tx = b.ax; b.ty = b.ay; b.espera = 0; }
+      if (b !== meu && b.remoto && Date.now() - b.remoto < 60000) { // jogador online: anda para onde ele realmente está indo
+        if (Math.hypot(b.rx - b.x, b.ry - b.y) > 80) { b.x = b.rx; b.y = b.ry; }
+        if (Math.hypot(b.rx - b.x, b.ry - b.y) >= 1) { b.tx = b.rx; b.ty = b.ry; b.espera = 0; } else { b.tx = 0; b.espera = 5; }
+      }
       if (b.espera > 0) { b.espera--; }
       else {
         if (!b.tx) { b.tx = OFX + 150 + b.r() * 180; b.ty = OFY + 110 + b.r() * 90; }
-        var dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy), vel = b === meu ? 0.6 : 0.25;
+        var dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy), vel = b === meu || b.remoto ? 0.6 : 0.25;
         if (d < 1) { b.tx = 0; b.espera = b === meu ? 100000 : 60 + b.r() * 240 | 0; b.explorando = false; }
         else { b.x += dx / d * Math.min(vel, d); b.y += dy / d * Math.min(vel, d); }
       }
@@ -2518,9 +2522,57 @@
       if (!r.ok) { if (r.mudo) atualizarPerfil().then(desenharMudo); return mensagem("msgRadio", r.erro || "Não deu para enviar."); }
       document.getElementById("msgRadio").className = "msg";
       if (bonecos[eu.nome]) bonecos[eu.nome].fala = { texto: texto.length > 42 ? texto.slice(0, 40) + "…" : texto, ate: Date.now() + 7000 };
-      campo.value = ""; ultimoChat = ""; setTimeout(lerRadio, 300);
+      campo.value = ""; ultimoChat = ""; setTimeout(lerRadio, 300); avisarChatAoVivo();
     });
   });
+
+
+  /* ---------------- AO VIVO (Firebase): todo mundo vê todo mundo andando, e o rádio chega na hora ---------------- */
+  var aoVivo = null;
+  function avisarChatAoVivo() { try { if (aoVivo) aoVivo.db.ref("ping").set(firebase.database.ServerValue.TIMESTAMP); } catch (e) {} }
+  (function () {
+    var cfg = window.COLONIA && window.COLONIA.FIREBASE;
+    if (!cfg || !cfg.databaseURL || TESTE) return;
+    var V = "10.12.2", base = "https://www.gstatic.com/firebasejs/" + V + "/";
+    function carregarJs(src) { return new Promise(function (ok, erro) { var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = erro; document.head.appendChild(s); }); }
+    carregarJs(base + "firebase-app-compat.js").then(function () { return Promise.all([carregarJs(base + "firebase-database-compat.js"), carregarJs(base + "firebase-auth-compat.js")]); }).then(function () {
+      firebase.initializeApp(cfg);
+      return firebase.auth().signInAnonymously();
+    }).then(function (cred) {
+      var db = firebase.database(), uid = cred.user.uid, minha = db.ref("pos/" + uid);
+      aoVivo = { db: db, uid: uid };
+      minha.onDisconnect().remove();
+      // recebe os outros
+      function chegou(snap) {
+        var p = snap.val(); if (!p || snap.key === uid || !p.n) return;
+        if (eu && logado() && p.n === eu.nome) return;
+        if (p.t && Date.now() - p.t > 120000) return;
+        var b = bonecos[p.n]; if (!b) return;
+        b.rx = p.tx || p.x; b.ry = p.ty || p.y; b.remoto = Date.now();
+        if (Math.hypot(p.x - b.x, p.y - b.y) > 40) { b.x = p.x; b.y = p.y; }
+        if (p.v != null) b.itens = p.v;
+      }
+      db.ref("pos").on("child_added", chegou); db.ref("pos").on("child_changed", chegou);
+      db.ref("pos").on("child_removed", function (snap) { var p = snap.val(); if (p && bonecos[p.n]) bonecos[p.n].remoto = 0; });
+      // rádio: quando alguém fala, todo mundo busca as mensagens na hora (o filtro continua no servidor)
+      var primeiro = true;
+      db.ref("ping").on("value", function () {
+        if (primeiro) { primeiro = false; return; }
+        setTimeout(function () { if (radioTimer) { ultimoChat = ""; lerRadio(); } else fetch(API + "?chat=1").then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) registrarFalas(d.mensagens); }).catch(function () {}); }, 400);
+      });
+      // envia a minha posição só quando muda o destino (e um "estou aqui" a cada 20 s): gasta pouca internet
+      var ultimaChave = "", ultimoEnvio = 0;
+      setInterval(function () {
+        var meu = meuBoneco(); if (!meu) return;
+        var tx = meu.tx || meu.x, ty = meu.ty || meu.y;
+        var chave = missao.modo === "consertando" ? "w" + Math.round(meu.x / 30) + "," + Math.round(meu.y / 30) : Math.round(tx) + "," + Math.round(ty);
+        chave += "|" + (eu.veste || "");
+        if (chave === ultimaChave && Date.now() - ultimoEnvio < 20000) return;
+        ultimaChave = chave; ultimoEnvio = Date.now();
+        minha.set({ n: eu.nome, x: Math.round(meu.x), y: Math.round(meu.y), tx: Math.round(missao.modo === "consertando" ? meu.x : tx), ty: Math.round(missao.modo === "consertando" ? meu.y : ty), v: eu.veste || "", t: firebase.database.ServerValue.TIMESTAMP });
+      }, 300);
+    }).catch(function (e) { console.log("[ao vivo] não conectou:", e && e.message); });
+  })();
 
   /* ---------------- abas ---------------- */
   function irPara(nome) {

@@ -15,6 +15,10 @@ window.COLONIA = {
   PIX_NOME: "COLONIA",           // seu nome como está no banco (até 25 letras, sem acento)
   PIX_CIDADE: "",         // sua cidade (até 15 letras, sem acento)
 
+  // ---- AO VIVO (Firebase) ----
+  // Cole aqui o firebaseConfig do seu projeto Firebase. Vazio (null) = sem mapa ao vivo.
+  FIREBASE: null,
+
   // Quando a colônia conseguir produzir oxigênio, mude para true:
   // os capacetes saem (só fica de capacete quem quiser).
   OXIGENIO_NO_PLANETA: false,
