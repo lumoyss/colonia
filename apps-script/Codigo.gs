@@ -148,6 +148,7 @@ const SILENCIO_MINUTOS = 5, GUARDA_BONUS = 20;
 const CHAT_MAX_POR_MINUTO = 8;       // mais que isso em 1 minuto é bloqueado
 const CHAT_OFENSAS_PARA_SILENCIAR = 3; // 3 mensagens ofensivas bloqueadas = silenciado automático
 const CHAT_SILENCIO_AUTO_MIN = 10;
+const CHAT_OFENSA_VISIVEL_SEG = 120; // mensagem ofensiva fica no rádio por 2 min para um guarda pegar; depois some sozinha
 // Palavras bloqueadas no rádio (sem acento, minúsculas). Pode acrescentar ou tirar à vontade.
 const PALAVRAS_PROIBIDAS = ['porra', 'caralho', 'krl', 'crl', 'merda', 'puta', 'puto', 'putaria', 'fdp', 'pqp', 'cu', 'cuzao', 'buceta', 'boceta',
   'xoxota', 'xereca', 'viado', 'bicha', 'sapatao', 'traveco', 'arrombado', 'arrombada', 'otario', 'otaria', 'idiota', 'imbecil', 'babaca',
@@ -1256,7 +1257,12 @@ function lerChat_() {
   const guardado = cache.get('chat');
   if (guardado) return JSON.parse(guardado);
   const aba = planilha_().getSheetByName(ABA_CHAT);
-  const msgs = linhas_(aba).filter(function (l) { return String(l[4]).toLowerCase() !== 'apagado'; }).slice(-60).map(function (l) {
+  const agora = Date.now();
+  const msgs = linhas_(aba).filter(function (l) {
+    const st = String(l[4]).toLowerCase();
+    if (st === 'ofensa') return agora - new Date(l[0]).getTime() < CHAT_OFENSA_VISIVEL_SEG * 1000; // visível só por 2 min
+    return st !== 'apagado' && st.indexOf('ofensa') < 0;
+  }).slice(-60).map(function (l) {
     return { t: new Date(l[0]).getTime(), numero: l[1], nome: l[2], texto: l[3] };
   });
   const r = { ok: true, mensagens: msgs };
@@ -1283,10 +1289,13 @@ function enviarChat_(ss, d) {
   if (janela.length >= CHAT_MAX_POR_MINUTO) return { ok: false, erro: 'Você mandou muitas mensagens seguidas. Espere ' + Math.ceil((60000 - (agora - janela[0])) / 1000) + ' segundos.' };
   const normal = normalizarTexto_(texto);
   if (cache.get('ultimotexto_' + num) === normal) return { ok: false, erro: 'Você já mandou essa mensagem. Não repita, por favor.' };
-  // ofensas: bloqueia a mensagem; depois de algumas, silencia automático
+  // ofensas: a mensagem aparece no rádio por 2 min (chance de um guarda pegar) e depois some sozinha; depois de algumas, silencia automático
   if (temOfensa_(normal)) {
     const n = (Number(cache.get('ofensas_' + num)) || 0) + 1;
     cache.put('ofensas_' + num, String(n), 21600);
+    cache.put(chaveTempo, '1', 4); janela.push(agora); cache.put('janela_' + num, JSON.stringify(janela), 120); cache.put('ultimotexto_' + num, normal, 600);
+    ss.getSheetByName(ABA_CHAT).appendRow([new Date(), s.dados[0], texto_(String(s.dados[2])), texto_(texto), 'ofensa']);
+    cache.remove('chat');
     if (n >= CHAT_OFENSAS_PARA_SILENCIAR) {
       s.aba.getRange(s.linha, C_MUDO_ATE).setValue(agora + CHAT_SILENCIO_AUTO_MIN * 60000);
       cache.put('ofensas_' + num, '0', 21600);
@@ -1294,7 +1303,7 @@ function enviarChat_(ss, d) {
       avisoRadio_(ss, s.dados[2] + ' ficou sem rádio por ' + CHAT_SILENCIO_AUTO_MIN + ' minutos por linguagem ofensiva.');
       return { ok: false, erro: 'Você ficou sem rádio por ' + CHAT_SILENCIO_AUTO_MIN + ' minutos por insistir em linguagem ofensiva.' };
     }
-    return { ok: false, erro: 'Sua mensagem não foi enviada: tem palavras ofensivas. Seja gentil no rádio (' + n + ' de ' + CHAT_OFENSAS_PARA_SILENCIAR + ' avisos).' };
+    return { ok: true };
   }
   cache.put(chaveTempo, '1', 4);
   janela.push(agora); cache.put('janela_' + num, JSON.stringify(janela), 120);
@@ -1353,6 +1362,11 @@ function resumoDiario() {
     corpo += '\nRECLAMAÇÕES DE SILENCIADOS ESPERANDO VOCÊ (' + recl.length + ') — decida na aba Silenciados (certo ou abuso)\n';
     recl.forEach(function (l) { corpo += l[0] + ' | guarda ' + l[3] + ' silenciou ' + l[5] + '\n   Mensagens: ' + l[6] + '\n   Reclamação: ' + l[7] + '\n'; });
   }
+  if (ss.getSheetByName(ABA_SILENCIO)) {
+    const fl = linhas_(ss.getSheetByName(ABA_SILENCIO)).filter(function (l) { return new Date(l[1]) > desde && /^FLAGRA/.test(String(l[6])); });
+    corpo += '\nFLAGRAS DOS GUARDAS (notícia para o vídeo) (' + fl.length + ')\n';
+    fl.forEach(function (l) { corpo += 'Guarda ' + l[3] + ' pegou ' + l[5] + ': ' + String(l[6]).replace(/^FLAGRA: /, '') + '\n'; });
+  }
   if (ss.getSheetByName(ABA_LEILOES)) {
     const lei = linhas_(ss.getSheetByName(ABA_LEILOES)).filter(function (l) { return new Date(l[1]) > desde; });
     corpo += '\nLEILÃO DO VÍDEO (' + lei.length + ')\n';
@@ -1396,6 +1410,7 @@ function torrePorId_(ss, id) {
 function salvarTorre_(ss, t) {
   ss.getSheetByName(ABA_TORRES).getRange(t.linha, 3, 1, 14).setValues([[t.status, t.pontos, t.meta, t.preco, JSON.stringify(t.contrib), t.recusaram.join(','), t.ofertaNumero, t.ofertaAte, t.donoNumero, t.dono, t.nomeCla, t.precoEntrada, t.descobridor, t.descobertaEm || '']]);
 }
+function cache_limpar_() { CacheService.getScriptCache().remove('chat'); }
 function avisoRadio_(ss, texto) { ss.getSheetByName(ABA_CHAT).appendRow([new Date(), 0, 'NAVE', texto_(texto), '']); CacheService.getScriptCache().remove('chat'); }
 function descobrirTorre_(ss, d) {
   const s = acharSobrevivente_(ss, d);
@@ -1534,10 +1549,24 @@ function silenciar_(ss, d) {
   const alvo = linhaPorNumero_(ss, d.numero);
   if (!alvo) return { ok: false, erro: 'Sobrevivente não encontrado.' };
   if (String(alvo.dados[0]) === String(s.dados[0])) return { ok: false, erro: 'Você não pode silenciar a si mesmo.' };
-  if ((Number(alvo.dados[C_MUDO_ATE - 1]) || 0) > Date.now()) return { ok: false, erro: alvo.dados[2] + ' já está silenciado.' };
+  if ((Number(alvo.dados[C_MUDO_ATE - 1]) || 0) > Date.now() && !CacheService.getScriptCache().get('mudoauto_' + alvo.dados[0])) return { ok: false, erro: alvo.dados[2] + ' já está silenciado.' };
   const msgs = linhas_(ss.getSheetByName(ABA_CHAT)).filter(function (l) { return String(l[1]) === String(alvo.dados[0]); }).slice(-5).map(function (l) { return String(l[3]); }).join(' / ');
   alvo.aba.getRange(alvo.linha, C_MUDO_ATE).setValue(Date.now() + SILENCIO_MINUTOS * 60000);
+  // flagrante: a pessoa mandou palavrão que ainda está no rádio → o guarda acertou, ganha o bônus na hora e a mensagem some
+  const abaChat = ss.getSheetByName(ABA_CHAT), lsChat = linhas_(abaChat), flagra = [];
+  lsChat.forEach(function (l, i) {
+    if (String(l[1]) === String(alvo.dados[0]) && String(l[4]).toLowerCase() === 'ofensa' && Date.now() - new Date(l[0]).getTime() < CHAT_OFENSA_VISIVEL_SEG * 1000) {
+      flagra.push(String(l[3])); abaChat.getRange(i + 2, 5).setValue('ofensa pega pelo guarda');
+    }
+  });
   const id = 'S' + Date.now().toString(36).toUpperCase();
+  if (flagra.length) {
+    creditar_(ss, s.dados[0], GUARDA_BONUS);
+    ss.getSheetByName(ABA_SILENCIO).appendRow([id, new Date(), s.dados[0], texto_(String(s.dados[2])), alvo.dados[0], texto_(String(alvo.dados[2])), texto_('FLAGRA: ' + flagra.join(' / ')), '', 'certo', 'flagra: bônus de ' + GUARDA_BONUS + ' pago na hora']);
+    avisoRadio_(ss, '🚨 FLAGRA! O guarda ' + s.dados[2] + ' pegou ' + alvo.dados[2] + ' com linguagem ofensiva e silenciou por ' + SILENCIO_MINUTOS + ' minutos. +' + GUARDA_BONUS + ' moedas para o guarda.');
+    cache_limpar_();
+    return { ok: true, nome: String(alvo.dados[2]), flagra: true, bonus: GUARDA_BONUS };
+  }
   ss.getSheetByName(ABA_SILENCIO).appendRow([id, new Date(), s.dados[0], texto_(String(s.dados[2])), alvo.dados[0], texto_(String(alvo.dados[2])), texto_(msgs), '', '', '']);
   avisoRadio_(ss, 'O guarda ' + s.dados[2] + ' silenciou ' + alvo.dados[2] + ' por ' + SILENCIO_MINUTOS + ' minutos.');
   return { ok: true, nome: String(alvo.dados[2]) };

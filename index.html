@@ -2344,7 +2344,7 @@
           var sb = document.createElement("button"); sb.type = "button"; sb.className = "silenciar"; sb.textContent = "🔇"; sb.title = "Silenciar " + m.nome + " por 5 minutos";
           sb.onclick = function () {
             if (!sb.dataset.c) { sb.dataset.c = 1; sb.textContent = "🔇 silenciar?"; return; }
-            enviar(credenciais({ acao: "silenciar", numero: m.numero })).then(function (r) { mensagem("msgRadio", r.ok ? "Você silenciou " + r.nome + " por 5 minutos. Se houver reclamação, a colônia revisa o rádio." : r.erro, r.ok); ultimoChat = ""; setTimeout(lerRadio, 300); });
+            enviar(credenciais({ acao: "silenciar", numero: m.numero })).then(function (r) { mensagem("msgRadio", !r.ok ? r.erro : r.flagra ? "FLAGRA! Você pegou " + r.nome + " e ganhou " + r.bonus + " moedas." : "Você silenciou " + r.nome + " por 5 minutos. Se houver reclamação, a colônia revisa o rádio.", r.ok); if (r.flagra) carregar(); ultimoChat = ""; setTimeout(lerRadio, 300); });
           };
           li.appendChild(sb);
         }

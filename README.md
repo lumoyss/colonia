@@ -163,3 +163,10 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - Frase de outdoor e anúncio pago passam pelo mesmo filtro de palavrões do rádio. Quem está sem rádio também não pode trocar a frase.
 - Guardas veem, no Mercado (aba TERRENO), a lista "FISCALIZAR OUTDOORS" e podem tirar uma frase ofensiva. Quem escreveu fica 5 minutos sem rádio.
 - Isso cai na mesma aba Silenciados (a coluna "mensagens" começa com "OUTDOOR de ..."). Você decide igual ao rádio: "certo" (guarda ganha bônus) ou "abuso" (guarda perde a função).
+
+## Flagra dos guardas
+
+- Mensagem com palavrão não é mais bloqueada na hora: ela aparece no rádio por 2 minutos e depois some sozinha.
+- Se um guarda silenciar a pessoa nesses 2 minutos, é FLAGRA: a mensagem some, o guarda ganha o bônus na hora (sem você precisar decidir) e o rádio anuncia.
+- O e-mail diário traz a lista "FLAGRAS DOS GUARDAS" para você usar como notícia no vídeo.
+- Quem insiste (3 mensagens ofensivas) continua ficando 10 minutos sem rádio.
