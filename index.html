@@ -34,7 +34,7 @@
   .contador b{color:var(--laranja);font-size:16px}
   .cena{margin:18px 0 6px;border:4px solid var(--fundo3);background:#000;position:relative}
   .mapa-acao{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:92%;pointer-events:none}
-  .mapa-acao .btn{pointer-events:auto;margin:0;padding:10px 14px;font-size:12px;box-shadow:0 0 0 3px #0B161C,0 0 14px rgba(224,122,58,.8);animation:pulsa 1.2s ease-in-out infinite}
+  .mapa-acao .btn{pointer-events:auto;margin:0;padding:10px 14px;font-size:12px;width:auto;box-shadow:0 0 0 3px #0B161C,0 0 14px rgba(224,122,58,.8);animation:pulsa 1.2s ease-in-out infinite}
   .mapa-acao p{margin:0;background:rgba(11,22,28,.85);color:var(--creme);padding:4px 8px;font-size:13px;text-align:center}
   .mapa-acao[hidden],.mapa-acao [hidden]{display:none}
   @keyframes pulsa{50%{transform:scale(1.06)}}
@@ -329,7 +329,7 @@
   </details>
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
-    <div class="mapa-acao" id="mapaAcao" hidden><button class="btn" type="button" id="btnMapaAcao"></button><p id="mapaAcaoInfo" hidden></p></div>
+    <div class="mapa-acao" id="mapaAcao" hidden><div id="mapaAcaoBotoes" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"></div><p id="mapaAcaoInfo" hidden></p></div>
     <div class="zoom"><button type="button" id="zoomMais" aria-label="Aproximar">+</button><button type="button" id="zoomMenos" aria-label="Afastar">−</button><button type="button" id="zoomCentro" aria-label="Voltar para o meu bonequinho" style="font-size:12px">◎</button></div></div>
       <div class="missao" id="missao" hidden style="margin:0 0 12px">
         <h2 class="pix" id="missaoTitulo">TRABALHO</h2>
@@ -1157,20 +1157,38 @@
     info.textContent = "Reconhecendo o Terreno " + n + "... faltam " + Math.floor(seg / 60) + ":" + ("0" + seg % 60).slice(-2) + ". Fique dentro do terreno.";
   }
   var destaqueLote = null; // só o próprio jogador vê: o terreno em que ele está pisca no mapa
+  // Lucas 14/11: o botão da ação certa aparece em cima do mapa, conforme o lugar onde o bonequinho está
+  // (nave = consertar, terreno = reivindicar/invadir, torre = limpar, zona de mineração = minerar, baú = abrir)
+  var mapaAlvos = [];
+  function vis(el) { return !!el && !el.hidden && el.offsetParent !== null; }
   function sincronizarMapaAcao() {
-    var bt = document.getElementById("btnTerreno"), box = document.getElementById("mapaAcao"), b2 = document.getElementById("btnMapaAcao"), inf = document.getElementById("mapaAcaoInfo");
+    var bt = document.getElementById("btnTerreno"), box = document.getElementById("mapaAcao"), inf = document.getElementById("mapaAcaoInfo"), lista = document.getElementById("mapaAcaoBotoes");
     var acao = bt.hidden ? "" : bt.dataset.acao, txt = document.getElementById("terrenoInfo").textContent, meu = meuBoneco();
     var n = meu ? loteEm(meu.x, meu.y) : 0, reconhecendo = recon && !recon.pronto && recon.lote === n, invadindo = inv && inv.lote === n;
     destaqueLote = n && (acao === "reivindicar" || acao === "invadir" || reconhecendo || invadindo) ? { n: n, tipo: acao === "invadir" || invadindo ? "invadir" : "livre" } : null;
-    var mostra = !!acao || reconhecendo || invadindo;
+    var alvos = [];
+    if (acao) alvos.push({ el: bt, txt: bt.textContent });
+    var tb = Array.prototype.filter.call(document.querySelectorAll("#torreBox button"), function (b) { return /DESBLOQUEAR|PARAR|SER DONO/.test(b.textContent); })[0];
+    if (vis(document.getElementById("torreBox")) && tb) alvos.push({ el: tb, txt: /DESBLOQUEAR/.test(tb.textContent) ? "🧹 LIMPAR A TORRE" : tb.textContent });
+    ["btnBau", "btnBauzinho", "btnMinerar"].forEach(function (id) { var e = document.getElementById(id); if (e && !e.hidden) alvos.push({ el: e, txt: (id === "btnMinerar" ? "⛏️ " : "🎁 ") + e.textContent }); });
+    if (meu && logado() && naNave() && missao.modo === "parado" && !doente()) {
+      var bc = Array.prototype.filter.call(document.querySelectorAll("#botoesTrabalho button"), function (b) { return b.textContent === BOTAO_TRAB.consertar; })[0];
+      if (bc) alvos.push({ el: bc, txt: "🔧 CONSERTAR A NAVE" });
+    }
+    alvos = alvos.slice(0, 2);
+    var info = reconhecendo || invadindo ? txt : "", mostra = alvos.length > 0 || !!info;
     if (box.hidden === mostra) box.hidden = !mostra;
-    if (!mostra) return;
-    b2.hidden = !acao; if (acao && b2.textContent !== bt.textContent) b2.textContent = bt.textContent;
-    var info = reconhecendo || invadindo ? txt : "";
     inf.hidden = !info; if (inf.textContent !== info) inf.textContent = info;
+    var assin = "a:" + alvos.map(function (a) { return a.txt; }).join("|");
+    mapaAlvos = alvos;
+    if (lista.dataset.assin === assin) return; lista.dataset.assin = assin; lista.innerHTML = "";
+    alvos.forEach(function (a, k) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn" + (k ? " sec" : ""); b.textContent = a.txt;
+      b.onclick = function () { var alvo = mapaAlvos[k]; if (alvo) alvo.el.click(); lista.dataset.assin = ""; setTimeout(sincronizarMapaAcao, 50); };
+      lista.appendChild(b);
+    });
   }
-  document.getElementById("btnMapaAcao").addEventListener("click", function () { document.getElementById("btnTerreno").click(); setTimeout(sincronizarMapaAcao, 50); });
-  setInterval(function () { verTerreno(); sincronizarMapaAcao(); }, 1000);
+  setInterval(verTerreno, 1000); setInterval(sincronizarMapaAcao, 400);
   var inv = null, invTimer = null, INVASAO_MIN = 15;
   function pararInvasao() { inv = null; clearInterval(invTimer); }
   function pingInvasao() {
