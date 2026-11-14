@@ -145,7 +145,7 @@ const TAXA_CLA = 0.10;               // 10% da entrada no clã fica com a colôn
 // Você decide na aba Silenciados: escreva "certo" ou "abuso" na coluna decisao.
 const SILENCIO_MINUTOS = 5, GUARDA_BONUS = 20;
 // RÁDIO: proteção automática contra ofensas e flood
-const CHAT_MAX_POR_MINUTO = 5;       // mais que isso em 1 minuto é bloqueado
+const CHAT_MAX_POR_MINUTO = 8;       // mais que isso em 1 minuto é bloqueado
 const CHAT_OFENSAS_PARA_SILENCIAR = 3; // 3 mensagens ofensivas bloqueadas = silenciado automático
 const CHAT_SILENCIO_AUTO_MIN = 10;
 // Palavras bloqueadas no rádio (sem acento, minúsculas). Pode acrescentar ou tirar à vontade.
@@ -1260,7 +1260,7 @@ function enviarChat_(ss, d) {
   const mudo = Number(s.dados[C_MUDO_ATE - 1]) || 0;
   if (mudo > Date.now() && CacheService.getScriptCache().get('mudoauto_' + s.dados[0])) return { ok: false, erro: 'Você está sem rádio por linguagem ofensiva. Volta a falar em ' + Math.ceil((mudo - Date.now()) / 60000) + ' min.' };
   if (mudo > Date.now()) return { ok: false, mudo: true, erro: 'Um guarda silenciou você no rádio. Você volta a falar em ' + Math.ceil((mudo - Date.now()) / 60000) + ' min. Se foi injusto, toque em RECLAMAR.' };
-  const texto = limpar_(d.texto, 280);
+  const texto = limpar_(d.texto, 250);
   if (!texto) return { ok: false, erro: 'Escreva uma mensagem.' };
 
   const cache = CacheService.getScriptCache(), num = s.dados[0];
