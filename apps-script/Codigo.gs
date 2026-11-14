@@ -117,6 +117,8 @@ const BAU_RAROS = ['capacete_dourado', 'traje_dourado', 'mochila'];
 const BAU_MOEDAS = 50;               // moedas que vêm no baú
 const BAU_CHANCE_FICHA_ITEM = 0.25;  // chance de vir a ficha "Criar item"
 const BAU_CHANCE_FICHA_EMPRESA = 0.05; // chance de vir a ficha "Criar empresa"
+// BAÚ PEQUENO: aparece a cada 14 a 16 minutos num lugar do mapa, só com moedas
+const BAUZINHO_MINUTOS = 15, BAUZINHO_VARIA_SEG = 60, BAUZINHO_MIN = 40, BAUZINHO_MAX = 90, BAUZINHO_MAX_MAPA = 2;
 const CRIAR_ITEM_PRECO = 500;        // moedas para usar a ficha de criar item
 const CRIAR_EMPRESA_PRECO = 5000;    // moedas para usar a ficha de criar empresa (precisa ter terreno)
 
@@ -270,7 +272,7 @@ function doGet(e) {
   });
   const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
   const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
-  const resposta = { ok: true, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
+  const resposta = { ok: true, bauzinhos: bauzinhos_().lista, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
     nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros,
     obras: ss.getSheetByName(ABA_OBRAS) ? obrasAbertas_(ss) : [], funcoes: funcoes,
     torres: ss.getSheetByName(ABA_TORRES) ? torresPublicas_(ss, todas) : [], leilao: ss.getSheetByName(ABA_LEILOES) ? leilaoPublico_(ss) : null, criados: ss.getSheetByName(ABA_CRIACOES) ? criadosPublicos_(ss) : {},
@@ -296,7 +298,7 @@ function doPost(e) {
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_,
       curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
-      silenciar: silenciar_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_ };
+      silenciar: silenciar_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
     if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'trabalhar', 'plantao', 'reconhecer', 'amigo', 'objetivo'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
@@ -799,6 +801,39 @@ function abrirBau_(ss, d) {
   ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Baú do dia: ' + BAU_MOEDAS + ' moedas, ' + ganhou.join(', '), 0]);
   p.ganhou = ganhou;
   return p;
+}
+
+/* ---------- Baús pequenos (a cada 14 a 16 minutos, no máximo 2 no mapa) ---------- */
+// Cada baú fica no mapa até alguém abrir. Se já tiver BAUZINHO_MAX_MAPA esperando, não aparece outro.
+function bauzinhos_() {
+  const pr = PropertiesService.getScriptProperties(), agora = Date.now();
+  let st = null; try { st = JSON.parse(pr.getProperty('BAUZINHOS') || 'null'); } catch (e) { st = null; }
+  if (!st) st = { lista: [], proximo: agora, seq: 0 };
+  const intervalo = function () { return (BAUZINHO_MINUTOS * 60 + Math.round((Math.random() - 0.5) * 2 * BAUZINHO_VARIA_SEG)) * 1000; };
+  let mudou = false;
+  while (agora >= st.proximo) {
+    mudou = true;
+    if (st.lista.length < BAUZINHO_MAX_MAPA) {
+      st.seq++; st.lista.push({ id: st.seq, x: 30 + Math.floor(Math.random() * (MAPA_L - 60)), y: 30 + Math.floor(Math.random() * (MAPA_A - 60)) });
+      st.proximo += intervalo();
+    } else st.proximo = agora + intervalo(); // mapa cheio: o relógio só volta a contar quando alguém abrir
+  }
+  if (mudou) pr.setProperty('BAUZINHOS', JSON.stringify(st));
+  return st;
+}
+function abrirBauzinho_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente para abrir o baú.' };
+  const st = bauzinhos_(), b = st.lista.filter(function (x) { return x.id === Number(d.id); })[0];
+  if (!b) return { ok: false, erro: 'Alguém chegou primeiro e abriu esse baú.' };
+  if (Math.hypot(Number(d.x) - b.x, Number(d.y) - b.y) > 24) return { ok: false, erro: 'Chegue mais perto do baú.' };
+  const moedas = BAUZINHO_MIN + Math.floor(Math.random() * (BAUZINHO_MAX - BAUZINHO_MIN + 1));
+  st.lista = st.lista.filter(function (x) { return x.id !== b.id; });
+  PropertiesService.getScriptProperties().setProperty('BAUZINHOS', JSON.stringify(st));
+  CacheService.getScriptCache().remove('lista');
+  s.aba.getRange(s.linha, C_MOEDAS).setValue((Number(s.dados[C_MOEDAS - 1]) || 0) + moedas);
+  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), s.dados[0], texto_(String(s.dados[2])), 'Baú pequeno: ' + moedas + ' moedas', 0]);
+  const p = perfil_(ss, d); p.moedasBau = moedas; return p;
 }
 
 /* ---------- Outdoor: a frase no terreno ---------- */

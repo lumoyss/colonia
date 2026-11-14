@@ -197,7 +197,8 @@
     </ul>
     <h4>Explorar e construir</h4>
     <ul>
-      <li>Toque no mapa para andar. Todo dia um baú aparece em algum lugar: quem chegar primeiro leva moedas e itens (às vezes uma ficha para criar um item ou uma empresa).</li>
+      <li>Toque no mapa para andar. Todo dia aparece o BAÚ DO DIA (grande e brilhando): quem chegar primeiro leva moedas e itens (às vezes uma ficha para criar um item ou uma empresa).</li>
+      <li>A cada 15 minutos, mais ou menos, aparece um baú pequeno em algum lugar do mapa, com 40 a 90 moedas. Ele fica lá até alguém pegar (no máximo 2 esperando no mapa).</li>
       <li>Pare num terreno livre (estacas nos cantos), reivindique, volte para a nave e registre no Mercado. No terreno você constrói sua casa (um engenheiro faz a obra).</li>
       <li>Com picareta, minere na borda pedregosa do mapa.</li>
     </ul>
@@ -209,7 +210,8 @@
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
     <div class="zoom"><button type="button" id="zoomMais" aria-label="Aproximar">+</button><button type="button" id="zoomMenos" aria-label="Afastar">−</button><button type="button" id="zoomCentro" aria-label="Voltar para o meu bonequinho" style="font-size:12px">◎</button></div></div>
-  <button class="btn" type="button" id="btnBau" hidden style="margin:0 0 8px">ABRIR O BAÚ!</button>
+  <button class="btn" type="button" id="btnBau" hidden style="margin:0 0 8px">ABRIR O BAÚ DO DIA!</button>
+  <button class="btn sec" type="button" id="btnBauzinho" hidden style="margin:0 0 8px">ABRIR O BAÚ PEQUENO</button>
   <button class="btn sec" type="button" id="btnMinerar" hidden style="margin:0 0 8px">MINERAR AQUI</button>
   <div id="terrenoBox" hidden style="text-align:center;margin:0 0 8px"><p class="legenda" id="terrenoInfo" style="margin:0 0 6px;color:var(--creme)"></p><button class="btn" type="button" id="btnTerreno" hidden style="margin:0">REGISTRAR TERRENO</button></div>
   <div class="torre-box" id="torreBox" hidden></div>
@@ -664,7 +666,7 @@
     estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
-    estado.leilao = d.leilao || null; desenharLeilao();
+    estado.leilao = d.leilao || null; desenharLeilao(); estado.bauzinhos = d.bauzinhos || [];
     calcularDonos(); desenharAlugueis(); desenharAnuncios(); if (logado()) desenharExtras();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
     desenharOfertas();
@@ -876,6 +878,23 @@
   }
   function meuBoneco() { return eu && logado() ? bonecos[eu.nome] : null; }
   function bauVisivel() { var b = estado.bau; return b && b.x != null && !b.abertoPor; }
+  function bauzinhoPerto(meu) { var achou = null; (estado.bauzinhos || []).forEach(function (b) { if (!achou && meu && Math.hypot(meu.x - b.x, meu.y - b.y) < 14) achou = b; }); return achou; }
+  function desenharBauzinho(x, y, t) {
+    mctx.fillStyle = "#3a4a52"; mctx.fillRect(x - 3, y - 2, 6, 4);
+    mctx.fillStyle = "#9fb3bd"; mctx.fillRect(x - 3, y - 2, 6, 1);
+    mctx.fillStyle = "#7FD6C8"; mctx.fillRect(x - 1, y - 1, 2, 1);
+    if ((t >> 4) % 2) { mctx.fillStyle = "#c9f0e8"; mctx.fillRect(x + 3, y - 4, 1, 1); }
+  }
+  function desenharBauGrande(x, y, t) {
+    var pulso = (t >> 3) % 4;
+    mctx.fillStyle = "rgba(232,194,90,.18)"; mctx.fillRect(x - 3, y - 40, 6, 36); // feixe de luz
+    mctx.fillStyle = "rgba(232,194,90,.12)"; mctx.fillRect(x - 10 - pulso, y - 7 - pulso, 20 + pulso * 2, 14 + pulso * 2);
+    mctx.fillStyle = "#3b200c"; mctx.fillRect(x - 8, y - 5, 16, 10);
+    mctx.fillStyle = "#8a5426"; mctx.fillRect(x - 7, y - 4, 14, 8);
+    mctx.fillStyle = "#a8692f"; mctx.fillRect(x - 7, y - 6, 14, 3);
+    mctx.fillStyle = OURO; mctx.fillRect(x - 8, y - 1, 16, 2); mctx.fillRect(x - 2, y - 2, 4, 4); mctx.fillRect(x - 8, y - 6, 2, 11); mctx.fillRect(x + 6, y - 6, 2, 11);
+    mctx.fillStyle = "#fff"; if ((t >> 4) % 2) { mctx.fillRect(x + 9, y - 9, 1, 1); mctx.fillRect(x - 11, y - 6, 1, 1); } else { mctx.fillRect(x + 4, y - 12, 1, 1); mctx.fillRect(x - 6, y + 7, 1, 1); }
+  }
   function desenharBau(x, y, t) {
     mctx.fillStyle = "#5a3418"; mctx.fillRect(x - 4, y - 3, 8, 6);
     mctx.fillStyle = "#8a5426"; mctx.fillRect(x - 4, y - 3, 8, 2);
@@ -895,7 +914,8 @@
       mctx.fillStyle = "#3a4a52"; mctx.fillRect(p[0] - 1, p[1] + 1, 2, 2);
       if (grande) { mctx.fillStyle = "#E07A3A"; mctx.fillRect(p[0] + r + 1, p[1] - 3, 4, 3); mctx.fillStyle = "#7A2E22"; mctx.fillRect(p[0] + r + 2, p[1], 1, 4); }
     });
-    if (bauVisivel()) desenharBau(estado.bau.x, estado.bau.y, tempo);
+    if (bauVisivel()) desenharBauGrande(estado.bau.x, estado.bau.y, tempo);
+    (estado.bauzinhos || []).forEach(function (b) { desenharBauzinho(b.x, b.y, tempo); });
     desenharTorresMapa(tempo);
 
     var vivos = ordem.map(function (id) { return bonecos[id]; }), meu = meuBoneco();
@@ -980,6 +1000,8 @@
     // perto do baú?
     var perto = meu && bauVisivel() && Math.hypot(meu.x - estado.bau.x, meu.y - estado.bau.y) < 14;
     var bb = document.getElementById("btnBau"); if (bb.hidden === !!perto) bb.hidden = !perto;
+    var pertoZ = !!bauzinhoPerto(meu);
+    var bz = document.getElementById("btnBauzinho"); if (bz.hidden === !!pertoZ) bz.hidden = !pertoZ;
     var pode = meu && !meu.tx && tem(eu.itens, "picareta") && naZonaDeMineracao(meu.x, meu.y);
     var bm = document.getElementById("btnMinerar"); if (bm.hidden === !!pode) bm.hidden = !pode;
     requestAnimationFrame(quadro);
@@ -1142,6 +1164,16 @@
     else if (b.x == null) el.textContent = "O baú de hoje aparece às " + b.hora + "h em algum lugar do mapa. Fique de olho!";
     else el.textContent = "O BAÚ DE HOJE APARECEU! Toque no mapa para explorar com o seu bonequinho e encontrá-lo.";
   }
+  document.getElementById("btnBauzinho").addEventListener("click", function () {
+    var bt = this, meu = meuBoneco(), b = bauzinhoPerto(meu); if (!meu || !b) return; bt.disabled = true;
+    enviar(credenciais({ acao: "bauzinho", id: b.id, x: Math.round(meu.x), y: Math.round(meu.y) })).then(function (r) {
+      bt.disabled = false;
+      if (!r.ok) { mensagemMapa(r.erro || "Não deu para abrir."); carregar(); return; }
+      aplicarPerfil(r); salvarEu(); mostrarCartao(eu); estado.bauzinhos = (estado.bauzinhos || []).filter(function (x) { return x.id !== b.id; });
+      missao.flash = { txt: "+" + r.moedasBau + " moedas", t: tempo };
+      mensagemMapa("Você abriu o baú pequeno e ganhou " + r.moedasBau + " moedas! ");
+    });
+  });
   document.getElementById("btnBau").addEventListener("click", function () {
     var bt = this; bt.disabled = true;
     enviar(credenciais({ acao: "bau" })).then(function (r) {

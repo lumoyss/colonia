@@ -136,6 +136,10 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - Fecha **todo dia às 20h** (LEILAO_HORA no topo do `Codigo.gs`). O rádio anuncia o vencedor, as moedas vão para você (CONTA_DONO ou cofre) e um novo leilão começa.
 - O vencedor escreve no site o @ e o que quer divulgar. Aparece no e-mail diário e na aba **Leiloes** (coluna frase).
 
+## Baús pequenos (atualização de 13/11, 21h)
+- O baú do dia ficou maior e brilhando (com feixe de luz). Continua 1 por dia, com moedas, recursos e às vezes as fichas de criar item/empresa.
+- A cada 14 a 16 minutos aparece um **baú pequeno** em algum lugar do mapa, com 40 a 90 moedas. Ele fica no mapa até alguém abrir; no máximo 2 esperando ao mesmo tempo. Números no topo do `Codigo.gs` (BAUZINHO_...).
+
 ### Moderação (na planilha)
 - Apagar uma mensagem: aba **Chat**, escreva `apagado` na coluna **status** da mensagem.
 - Silenciar alguém: aba **Sobreviventes**, escreva `sim` na coluna **banido**.
