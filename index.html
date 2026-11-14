@@ -110,6 +110,7 @@
   nav.subabas button{flex:1 1 30%;font-family:"Press Start 2P",monospace;font-size:8px;padding:10px 4px;background:var(--fundo2);color:var(--apagado);border:2px solid var(--fundo3);cursor:pointer}
   nav.subabas button[aria-pressed=true]{background:var(--fundo3);color:var(--creme);border-color:var(--verde)}
   .sub{display:none}.sub.ativo{display:block}
+  .falta{background:none;border:2px dashed #E8C25A;color:#E8C25A;font-family:"Press Start 2P",monospace;font-size:8px;padding:8px 6px;cursor:pointer;line-height:1.6}
   .loja-item{background:var(--fundo);border:3px solid var(--fundo2);padding:12px;display:flex;flex-direction:column;gap:6px}
   .loja-item .preco{font-family:"Press Start 2P",monospace;color:var(--laranja);font-size:12px}
   .loja-item small{color:var(--apagado);font-size:14px;flex:1}
@@ -360,6 +361,7 @@
       <div class="conta" id="conta" hidden>
         <span class="quem" id="contaNome"></span>
         <span class="moedas" id="contaMoedas">0</span>
+        <button type="button" class="btn mini" id="btnMaisMoedas" style="margin:0;width:auto;padding:8px 10px;font-size:9px">+ ADQUIRIR MOEDAS</button>
         <span class="inv" id="contaItens"></span>
         <span class="inv" id="contaOnline" hidden></span>
       </div>
@@ -1404,6 +1406,7 @@
     }
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
+    marcarFaltaMoedas();
     desenharItens(); mostrarMissao(); desenharOfertas(); desenharAlugueis(); desenharFormIdeia(); desenharExtras();
   }
   document.getElementById("formLogin").addEventListener("submit", function (ev) {
@@ -1736,6 +1739,23 @@
     el.appendChild(b); el.appendChild(p); el.appendChild(d); el.appendChild(bt);
     return { el: el, botao: bt };
   }
+  // em cada produto: se faltam moedas, mostra o atalho para adquirir moedas
+  function marcarFaltaMoedas() {
+    if (!estado.mercado) return;
+    var tenho = logado() ? Number(eu.moedas) || 0 : null, precos = {};
+    estado.mercado.itens.forEach(function (i) { precos[i.id] = i.preco + (i.maoDeObra || 0); });
+    var cartoes = [].slice.call(document.querySelectorAll("#mercado [data-item]"));
+    var reg = document.getElementById("cartaoRegistro"), T = lotesCfg(); if (reg && T) { reg.dataset.preco = T.preco; cartoes.push(reg); }
+    cartoes.forEach(function (el) {
+      var preco = el.dataset.item ? precos[el.dataset.item] : Number(el.dataset.preco), f = el.querySelector(".falta");
+      var falta = tenho != null && preco != null && tenho < preco ? preco - tenho : 0;
+      if (!falta) { if (f) f.remove(); return; }
+      if (!f) { f = document.createElement("button"); f.type = "button"; f.className = "falta"; f.onclick = function () { irSub("moedas"); document.getElementById("subabas").scrollIntoView({ behavior: "smooth", block: "start" }); }; el.appendChild(f); }
+      f.textContent = "FALTAM " + falta.toLocaleString("pt-BR") + " MOEDAS · ADQUIRIR MOEDAS";
+    });
+  }
+  document.getElementById("btnMaisMoedas").onclick = function () { irSub("moedas"); document.getElementById("subabas").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  setInterval(marcarFaltaMoedas, 2000);
   function irSub(nome) {
     document.querySelectorAll("#subabas button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.sub === nome)); });
     document.querySelectorAll(".sub").forEach(function (d) { d.classList.toggle("ativo", d.dataset.sub === nome); });
