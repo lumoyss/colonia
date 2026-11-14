@@ -118,6 +118,13 @@
   .slot[aria-pressed=true]{border-color:var(--laranja);box-shadow:0 0 0 2px var(--laranja)}
   .slot .q{position:absolute;right:3px;bottom:2px;font-family:"Press Start 2P",monospace;font-size:9px;color:var(--creme);text-shadow:1px 1px 0 #000}
   .slot .v{position:absolute;left:3px;top:2px;font-family:"Press Start 2P",monospace;font-size:8px;color:var(--verde2)}
+  .inv-vida{background:var(--fundo2);border:3px solid var(--fundo3);border-bottom:0;padding:12px;display:grid;gap:12px}
+  .inv-vida .linha{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+  .inv-vida .nome{font-weight:700}
+  .inv-vida .barra{grid-column:1/-1;height:12px;background:var(--fundo);border:2px solid var(--fundo3)}
+  .inv-vida .barra i{display:block;height:100%}
+  .inv-vida .botoes{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+  .inv-vida .botoes .btn{width:auto;margin:0;flex:1 1 40%;padding:10px 8px;font-size:9px}
   .inv-det{background:var(--fundo2);border:3px solid var(--fundo3);border-top:0;padding:12px}
   .inv-det h4{margin:0 0 4px;font-family:"Press Start 2P",monospace;font-size:11px;color:var(--verde2);line-height:1.6}
   .inv-det .acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -403,6 +410,7 @@
         <h3 class="pix cat">SEU INVENTÁRIO</h3>
         <p class="dica">Tudo o que é seu fica aqui: o que veio do baú, da mineração, das compras e os itens criados. Toque num item para usar, vestir ou vender.</p>
         <div class="msg" id="msgInv" role="status"></div>
+        <div class="inv-vida" id="invVida"></div>
         <div class="inv-grade" id="invGrade"></div>
         <div class="inv-det" id="invDet" hidden></div>
       </div>
@@ -1794,7 +1802,35 @@
     return w;
   }
   var invSel = null;
+  function desenharVidaInv() {
+    var box = document.getElementById("invVida"), V = vida(); if (!box || !V || !logado()) return;
+    var des = eu.funcao === "desempregado", ar = Math.max(0, Number(eu.ar) || 0), fome = Math.max(0, Number(eu.fome) || 0);
+    var cont = contarItens(eu.itens), gas = estado.mercado.itens.filter(function (i) { return i.id === "gas"; })[0], racao = estado.mercado.itens.filter(function (i) { return i.id === "racao"; })[0];
+    var assin = [des, Math.round(ar / 10), Math.round(fome / 10), eu.itens, eu.moedas].join("|"); if (box.dataset.assin === assin) return; box.dataset.assin = assin;
+    box.innerHTML = "";
+    function linha(nome, txt, frac, cor) {
+      var l = document.createElement("div"), n = document.createElement("span"), t = document.createElement("span"), b = document.createElement("div"), i = document.createElement("i"), bt = document.createElement("div");
+      l.className = "linha"; n.className = "nome"; n.textContent = nome; t.className = "dica"; t.style.margin = "0"; t.textContent = txt;
+      b.className = "barra"; i.style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + "%"; i.style.background = frac < 0.25 ? "var(--brasa)" : cor; b.appendChild(i);
+      bt.className = "botoes"; l.appendChild(n); l.appendChild(t); l.appendChild(b); l.appendChild(bt); box.appendChild(l); return bt;
+    }
+    function botao(dest, txt, f, off) { var b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = txt; b.disabled = !!off; b.onclick = function () { b.disabled = true; f(b); }; dest.appendChild(b); }
+    function h(min) { return min >= 60 ? Math.floor(min / 60) + "h" + (min % 60 ? String(Math.round(min % 60)).padStart(2, "0") : "") : Math.round(min) + " min"; }
+    if (des) { var p = document.createElement("p"); p.className = "dica"; p.style.margin = "0"; p.textContent = "Desempregado não gasta ar nem sente fome."; box.appendChild(p); return; }
+    var ba = linha("🧪 AR", ar ? "dura " + h(ar) + " parado" : "SEM AR: você fica doente", ar / V.arMax, "var(--verde)");
+    if (gas) botao(ba, ar > V.arMax * 0.75 ? "TANQUE CHEIO" : "ENCHER O AR (" + gas.preco + ")", function () {
+      enviar(credenciais({ acao: "comprar", item: "gas" })).then(function (r) { depoisInv(r, "Tanque cheio! 24 horas de ar."); });
+    }, ar > V.arMax * 0.75 || (Number(eu.moedas) || 0) < gas.preco);
+    var resta = Math.max(0, V.fomeLimite - fome), bf = linha("🍲 FOME", resta ? "ainda aguenta " + h(resta) + " de trabalho" : "COM FOME: coma para trabalhar", resta / V.fomeLimite, "var(--laranja)");
+    Object.keys(COMIDAS).filter(function (k) { return cont[k]; }).forEach(function (k) {
+      botao(bf, "COMER " + COMIDAS[k].toUpperCase() + " (" + cont[k] + ")", function () { enviar(credenciais({ acao: "comer", item: k })).then(function (r) { depoisInv(r, "Hum! Fome saciada."); }); });
+    });
+    if (racao) botao(bf, "ADQUIRIR RAÇÃO (" + racao.preco + ")", function () {
+      enviar(credenciais({ acao: "comprar", item: "racao" })).then(function (r) { depoisInv(r, "Ração guardada no inventário."); });
+    }, (Number(eu.moedas) || 0) < racao.preco);
+  }
   function desenharInventario() {
+    desenharVidaInv();
     var g = document.getElementById("invGrade"); if (!g || !estado.mercado || !logado()) return;
     var cont = contarItens(eu.itens), ids = Object.keys(cont).filter(nomeItem);
     var assin = eu.itens + "|" + eu.veste + "|" + invSel; if (g.dataset.assin === assin) return; g.dataset.assin = assin;
