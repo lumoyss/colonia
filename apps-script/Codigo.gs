@@ -95,6 +95,8 @@ const TAXA_TERRENO = 0.02;      // 2% de cada venda de terreno/casa entre jogado
 const ANUNCIO_HORAS = 24;       // quanto tempo um anúncio fica no outdoor
 // Ideias: só quem tem casa construída pode mandar
 const IDEIA_PRECISA_BASE = true;
+// Cadastro: cada @ do Instagram só acorda 1 sobrevivente (false = @ opcional)
+const INSTAGRAM_OBRIGATORIO = true;
 
 /* ---------- MERCADO: pacotes de moedas (em reais) e itens (em moedas) ---------- */
 const PACOTES = {
@@ -319,6 +321,7 @@ function cadastrar_(ss, d) {
 
   if (nome.length < 2) return { ok: false, erro: 'Escolha um nome com pelo menos 2 letras.' };
   if (!profissao) return { ok: false, erro: 'Escolha uma profissão.' };
+  if (INSTAGRAM_OBRIGATORIO && !instagram) return { ok: false, erro: 'Coloque o seu @ do Instagram: cada @ acorda um sobrevivente.' };
   if (instagram && !/^[A-Za-z0-9._]{1,30}$/.test(instagram)) return { ok: false, erro: 'Esse @ do Instagram não parece certo.' };
 
   const aba = ss.getSheetByName(ABA_SOBREVIVENTES);
