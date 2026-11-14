@@ -174,7 +174,7 @@ const ITENS_TERRA = [
   { id: 'relogio', nome: 'Relógio quebrado' }, { id: 'radio_velho', nome: 'Rádio velho' }, { id: 'moeda_antiga', nome: 'Moeda antiga da Terra' }
 ];
 const ITENS_ALIEN = [{ id: 'espada_alien', nome: 'Espada alienígena' }, { id: 'armadura_alien', nome: 'Armadura alienígena' }];
-const PECA_NAVE_PONTOS_MIN = 30, PECA_NAVE_PONTOS_MAX = 50;
+const PECA_NAVE_PONTOS_MIN = 30, PECA_NAVE_PONTOS_MAX = 50, PECA_NAVE_MOEDAS = 10; // Lucas 14/11: instalar a peça dá também umas moedas
 function achados_() { return RECURSOS.concat(ITENS_TERRA, ITENS_ALIEN, [{ id: 'peca_nave', nome: 'Peça vital da nave' }]); }
 // Aluguel: o dono escolhe o preço por semana; o inquilino paga adiantado
 const ALUGUEL_DIAS = 7;
@@ -869,6 +869,7 @@ function usarPecaNave_(ss, d) {
   p.itens = lista.join(','); salvarPerfil_(s, p);
   const pts = PECA_NAVE_PONTOS_MIN + Math.floor(Math.random() * (PECA_NAVE_PONTOS_MAX - PECA_NAVE_PONTOS_MIN + 1));
   somarPontos_(s, s.dados, pts);
+  p.moedas = (Number(p.moedas) || 0) + PECA_NAVE_MOEDAS; s.aba.getRange(s.linha, C_MOEDAS).setValue(p.moedas); p.moedasPeca = PECA_NAVE_MOEDAS;
   p.pontos = (Number(s.dados[C_PONTOS - 1]) || 0) + pts; p.pontosPeca = pts;
   avisoRadio_(ss, '🔧 ' + p.nome + ' instalou uma peça vital na nave: +' + pts + ' pontos de uma vez!');
   return p;

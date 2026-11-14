@@ -618,6 +618,12 @@
     <p class="dica" id="premioDica">Já está no seu inventário.</p>
     <button type="button" class="btn sec" id="premioVer">VER MEU INVENTÁRIO</button>
   </div></div>
+  <div class="modal" id="dicaModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="dicaTitulo" style="text-align:center">
+    <div id="dicaIcone" style="font-size:44px"></div>
+    <h2 class="pix" id="dicaTitulo" style="margin:6px 0 10px;color:var(--laranja)"></h2>
+    <p id="dicaTexto" style="text-align:left"></p>
+    <button type="button" class="btn" id="dicaOk">ENTENDI</button>
+  </div></div>
   <div class="modal" id="perfilModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="perfilNome">
     <button type="button" class="fechar" id="perfilFechar" aria-label="Fechar">X</button>
     <canvas id="perfilSprite" width="24" height="34"></canvas>
@@ -1159,6 +1165,26 @@
   var destaqueLote = null; // só o próprio jogador vê: o terreno em que ele está pisca no mapa
   // Lucas 14/11: o botão da ação certa aparece em cima do mapa, conforme o lugar onde o bonequinho está
   // (nave = consertar, terreno = reivindicar/invadir, torre = limpar, zona de mineração = minerar, baú = abrir)
+  var DICAS_LUGAR = {
+    nave: ["🚀", "A NAVE ORION", "É aqui que todo mundo vive enquanto não tem base. O ar da nave está acabando! Toque em CONSERTAR A NAVE para ganhar moedas e pontos e ajudar a nave a bater as metas (veja a barra no topo do site)."],
+    terreno_livre: ["🚩", "TERRENO LIVRE", "Este pedaço do planeta não tem dono. Toque em REIVINDICAR e fique 3 minutos dentro dele. Depois volte para a nave e registre o terreno no Mercado. Com terreno você pode construir uma base oxigenada."],
+    terreno_dono: ["🏠", "TERRENO DE OUTRO SOBREVIVENTE", "Este terreno já tem dono. Se você ficar 15 minutos dentro dele, pode invadir e levar 5% das moedas do dono (ou um item). Donos podem contratar um guarda de segurança para se proteger."],
+    mineracao: ["⛏️", "ZONA DE MINERAÇÃO", "A borda pedregosa do mapa. Toque em MINERAR para procurar coisas: cristais de oxigênio, peças da nave, lembranças da Terra e até itens alienígenas. Você começa com uma picareta velha que aguenta 60 mineradas."],
+    torre: ["🗼", "TORRE ALIENÍGENA", "Uma torre antiga que não foi feita por humanos. Toque em LIMPAR A TORRE e fique aqui para ajudar a desbloquear. Quem mais ajudar pode virar dono do primeiro clã."],
+    bau: ["🎁", "BAÚ DO DIA", "Um baú com moedas e itens. Só dá para abrir um por dia: toque em ABRIR O BAÚ."],
+    bauzinho: ["🎁", "BAÚ PEQUENO", "Baús pequenos aparecem pelo mapa de tempos em tempos e ficam até alguém pegar. Toque em ABRIR para ganhar moedas."]
+  };
+  function lerVistos() { try { return JSON.parse(localStorage.getItem("colonia_vistos") || "{}"); } catch (e) { return {}; } }
+  function jaVisto(k) { return !!lerVistos()[k]; }
+  function marcarVisto(k) { try { var v = lerVistos(); v[k] = 1; localStorage.setItem("colonia_vistos", JSON.stringify(v)); } catch (e) { /* sem memória do navegador: segue */ } }
+  function algumModalAberto() { return Array.prototype.some.call(document.querySelectorAll(".modal"), function (m) { return !m.hidden; }); }
+  function mostrarDica(k) {
+    var D = DICAS_LUGAR[k]; if (!D || jaVisto("lugar_" + k) || algumModalAberto()) return;
+    marcarVisto("lugar_" + k);
+    document.getElementById("dicaIcone").textContent = D[0]; document.getElementById("dicaTitulo").textContent = D[1]; document.getElementById("dicaTexto").textContent = D[2];
+    document.getElementById("dicaModal").hidden = false;
+  }
+  document.getElementById("dicaOk").onclick = function () { document.getElementById("dicaModal").hidden = true; };
   var mapaAlvos = [];
   function vis(el) { return !!el && !el.hidden && el.offsetParent !== null; }
   function sincronizarMapaAcao() {
@@ -1174,6 +1200,10 @@
     if (meu && logado() && naNave() && missao.modo === "parado" && !doente()) {
       var bc = Array.prototype.filter.call(document.querySelectorAll("#botoesTrabalho button"), function (b) { return b.textContent === BOTAO_TRAB.consertar; })[0];
       if (bc) alvos.push({ el: bc, txt: "🔧 CONSERTAR A NAVE" });
+    }
+    if (meu && logado() && !meu.tx) {
+      var lugar = naNave() ? "nave" : !document.getElementById("btnBau").hidden ? "bau" : !document.getElementById("btnBauzinho").hidden ? "bauzinho" : vis(document.getElementById("torreBox")) ? "torre" : naZonaDeMineracao(meu.x, meu.y) ? "mineracao" : n && estado.donos[n] ? (estado.donos[n] !== eu.nome ? "terreno_dono" : "") : n ? "terreno_livre" : "";
+      if (lugar) mostrarDica(lugar);
     }
     alvos = alvos.slice(0, 2);
     var info = reconhecendo || invadindo ? txt : "", mostra = alvos.length > 0 || !!info;
@@ -2279,9 +2309,9 @@
   /* ---------------- aviso de prêmio ("você ganhou!") ---------------- */
   function premio(titulo, itens, moedas) {
     var box = document.getElementById("premioItens"); box.innerHTML = "";
-    function cartao(ic, nome) { var d = document.createElement("div"); d.style.cssText = "background:var(--fundo);border:3px solid var(--fundo3);padding:10px;min-width:96px"; var i = document.createElement("div"); i.style.fontSize = "38px"; i.textContent = ic; var n = document.createElement("div"); n.style.fontWeight = "700"; n.textContent = nome; d.appendChild(i); d.appendChild(n); box.appendChild(d); }
+    function cartao(ic, nome, expl) { var d = document.createElement("div"); d.style.cssText = "background:var(--fundo);border:3px solid var(--fundo3);padding:10px;min-width:96px;max-width:260px"; var i = document.createElement("div"); i.style.fontSize = "38px"; i.textContent = ic; var n = document.createElement("div"); n.style.fontWeight = "700"; n.textContent = nome; d.appendChild(i); d.appendChild(n); if (expl) { var e = document.createElement("p"); e.className = "dica"; e.style.cssText = "margin:6px 0 0;font-size:14px;text-align:left"; e.textContent = expl; d.appendChild(e); } box.appendChild(d); }
     if (moedas) cartao("🪙", "+" + moedas + " moedas");
-    (itens || []).forEach(function (id) { cartao(icone(id), nomeItem(id) || id); });
+    (itens || []).forEach(function (id) { cartao(icone(id), nomeItem(id) || id, usoItem(id) || descItem(id)); marcarVisto("item_" + id); });
     document.getElementById("premioTitulo").textContent = titulo || "VOCÊ GANHOU!";
     document.getElementById("premioDica").textContent = (itens || []).length ? "Já está no seu inventário (Mercado → INVENTÁRIO)." : "As moedas já estão na sua conta.";
     document.getElementById("premioVer").hidden = !(itens || []).length;
@@ -2308,6 +2338,23 @@
   var COMIVEIS = { comida: "sacia 4h de trabalho", refeicao: "sacia 8h de trabalho", racao: "sacia 4h de trabalho" };
   function icone(id) { return ICONES[id] || (/^lote_/.test(id) ? "🗺️" : /^empresa_/.test(id) ? "🏭" : "📦"); }
   function ehRoupa(id) { return id === "traje_dourado" || (estado.mercado && estado.mercado.itens.some(function (i) { return i.id === id && i.slot; })); }
+  // Lucas 14/11: o jogo explica sozinho o que é cada item e o que fazer com ele
+  var ITENS_TERRA_IDS = ["sucata", "parafusos", "garrafa", "relogio", "radio_velho", "moeda_antiga"];
+  function usoItem(id) {
+    if (id === "peca_nave") return "O que fazer: instale na nave! Toque em INSTALAR NA NAVE: a nave ganha de 30 a 50 pontos de conserto e você ganha 10 moedas.";
+    if (/^(cristal|minerio|semente|fossil|peca)$/.test(id)) return "O que fazer: entregue no Centro de Pesquisa (☰ → NAVE ORION → CENTRO DE PESQUISA) para ganhar moedas, ou venda para outros sobreviventes.";
+    if (ITENS_TERRA_IDS.indexOf(id) >= 0) return "Uma lembrança da Terra achada na mineração. O que fazer: venda para outros sobreviventes no mercado (colecionadores pagam bem).";
+    if (/_alien$/.test(id)) return "Item raro, feito por outros seres deste planeta. O que fazer: guarde ou venda caro para outros sobreviventes.";
+    if (id === "picareta") return "O que fazer: leve o bonequinho para a borda pedregosa do mapa e toque em MINERAR (aparece em cima do mapa).";
+    if (id === "ticket_assembleia") return "O que fazer: use para entrar na Assembleia do dia (☰ → NAVE ORION → ASSEMBLEIA), comentar e votar.";
+    if (id === "ticket_pauta") return "O que fazer: use na Assembleia para propor um assunto e criar uma enquete.";
+    if (id === "ficha_item" || id === "ficha_empresa") return "O que fazer: use para criar o seu próprio item ou empresa (toque em USAR).";
+    if (/^reliquia_/.test(id)) return "Item exclusivo do check-in, com o seu nome. Junto com as horas online e as Assembleias, libera um título de nobreza (☰ → NAVE ORION → TÍTULOS).";
+    if (/^lote_/.test(id)) return "O que fazer: construa uma casa (Mercado → IMÓVEIS), coloque um outdoor ou venda o terreno.";
+    if (COMIVEIS[id]) return "O que fazer: toque em COMER quando a barra de fome estiver alta.";
+    if (ehRoupa(id)) return "O que fazer: toque em VESTIR e todo mundo vê a roupa no seu bonequinho no mapa.";
+    return "";
+  }
   function descItem(id) {
     if (/^lote_/.test(id)) return "Seu terreno no mapa. Dá para construir casa ou colocar outdoor nele, ou vender para outro sobrevivente.";
     if (estado.criados && estado.criados[id]) return "Item criado por " + estado.criados[id].dono + ".";
@@ -2383,6 +2430,8 @@
     var d = document.getElementById("invDet"), id = invSel; d.hidden = !id; d.innerHTML = ""; if (!id) return;
     var h = document.createElement("h4"); h.textContent = icone(id) + " " + nomeItem(id); d.appendChild(h);
     var p = document.createElement("p"); p.className = "dica"; p.style.margin = "0"; p.textContent = "Você tem " + cont[id] + ". " + descItem(id); d.appendChild(p);
+    var uso = usoItem(id); if (uso) { var pu = document.createElement("p"); pu.className = "dica"; pu.style.cssText = "margin:6px 0 0;color:var(--verde2)"; pu.textContent = "👉 " + uso; d.appendChild(pu); }
+    setTimeout(function () { d.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 30);
     var ac = document.createElement("div"); ac.className = "acoes"; d.appendChild(ac);
     if (ehRoupa(id)) {
       var vestindo = tem(eu.veste, id);
@@ -2400,8 +2449,8 @@
       irSub("imoveis"); setTimeout(function () { var o = document.querySelector('[data-item="outdoor"]'); if (o) { o.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }); var i = o.querySelector("input"); if (i) i.focus(); } }, 150);
     }));
     if (id === "ticket_assembleia" || id === "ticket_pauta") ac.appendChild(acaoInv("USAR NA ASSEMBLEIA", false, function () { irPara("assembleia"); abrirAssembleia(); }));
-    if (id === "peca_nave") ac.appendChild(acaoInv("INSTALAR NA NAVE (+30 A 50 PONTOS)", false, function (b) {
-      b.disabled = true; enviar(credenciais({ acao: "usar_peca" })).then(function (r) { b.disabled = false; depoisInv(r, "Peça instalada! +" + (r.pontosPeca || "") + " pontos para a nave."); if (r.ok) carregar(); });
+    if (id === "peca_nave") ac.appendChild(acaoInv("INSTALAR NA NAVE (+30 A 50 PONTOS E 10 MOEDAS)", false, function (b) {
+      b.disabled = true; enviar(credenciais({ acao: "usar_peca" })).then(function (r) { b.disabled = false; depoisInv(r, "Peça instalada! +" + (r.pontosPeca || "") + " pontos para a nave e +" + (r.moedasPeca || 0) + " moedas para você."); if (r.ok) carregar(); });
     }));
     if (id === "picareta") { var dp = document.createElement("p"); dp.className = "dica"; dp.textContent = "Para usar: leve o bonequinho para a borda pedregosa do mapa e toque em MINERAR."; d.appendChild(dp); }
     if (!vendivel(id)) return;
