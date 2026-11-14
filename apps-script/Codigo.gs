@@ -223,7 +223,7 @@ function setup() {
   colunas_(garantirAba_(ss, ABA_SILENCIO), ['id', 'data', 'guarda_numero', 'guarda', 'silenciado_numero', 'silenciado', 'mensagens', 'reclamacao', 'decisao', 'processado']);
   colunas_(garantirAba_(ss, ABA_CRIACOES), ['id', 'data', 'numero', 'nome', 'tipo', 'ideia', 'moedas_pagas', 'status', 'nome_final', 'processado']);
   colunas_(garantirAba_(ss, ABA_LEILOES), ['id', 'fechou', 'numero', 'nome', 'instagram', 'lance', 'frase', 'status']);
-  colunas_(garantirAba_(ss, ABA_OFERTAS), ['id', 'data', 'vendedor_numero', 'vendedor', 'item', 'preco', 'status', 'comprador_numero', 'comprador']);
+  colunas_(garantirAba_(ss, ABA_OFERTAS), ['id', 'data', 'vendedor_numero', 'vendedor', 'item', 'preco', 'status', 'comprador_numero', 'comprador', 'quantidade']);
 
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('resumoDiario').timeBased().everyDays(1).atHour(21).create();
@@ -279,7 +279,7 @@ function doGet(e) {
     terrenos: { x0: LOTE_X0, y0: LOTE_Y0, l: LOTE_L, a: LOTE_A, colunas: LOTE_COLUNAS, linhas: LOTE_LINHAS, nave: LOTES_DA_NAVE, preco: TERRENO_PRECO, minutos: TERRENO_MINUTOS, porPessoa: TERRENOS_POR_PESSOA }
   };
   const ofertas = linhas_(ss.getSheetByName(ABA_OFERTAS)).filter(function (l) { return l[6] === 'aberta'; }).slice(-100).reverse().map(function (l) {
-    return { id: l[0], vendedor: l[3], item: l[4], preco: l[5] };
+    return { id: l[0], vendedor: l[3], item: l[4], preco: l[5], qtd: qtdOferta_(l) };
   });
   const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
   const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
@@ -983,14 +983,17 @@ function vendivel_(id) {
 function vender_(ss, d) {
   const s = acharSobrevivente_(ss, d);
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
-  const item = String(d.item || ''), preco = Math.floor(Number(d.preco));
+  const item = String(d.item || ''), preco = Math.floor(Number(d.preco)), qtd = Math.floor(Number(d.qtd || 1));
   if (!vendivel_(item)) return { ok: false, erro: 'Esse item não pode ser vendido.' };
-  if (!(preco >= 1 && preco <= 100000)) return { ok: false, erro: 'Escolha um preço entre 1 e 100.000 moedas.' };
+  if (!(preco >= 1 && preco <= 100000)) return { ok: false, erro: 'Escolha um preço entre 1 e 100.000 moedas (por unidade).' };
+  if (!(qtd >= 1 && qtd <= 999)) return { ok: false, erro: 'Escolha quantas unidades quer vender.' };
+  if (qtd > 1 && /^lote_/.test(item)) return { ok: false, erro: 'Terreno é vendido um de cada vez.' };
   const aba = ss.getSheetByName(ABA_OFERTAS);
   const minhas = linhas_(aba).filter(function (l) { return l[6] === 'aberta' && String(l[2]) === String(s.dados[0]); }).length;
   if (minhas >= 10) return { ok: false, erro: 'Você já tem 10 itens à venda. Cancele algum primeiro.' };
   const p = perfilDe_(s), lista = p.itens ? p.itens.split(',') : [];
-  if (!tirarItem_(lista, item)) return { ok: false, erro: 'Você não tem esse item.' };
+  if (lista.filter(function (x) { return x === item; }).length < qtd) return { ok: false, erro: 'Você não tem ' + qtd + ' unidades desse item.' };
+  for (let k = 0; k < qtd; k++) tirarItem_(lista, item);
   if (lista.indexOf(item) < 0 && tem_(p.veste, item)) { p.veste = vestirLista_(p.veste, item, false); s.aba.getRange(s.linha, C_VESTE).setValue(p.veste || '-'); }
   if (/^lote_/.test(item) && !lista.some(function (i) { return /^lote_/.test(i); }) && lista.some(function (i) { return ITENS.some(function (x) { return x.id === i && x.base; }); }))
     return { ok: false, erro: 'Sua base está nesse terreno. Você não pode vender o único terreno onde está a sua base.' };
@@ -999,7 +1002,7 @@ function vender_(ss, d) {
   p.itens = lista.join(',');
   salvarPerfil_(s, p);
   const id = 'O' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
-  aba.appendRow([id, new Date(), p.numero, texto_(String(p.nome)), item, preco, 'aberta', '', '']);
+  aba.appendRow([id, new Date(), p.numero, texto_(String(p.nome)), item, preco, 'aberta', '', '', qtd]);
   return p;
 }
 
@@ -1017,10 +1020,12 @@ function cancelarOferta_(ss, d) {
   if (String(o.dados[2]) !== String(s.dados[0])) return { ok: false, erro: 'Essa oferta não é sua.' };
   o.aba.getRange(o.linha, 7).setValue('cancelada');
   const p = perfilDe_(s);
-  p.itens = (p.itens ? p.itens.split(',') : []).concat([o.dados[4]]).join(',');
+  const volta = []; for (let k = 0; k < qtdOferta_(o.dados); k++) volta.push(o.dados[4]);
+  p.itens = (p.itens ? p.itens.split(',') : []).concat(volta).join(',');
   salvarPerfil_(s, p);
   return p;
 }
+function qtdOferta_(l) { const q = Math.floor(Number(l[9])); return q >= 1 ? q : 1; }
 
 function comprarOferta_(ss, d) {
   const s = acharSobrevivente_(ss, d);
@@ -1028,16 +1033,20 @@ function comprarOferta_(ss, d) {
   const o = acharOferta_(ss, d.id);
   if (!o || o.dados[6] !== 'aberta') return { ok: false, erro: 'Alguém já comprou essa oferta.' };
   if (String(o.dados[2]) === String(s.dados[0])) return { ok: false, erro: 'Essa oferta é sua.' };
-  const preco = Number(o.dados[5]) || 0, p = perfilDe_(s);
+  const tem = qtdOferta_(o.dados), qtd = Math.floor(Number(d.qtd || 1));
+  if (!(qtd >= 1 && qtd <= tem)) return { ok: false, erro: 'Só tem ' + tem + (tem === 1 ? ' unidade' : ' unidades') + ' nessa oferta.' };
+  const preco = (Number(o.dados[5]) || 0) * qtd, p = perfilDe_(s);
   if (p.moedas < preco) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + preco + '.' };
   const vend = linhaPorNumero_(ss, o.dados[2]);
   p.moedas -= preco;
-  p.itens = (p.itens ? p.itens.split(',') : []).concat([o.dados[4]]).join(',');
+  const vem = []; for (let k = 0; k < qtd; k++) vem.push(o.dados[4]);
+  p.itens = (p.itens ? p.itens.split(',') : []).concat(vem).join(',');
   salvarPerfil_(s, p);
   const taxa = /^lote_/.test(String(o.dados[4])) ? Math.floor(preco * TAXA_TERRENO) : 0;
   if (vend) vend.aba.getRange(vend.linha, C_MOEDAS).setValue((Number(vend.dados[C_MOEDAS - 1]) || 0) + preco - taxa);
   if (taxa) cobrarTaxa_(ss, taxa, 'Taxa de venda de terreno');
-  o.aba.getRange(o.linha, 7).setValue('vendida');
+  o.aba.getRange(o.linha, 10).setValue(tem - qtd);
+  if (tem - qtd <= 0) o.aba.getRange(o.linha, 7).setValue('vendida');
   o.aba.getRange(o.linha, 8).setValue(p.numero);
   o.aba.getRange(o.linha, 9).setValue(texto_(String(p.nome)));
   return p;

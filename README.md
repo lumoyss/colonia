@@ -151,3 +151,9 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 1. No Apps Script, apague o código e cole o `Codigo.gs` novo. Salve.
 2. Escolha a função **setup** e clique em **Executar**.
 3. **Implantar → Gerenciar implantações → lápis → Versão: Nova versão → Implantar**. O link continua o mesmo.
+
+## Inventário e venda em quantidade
+
+- No Mercado tem a aba INVENTÁRIO: uma grade com espaços, e cada item aparece com ícone e quantidade. Tocando num item dá para vestir/tirar, comer, usar ficha ou vender.
+- Para vender, a pessoa escolhe quantas unidades e o preço de cada uma. Quem compra também escolhe quantas quer levar. Terreno é sempre um de cada vez.
+- Na aba Ofertas da planilha apareceu a coluna "quantidade" (quantas unidades ainda sobram). Rode o setup uma vez para criar o título dela.

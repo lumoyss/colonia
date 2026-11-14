@@ -10,7 +10,7 @@
 <meta property="og:image" content="perfil.png">
 <link rel="icon" href="perfil.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --fundo:#0B161C; --fundo2:#12242C; --fundo3:#1a333d;
@@ -21,7 +21,7 @@
   *{box-sizing:border-box}
   [hidden]{display:none!important}
   html,body{margin:0}
-  body{background:var(--fundo);color:var(--creme);font-family:"Pixelify Sans",system-ui,sans-serif;font-size:18px;line-height:1.45;
+  body{background:var(--fundo);color:var(--creme);font-family:"Nunito",system-ui,sans-serif;font-size:17px;line-height:1.45;
     background-image:radial-gradient(1px 1px at 20% 30%,#fff8 50%,transparent 51%),radial-gradient(1px 1px at 70% 10%,#fff6 50%,transparent 51%),radial-gradient(1px 1px at 40% 80%,#fff5 50%,transparent 51%),radial-gradient(1px 1px at 90% 60%,#fff6 50%,transparent 51%);
     background-size:180px 180px,230px 230px,150px 150px,260px 260px}
   .pix{font-family:"Press Start 2P",monospace;letter-spacing:.5px}
@@ -111,6 +111,20 @@
   nav.subabas button[aria-pressed=true]{background:var(--fundo3);color:var(--creme);border-color:var(--verde)}
   .sub{display:none}.sub.ativo{display:block}
   .falta{background:none;border:2px dashed #E8C25A;color:#E8C25A;font-family:"Press Start 2P",monospace;font-size:8px;padding:8px 6px;cursor:pointer;line-height:1.6}
+  .inv-grade{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:var(--fundo2);padding:8px;border:3px solid var(--fundo3)}
+  .slot{aspect-ratio:1;background:var(--fundo);border:2px solid var(--fundo3);position:relative;font-size:26px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;color:var(--creme);font-family:inherit;min-width:0}
+  .slot.vazio{cursor:default;background:#0e1c22}
+  .slot.ouro{border-color:#e8c14a;background:#2a2410}
+  .slot[aria-pressed=true]{border-color:var(--laranja);box-shadow:0 0 0 2px var(--laranja)}
+  .slot .q{position:absolute;right:3px;bottom:2px;font-family:"Press Start 2P",monospace;font-size:9px;color:var(--creme);text-shadow:1px 1px 0 #000}
+  .slot .v{position:absolute;left:3px;top:2px;font-family:"Press Start 2P",monospace;font-size:8px;color:var(--verde2)}
+  .inv-det{background:var(--fundo2);border:3px solid var(--fundo3);border-top:0;padding:12px}
+  .inv-det h4{margin:0 0 4px;font-family:"Press Start 2P",monospace;font-size:11px;color:var(--verde2);line-height:1.6}
+  .inv-det .acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .inv-det .acoes .btn{width:auto;margin:0;flex:1 1 40%}
+  .passo{display:flex;align-items:center;gap:8px;margin:6px 0}
+  .passo button{width:44px;height:40px;margin:0;padding:0;font-size:18px}
+  .passo output{min-width:48px;text-align:center;font-family:"Press Start 2P",monospace;font-size:12px}
   .loja-item{background:var(--fundo);border:3px solid var(--fundo2);padding:12px;display:flex;flex-direction:column;gap:6px}
   .loja-item .preco{font-family:"Press Start 2P",monospace;color:var(--laranja);font-size:12px}
   .loja-item small{color:var(--apagado);font-size:14px;flex:1}
@@ -362,7 +376,7 @@
         <span class="quem" id="contaNome"></span>
         <span class="moedas" id="contaMoedas">0</span>
         <button type="button" class="btn mini" id="btnMaisMoedas" style="margin:0;width:auto;padding:8px 10px;font-size:9px">+ ADQUIRIR MOEDAS</button>
-        <span class="inv" id="contaItens"></span>
+        <button type="button" class="btn mini" id="contaItens" style="margin:0;width:auto;padding:8px 10px;font-size:9px">🎒 INVENTÁRIO</button>
         <span class="inv" id="contaOnline" hidden></span>
       </div>
       <form id="formLogin" autocomplete="off">
@@ -375,6 +389,7 @@
       </form>
       <div class="msg" id="msgMercado" role="status"></div>
       <nav class="subabas" id="subabas">
+        <button type="button" data-sub="inventario" aria-pressed="false" id="subInventario" hidden>INVENTÁRIO</button>
         <button type="button" data-sub="terreno" aria-pressed="true">TERRENO</button>
         <button type="button" data-sub="moedas" aria-pressed="false">MOEDAS</button>
         <button type="button" data-sub="vida" aria-pressed="false">AR E COMIDA</button>
@@ -384,6 +399,13 @@
         <button type="button" data-sub="alugueis" aria-pressed="false">ALUGUÉIS</button>
         <button type="button" data-sub="sobreviventes" aria-pressed="false">ENTRE JOGADORES</button>
       </nav>
+      <div class="sub" data-sub="inventario">
+        <h3 class="pix cat">SEU INVENTÁRIO</h3>
+        <p class="dica">Tudo o que é seu fica aqui: o que veio do baú, da mineração, das compras e os itens criados. Toque num item para usar, vestir ou vender.</p>
+        <div class="msg" id="msgInv" role="status"></div>
+        <div class="inv-grade" id="invGrade"></div>
+        <div class="inv-det" id="invDet" hidden></div>
+      </div>
       <div class="sub ativo" data-sub="terreno">
         <h3 class="pix cat">TERRENO, CASA E OUTDOOR</h3>
         <div class="loja fila"><div id="registroTerreno" style="display:contents"></div><div id="loja-terreno" style="display:contents"></div></div>
@@ -419,17 +441,11 @@
       <p class="dica">Compre e venda recursos e itens com outros sobreviventes, em moedas. Terrenos também podem ser vendidos aqui. Bases não.</p>
       <div class="msg" id="msgVenda" role="status"></div>
       <div class="loja fila" id="ofertas" style="margin-top:8px"></div><p class="deslize">deslize para o lado →</p>
-      <form id="formVender" autocomplete="off" hidden>
+      <div id="formVender" hidden>
         <h3 class="pix cat" style="margin-top:18px">VENDER UM ITEM</h3>
-        <p class="dica" id="venderVazio">Você ainda não tem nada para vender. Explore o mapa e procure o baú do dia!</p>
-        <div id="venderCampos">
-          <label for="venderItem">Item</label>
-          <select id="venderItem"></select>
-          <label for="venderPreco">Preço (moedas)</label>
-          <input id="venderPreco" type="number" min="1" max="100000" placeholder="ex.: 50">
-          <button class="btn sec" type="submit" id="btnVender">COLOCAR À VENDA</button>
-        </div>
-      </form>
+        <p class="dica">Para vender, abra o seu inventário, toque no item e escolha quantas unidades e o preço de cada uma.</p>
+        <button class="btn sec" type="button" id="btnIrInventario">ABRIR MEU INVENTÁRIO</button>
+      </div>
       </div>
     </div>
   </section>
@@ -1446,13 +1462,15 @@
     if (on) {
       document.getElementById("contaNome").textContent = eu.nome + " · #" + eu.numero;
       document.getElementById("contaMoedas").textContent = (Number(eu.moedas) || 0).toLocaleString("pt-BR");
-      var cont = contarItens(eu.itens), inv = Object.keys(cont).filter(nomeItem).map(function (id) { return nomeItem(id) + (cont[id] > 1 ? " x" + cont[id] : ""); });
-      document.getElementById("contaItens").textContent = inv.length ? "Seus itens: " + inv.join(", ") : "Você ainda não tem itens.";
+      var nItens = String(eu.itens || "").split(",").filter(nomeItem).length;
+      document.getElementById("contaItens").textContent = "🎒 INVENTÁRIO (" + nItens + ")";
     }
+    document.getElementById("subInventario").hidden = !on;
+    if (!on && document.querySelector('.sub.ativo[data-sub="inventario"]')) irSub("terreno");
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
     marcarFaltaMoedas();
-    desenharItens(); mostrarMissao(); desenharOfertas(); desenharAlugueis(); desenharFormIdeia(); desenharExtras();
+    desenharItens(); mostrarMissao(); desenharOfertas(); desenharInventario(); desenharAlugueis(); desenharFormIdeia(); desenharExtras();
   }
   document.getElementById("formLogin").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -1714,7 +1732,7 @@
   }
   function vendivel(id) {
     var m = estado.mercado; if (!m) return false;
-    return /^lote_\d+$/.test(id) || (m.recursos || []).some(function (r) { return r.id === id; }) || m.itens.some(function (i) { return i.id === id && !i.base && !i.fixo; });
+    return /^lote_\d+$/.test(id) || /^criado_/.test(id) || id === "comida" || id === "refeicao" || (m.recursos || []).some(function (r) { return r.id === id; }) || m.itens.some(function (i) { return i.id === id && !i.base && !i.fixo && !i.gas && !i.consumivel; });
   }
   function desenharOfertas() {
     var box = document.getElementById("ofertas"); if (!box || !estado.mercado) return;
@@ -1722,55 +1740,125 @@
     var lista = estado.ofertas || [];
     if (!lista.length) { var v = document.createElement("p"); v.className = "dica"; v.textContent = "Ninguém está vendendo nada agora. Seja o primeiro!"; box.appendChild(v); }
     lista.forEach(function (o) {
-      var minha = logado() && o.vendedor === eu.nome;
-      var c = cartaoLoja(nomeItem(o.item) || o.item, Number(o.preco).toLocaleString("pt-BR") + " moedas", "Vendido por " + o.vendedor, minha ? "CANCELAR" : "COMPRAR");
+      var minha = logado() && o.vendedor === eu.nome, q = Number(o.qtd) || 1, quero = 1;
+      var c = cartaoLoja((icone(o.item) + " " + (nomeItem(o.item) || o.item)) + (q > 1 ? " x" + q : ""), Number(o.preco).toLocaleString("pt-BR") + " moedas" + (q > 1 ? " cada" : ""), "Vendido por " + o.vendedor, minha ? "CANCELAR" : "COMPRAR");
       c.botao.disabled = !logado();
+      function rotulo() { c.botao.textContent = minha ? "CANCELAR" : "COMPRAR " + quero + " (" + (quero * o.preco).toLocaleString("pt-BR") + ")"; delete c.botao.dataset.confirmar; }
+      if (!minha && q > 1) {
+        var ps = passo(q, function (v) { quero = v; rotulo(); }); c.el.insertBefore(ps, c.botao);
+      }
+      rotulo();
       c.botao.onclick = function () {
-        if (!minha && (Number(eu.moedas) || 0) < o.preco) return mensagem("msgVenda", "Moedas insuficientes para essa compra.");
-        if (!c.botao.dataset.confirmar) { c.botao.dataset.confirmar = "1"; c.botao.textContent = minha ? "CONFIRMAR CANCELAR" : "CONFIRMAR (" + o.preco + ")"; return; }
+        var total = quero * o.preco;
+        if (!minha && (Number(eu.moedas) || 0) < total) return mensagem("msgVenda", "Moedas insuficientes para essa compra.");
+        if (!c.botao.dataset.confirmar) { c.botao.dataset.confirmar = "1"; c.botao.textContent = minha ? "CONFIRMAR CANCELAR" : "CONFIRMAR (" + total.toLocaleString("pt-BR") + ")"; return; }
         c.botao.disabled = true;
-        enviar(credenciais({ acao: minha ? "cancelar" : "comprar_oferta", id: o.id })).then(function (r) {
+        enviar(credenciais({ acao: minha ? "cancelar" : "comprar_oferta", id: o.id, qtd: quero })).then(function (r) {
           if (!r.ok) { mensagem("msgVenda", r.erro || "Não deu certo."); carregar(); return; }
           aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
-          mensagem("msgVenda", minha ? "Oferta cancelada. O item voltou para você." : "Comprado! " + nomeItem(o.item) + " agora é seu.", true);
+          mensagem("msgVenda", minha ? "Oferta cancelada. Os itens voltaram para o seu inventário." : "Comprado! " + quero + "x " + nomeItem(o.item) + " foi para o seu inventário.", true);
           carregar();
         });
       };
       box.appendChild(c.el);
     });
-    // itens que eu posso vender
-    var sel = document.getElementById("venderItem"), atual = sel.value, cont = logado() ? contarItens(eu.itens) : {};
-    sel.innerHTML = "";
-    Object.keys(cont).filter(vendivel).forEach(function (id) {
-      var op = document.createElement("option"); op.value = id; op.textContent = nomeItem(id) + " (você tem " + cont[id] + ")"; sel.appendChild(op);
-    });
-    if (atual) sel.value = atual;
-    var temAlgo = sel.options.length > 0;
     document.getElementById("formVender").hidden = !logado();
-    document.getElementById("venderVazio").hidden = !logado() || temAlgo;
-    document.getElementById("venderCampos").hidden = !temAlgo;
   }
-  document.getElementById("formVender").addEventListener("submit", function (ev) {
-    ev.preventDefault();
-    var item = document.getElementById("venderItem").value, preco = Math.floor(Number(document.getElementById("venderPreco").value));
-    if (!item) return;
-    if (!(preco >= 1)) return mensagem("msgVenda", "Escolha um preço em moedas.");
-    var bt = document.getElementById("btnVender"); bt.disabled = true;
-    enviar(credenciais({ acao: "vender", item: item, preco: preco })).then(function (r) {
-      bt.disabled = false;
-      if (!r.ok) return mensagem("msgVenda", r.erro || "Não deu certo.");
-      aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
-      document.getElementById("venderPreco").value = "";
-      mensagem("msgVenda", nomeItem(item) + " está à venda por " + preco + " moedas.", true);
-      carregar();
-    });
-  });
+  /* ---------------- inventário (grade com espaços) ---------------- */
+  var ICONES = { base: "🏠", base_grande: "🏢", outdoor: "🪧", gas: "🧪", racao: "🥫", comida: "🥕", refeicao: "🍲", bone: "🧢", calca: "👖", chapeu: "🤠", colete: "🦺", vestido: "👗",
+    capacete_dourado: "⛑️", bota_dourada: "👢", calca_dourada: "👖", blusa_dourada: "👕", traje_dourado: "✨", mochila: "🎒", picareta: "⛏️", ferramentas: "🧰",
+    ficha_item: "🎟️", ficha_empresa: "🏭", cristal: "💎", peca: "⚙️", minerio: "🪨", semente: "🌱", fossil: "🦴" };
+  var COMIVEIS = { comida: "sacia 4h de trabalho", refeicao: "sacia 8h de trabalho", racao: "sacia 4h de trabalho" };
+  function icone(id) { return ICONES[id] || (/^lote_/.test(id) ? "🗺️" : /^empresa_/.test(id) ? "🏭" : "📦"); }
+  function ehRoupa(id) { return id === "traje_dourado" || (estado.mercado && estado.mercado.itens.some(function (i) { return i.id === id && i.slot; })); }
+  function descItem(id) {
+    if (/^lote_/.test(id)) return "Seu terreno no mapa. Dá para construir casa ou colocar outdoor nele, ou vender para outro sobrevivente.";
+    if (estado.criados && estado.criados[id]) return "Item criado por " + estado.criados[id].dono + ".";
+    if (COMIVEIS[id] && !(estado.mercado.itens.some(function (i) { return i.id === id; }))) return "Comida dos agricultores: " + COMIVEIS[id] + ".";
+    var i = estado.mercado.itens.filter(function (x) { return x.id === id; })[0]; if (i && i.desc) return i.desc;
+    if ((estado.mercado.recursos || []).some(function (r) { return r.id === id; })) return "Recurso achado no mapa. Pode ser vendido para outros sobreviventes.";
+    return "";
+  }
+  function passo(max, mudou, ini) {
+    var w = document.createElement("div"), m = document.createElement("button"), o = document.createElement("output"), p = document.createElement("button"), v = ini || 1;
+    w.className = "passo"; m.type = p.type = "button"; m.className = p.className = "btn mini"; m.textContent = "−"; p.textContent = "+";
+    function por() { o.textContent = v + "/" + max; m.disabled = v <= 1; p.disabled = v >= max; mudou(v); }
+    m.onclick = function () { v = Math.max(1, v - 1); por(); }; p.onclick = function () { v = Math.min(max, v + 1); por(); };
+    w.appendChild(m); w.appendChild(o); w.appendChild(p); setTimeout(por); o.textContent = v + "/" + max;
+    return w;
+  }
+  var invSel = null;
+  function desenharInventario() {
+    var g = document.getElementById("invGrade"); if (!g || !estado.mercado || !logado()) return;
+    var cont = contarItens(eu.itens), ids = Object.keys(cont).filter(nomeItem);
+    var assin = eu.itens + "|" + eu.veste + "|" + invSel; if (g.dataset.assin === assin) return; g.dataset.assin = assin;
+    if (invSel && !cont[invSel]) invSel = null;
+    g.innerHTML = "";
+    var total = Math.max(20, Math.ceil((ids.length + 1) / 5) * 5);
+    for (var k = 0; k < total; k++) (function (id) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "slot";
+      if (!id) { b.className += " vazio"; b.disabled = true; b.setAttribute("aria-label", "Espaço vazio"); g.appendChild(b); return; }
+      if (/dourad/.test(id)) b.className += " ouro";
+      b.textContent = icone(id); b.title = nomeItem(id); b.setAttribute("aria-label", nomeItem(id) + ", " + cont[id]);
+      b.setAttribute("aria-pressed", String(invSel === id));
+      if (cont[id] > 1) { var q = document.createElement("span"); q.className = "q"; q.textContent = cont[id]; b.appendChild(q); }
+      if (tem(eu.veste, id)) { var v = document.createElement("span"); v.className = "v"; v.textContent = "✓"; b.appendChild(v); }
+      b.onclick = function () { invSel = invSel === id ? null : id; desenharInventario(); };
+      g.appendChild(b);
+    })(ids[k]);
+    desenharDetalheInv(cont);
+  }
+  function acaoInv(txt, sec, f) { var b = document.createElement("button"); b.type = "button"; b.className = "btn" + (sec ? " sec" : ""); b.textContent = txt; b.onclick = function () { f(b); }; return b; }
+  function depoisInv(r, ok) {
+    if (!r.ok) return mensagem("msgInv", r.erro || "Não deu certo.");
+    aplicarPerfil(r); salvarEu(); mostrarCartao(eu); if (bonecos[eu.nome]) bonecos[eu.nome].itens = eu.veste;
+    mensagem("msgInv", ok, true); desenharConta();
+  }
+  function desenharDetalheInv(cont) {
+    var d = document.getElementById("invDet"), id = invSel; d.hidden = !id; d.innerHTML = ""; if (!id) return;
+    var h = document.createElement("h4"); h.textContent = icone(id) + " " + nomeItem(id); d.appendChild(h);
+    var p = document.createElement("p"); p.className = "dica"; p.style.margin = "0"; p.textContent = "Você tem " + cont[id] + ". " + descItem(id); d.appendChild(p);
+    var ac = document.createElement("div"); ac.className = "acoes"; d.appendChild(ac);
+    if (ehRoupa(id)) {
+      var vestindo = tem(eu.veste, id);
+      ac.appendChild(acaoInv(vestindo ? "TIRAR" : "VESTIR", false, function (b) {
+        b.disabled = true; enviar(credenciais({ acao: "vestir", item: id, ligar: !vestindo })).then(function (r) { b.disabled = false; depoisInv(r, vestindo ? "Você tirou: " + nomeItem(id) + "." : "Vestido! Todo mundo vê no mapa."); });
+      }));
+    }
+    if (COMIVEIS[id]) ac.appendChild(acaoInv("COMER", false, function (b) {
+      b.disabled = true; enviar(credenciais({ acao: "comer", item: id })).then(function (r) { b.disabled = false; depoisInv(r, "Hum! Fome saciada."); });
+    }));
+    if (id === "ficha_item" || id === "ficha_empresa") ac.appendChild(acaoInv("USAR", false, function () {
+      irPara("entrar"); setTimeout(function () { var cb = document.getElementById("criarBox"); if (cb) cb.scrollIntoView({ behavior: "smooth", block: "center" }); }, 200);
+    }));
+    if (id === "picareta") { var dp = document.createElement("p"); dp.className = "dica"; dp.textContent = "Para usar: leve o bonequinho para a borda pedregosa do mapa e toque em MINERAR."; d.appendChild(dp); }
+    if (!vendivel(id)) return;
+    var vh = document.createElement("h4"); vh.style.marginTop = "14px"; vh.textContent = "VENDER"; d.appendChild(vh);
+    var qtd = 1, lq = document.createElement("label"); lq.textContent = "Quantas unidades"; d.appendChild(lq);
+    var tot = document.createElement("p"); tot.className = "dica";
+    var preco = document.createElement("input"); preco.type = "number"; preco.min = 1; preco.max = 100000; preco.placeholder = "ex.: 50"; preco.id = "invPreco";
+    function conta() { var v = Math.floor(Number(preco.value)) || 0; tot.textContent = v ? "Você recebe " + (v * qtd).toLocaleString("pt-BR") + " moedas se venderem todas." : ""; }
+    if (cont[id] > 1 && !/^lote_/.test(id)) d.appendChild(passo(cont[id], function (v) { qtd = v; conta(); }));
+    else { var um = document.createElement("p"); um.className = "dica"; um.style.margin = "0"; um.textContent = "1 unidade"; d.appendChild(um); }
+    var lp = document.createElement("label"); lp.htmlFor = "invPreco"; lp.textContent = "Preço de cada unidade (moedas)"; d.appendChild(lp);
+    preco.oninput = conta; d.appendChild(preco); d.appendChild(tot);
+    d.appendChild(acaoInv("COLOCAR À VENDA", true, function (b) {
+      var v = Math.floor(Number(preco.value)); if (!(v >= 1)) return mensagem("msgInv", "Escolha o preço de cada unidade.");
+      b.disabled = true;
+      enviar(credenciais({ acao: "vender", item: id, preco: v, qtd: qtd })).then(function (r) {
+        b.disabled = false; depoisInv(r, qtd + "x " + nomeItem(id) + " à venda por " + v + " moedas cada, na aba ENTRE JOGADORES."); if (r.ok) carregar();
+      });
+    }));
+  }
+  document.getElementById("contaItens").onclick = function () { irSub("inventario"); document.getElementById("invGrade").scrollIntoView({ behavior: "smooth", block: "center" }); };
+  document.getElementById("btnIrInventario").onclick = function () { irSub("inventario"); };
 
   /* ---------------- mercado ---------------- */
   var mercadoPronto = false;
   function nomeItem(id) {
     var lt = /^lote_(\d+)$/.exec(id); if (lt) return "Terreno " + lt[1];
     if (estado.criados && estado.criados[id]) return (estado.criados[id].tipo === "empresa" ? "Empresa: " : "") + estado.criados[id].nome;
+    if (id === "comida") return "Comida"; if (id === "refeicao") return "Refeição";
     var m = estado.mercado; if (!m) return null;
     var i = m.itens.concat(m.recursos || []).filter(function (x) { return x.id === id; })[0]; return i ? i.nome : null;
   }
