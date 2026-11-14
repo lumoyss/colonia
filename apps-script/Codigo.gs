@@ -15,6 +15,8 @@
 // Sua InfiniteTag (sem o $). Os pagamentos em Pix caem na sua InfinitePay, sem taxa.
 const INFINITE_TAG = 'lumoyss';
 const SITE_URL = 'https://lumoyss.github.io/colonia/';
+// Líder da nave até a primeira eleição (22/11). Depois a eleição escolhe.
+const LIDER_NOME = 'Luvixo';
 
 const ABA_SOBREVIVENTES = 'Sobreviventes';
 const ABA_IDEIAS = 'Ideias';
@@ -121,7 +123,7 @@ const META_NAVE = 1000000, ETAPA_NAVE = 50000;
 // PROFISSÕES
 const FUNCOES = {
   mecanico:     { nome: 'Mecânico(a)', desc: 'O melhor para consertar a nave. Ganha: 1 moeda a cada 15 s consertando (2 com caixa de ferramentas) e, com a caixa, vale 3 pontos da nave a cada 15 s (os outros fazem 1).' },
-  engenheiro:   { nome: 'Engenheiro(a)', desc: 'Constrói as casas e prédios e instala outdoors. Ganha: a mão de obra que o dono paga (+1.000 por casa, +3.000 por prédio, +100 por outdoor), e conserta a nave como todo mundo enquanto não tem obra.' },
+  engenheiro:   { nome: 'Engenheiro(a)', desc: 'Constrói as casas e prédios e instala outdoors. Ganha: a mão de obra que o dono paga (+1.000 por casa, +3.000 por prédio, +100 por outdoor), e conserta a nave como todo mundo enquanto não tem obra. A própria casa ele constrói sem pagar mão de obra.' },
   agricultor:   { nome: 'Agricultor(a) e cozinheiro(a)', desc: 'Produz comida para a colônia. Ganha: 1 comida a cada 10 minutos cultivando, que você vende no mercado dos sobreviventes pelo preço que quiser (todo mundo precisa comer). Sem limite de vagas.' },
   minerador:    { nome: 'Minerador(a)', desc: 'Especialista em mineração. Ganha: minera na borda pedregosa do mapa com metade da espera (precisa de picareta) e vende o que achar. Também conserta a nave.' },
   explorador:   { nome: 'Explorador(a)', desc: 'Descobre o planeta. Ganha: vê o sinal das torres escondidas, desbloqueia torres 2x mais rápido (chance de virar dono de clã) e conserta a nave.' },
@@ -132,7 +134,7 @@ const FUNCOES = {
 };
 const MAPA_PROFISSAO = { 'Mecânica(o)': 'mecanico', 'Engenheira(o)': 'engenheiro', 'Agricultor(a)': 'agricultor', 'Cozinheira(o)': 'agricultor',
   'Minerador(a)': 'minerador', 'Explorador(a)': 'explorador', 'Médica(o)': 'medico', 'Guarda': 'guarda', 'Desempregado(a)': 'desempregado' };
-const TROCA_FUNCAO_DIAS = 0;        // TESTE (Lucas 13/11): troca de profissão liberada a qualquer momento. Para voltar ao limite, ponha 7.
+const TROCA_FUNCAO_DIAS = 1;        // Lucas 14/11: a profissão dura 1 dia; depois pode trocar
 const KIT_TEMPORARIO_HORAS = 24; // quem acorda ganha um kit de ferramentas temporário; depois precisa comprar o kit
 const VAGAS = {};               // (antigo: vagas por número de sobreviventes)
 const VAGAS_MAX = { guarda: GUARDAS_MAX }; // número máximo de pessoas na profissão
@@ -399,7 +401,7 @@ function doGet(e) {
   const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
   const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
   const resposta = { ok: true, bauzinhos: bauzinhos_().lista, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
-    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, guardas: guardasSeguranca_(todas), titulos: TITULOS, checkinMoedas: CHECKIN_MOEDAS, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
+    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, lider: LIDER_NOME, guardas: guardasSeguranca_(todas), titulos: TITULOS, checkinMoedas: CHECKIN_MOEDAS, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
     obras: ss.getSheetByName(ABA_OBRAS) ? obrasAbertas_(ss) : [], funcoes: funcoes,
     torres: ss.getSheetByName(ABA_TORRES) ? torresPublicas_(ss, todas) : [], leilao: ss.getSheetByName(ABA_LEILOES) ? leilaoPublico_(ss) : null, criados: ss.getSheetByName(ABA_CRIACOES) ? criadosPublicos_(ss) : {},
     ofertas: ofertas, bau: bau, mapa: { l: MAPA_L, a: MAPA_A } };
@@ -670,7 +672,7 @@ function comprar_(ss, d) {
     s.aba.getRange(s.linha, C_OUTDOOR).setValue(texto_(fr)); p.outdoor = fr; p.montado = true;
     return p;
   }
-  const obra = item.base || item.id === 'outdoor', mao = obra ? (MAO_DE_OBRA[item.id] || 0) : 0;
+  const obra = item.base || item.id === 'outdoor', souEng = p.funcao === 'engenheiro', mao = obra && !souEng ? (MAO_DE_OBRA[item.id] || 0) : 0; // engenheiro constrói a própria obra de graça
   if (obra && obrasDe_(ss, p.numero).length) return { ok: false, erro: 'Você já tem uma obra em andamento. Espere ela terminar.' };
   if (p.moedas < item.preco + mao) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + (item.preco + mao) + (mao ? ' (' + (item.base ? 'casa' : 'outdoor') + ' + mão de obra do engenheiro)' : '') + '.' };
 
@@ -693,9 +695,11 @@ function comprar_(ss, d) {
     p.moedas -= item.preco + mao;
     s.aba.getRange(s.linha, C_MOEDAS).setValue(p.moedas);
     const id = 'OB' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
-    ss.getSheetByName(ABA_OBRAS).appendRow([id, new Date(), p.numero, texto_(String(p.nome)), item.id, texto_(item.base ? lugar : frase), mao, 'aguardando', '', '', 0, 0]);
+    // Lucas 14/11: o engenheiro constrói a própria casa de graça (ele mesmo vira o engenheiro da obra)
+    ss.getSheetByName(ABA_OBRAS).appendRow([id, new Date(), p.numero, texto_(String(p.nome)), item.id, texto_(item.base ? lugar : frase), mao, souEng ? 'em obra' : 'aguardando', souEng ? p.numero : '', souEng ? texto_(String(p.nome)) : '', 0, souEng ? Date.now() : 0]);
     ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), item.nome + ' (obra)', item.preco + mao]);
-    p.obra = { id: id, item: item.id, status: 'aguardando' };
+    if (souEng) s.aba.getRange(s.linha, C_PLANTAO).setValue(Date.now());
+    p.obra = souEng ? { id: id, item: item.id, status: 'em obra', progresso: 0, total: OBRA_MINUTOS, propria: true } : { id: id, item: item.id, status: 'aguardando' };
     p.engenheirosOnline = online_(ss, 'engenheiro').length;
     return p;
   }
@@ -875,7 +879,7 @@ function trocarFuncao_(ss, d) {
   if (!FUNCOES[f]) return { ok: false, erro: 'Profissão inválida.' };
   const atual = funcaoDe_(s.dados), desde = Number(s.dados[C_FUNCAO_DATA - 1]) || 0;
   if (f === atual) return { ok: false, erro: 'Essa já é a sua profissão.' };
-  if (Date.now() - desde < TROCA_FUNCAO_DIAS * 86400000) return { ok: false, erro: 'Você só pode trocar de profissão 1 vez por semana. Próxima troca: ' + Utilities.formatDate(new Date(desde + TROCA_FUNCAO_DIAS * 86400000), 'America/Sao_Paulo', 'dd/MM HH:mm') + '.' };
+  if (Date.now() - desde < TROCA_FUNCAO_DIAS * 86400000) return { ok: false, erro: 'Você só pode trocar de profissão depois de ' + TROCA_FUNCAO_DIAS + ' dia(s). Próxima troca: ' + Utilities.formatDate(new Date(desde + TROCA_FUNCAO_DIAS * 86400000), 'America/Sao_Paulo', 'dd/MM HH:mm') + '.' };
   if (VAGAS[f]) {
     const todos = linhas_(ss.getSheetByName(ABA_SOBREVIVENTES)), vagas = Math.max(1, Math.floor(todos.length / VAGAS[f]));
     if (todos.filter(function (l) { return funcaoDe_(l) === f; }).length >= vagas) return { ok: false, erro: 'Não há vagas de ' + FUNCOES[f].nome + ' agora (' + vagas + ' vaga(s) para ' + todos.length + ' sobreviventes).' };
@@ -1870,7 +1874,7 @@ function perfilPublico_(numero) {
   return { ok: true, numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], historia: l[5], visual: String(l[6] || ''),
     itens: String(l[C_ITENS - 1] || ''), veste: vesteDe_(l), desde: new Date(l[C_DATA - 1]).getTime(), moedas: Number(l[C_MOEDAS - 1]) || 0,
     objetivo: String(l[C_OBJETIVO - 1] || ''), amigos: amigos.map(function (n) { return { numero: n, nome: nomes[n] }; }),
-    casa: casa, aluga: aluga ? true : false, titulo: String(l[C_TITULO - 1] || ''), apoiador: !!Number(l[C_APOIADOR - 1]), gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0, conselheiro: conselheiro_(ss, l[0]) };
+    casa: casa, aluga: aluga ? true : false, titulo: String(l[C_TITULO - 1] || ''), lider: String(l[2]).toLowerCase() === LIDER_NOME.toLowerCase(), apoiador: !!Number(l[C_APOIADOR - 1]), gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0, conselheiro: conselheiro_(ss, l[0]) };
 }
 function amigo_(ss, d) {
   const s = acharSobrevivente_(ss, d);

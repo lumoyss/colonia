@@ -261,6 +261,7 @@
     <h1 class="pix">NAVE ORION</h1>
     <p class="sub">A Terra caiu. A Nave Orion pousou num planeta com pouquíssimo oxigênio.<br>Todos a bordo dormem em hibernação, e o ar da nave está acabando.<br>Entre pelo link para acordar o seu sobrevivente.</p>
     <div class="contador pix"><b id="total">0</b> SOBREVIVENTES ACORDADOS</div>
+    <p id="liderNave" hidden style="margin:8px 0 0;color:var(--apagado);font-size:15px">👑 Líder da nave: <b id="liderNome"></b></p>
     <p id="cofreNave" hidden style="margin:8px 0 0;color:var(--apagado);font-size:15px">🏛️ Cofre da nave: <b id="cofreValor">0</b> moedas (impostos da colônia)</p>
     <div class="nave-meta" id="naveMeta" hidden>
       <div class="pix" style="font-size:10px;color:var(--verde2)">MISSÃO DE TODOS: CONSERTAR A NAVE ANTES DO AR ACABAR</div>
@@ -278,7 +279,7 @@
     <h4>Como ganhar moedas</h4>
     <ul>
       <li>Trabalhe com o site aberto. A barrinha em cima do seu sobrevivente enche uma parte a cada 15 segundos. A cada barrinha completa você ganha 1 moeda e 1 ponto de conserto da nave.</li>
-      <li>Cada profissão ganha moedas de um jeito. Veja os detalhes no painel TRABALHO, logo abaixo do mapa. Lá também dá para trocar de profissão (o prazo entre trocas aparece no painel).</li>
+      <li>Cada profissão ganha moedas de um jeito. Veja os detalhes no painel TRABALHO, logo abaixo do mapa. A profissão dura 1 dia; depois você pode trocar no mesmo painel.</li>
       <li>Venda o que você produzir ou achar pelo mapa no mercado dos sobreviventes (Mercado → ENTRE JOGADORES).</li>
       <li>Você também pode adquirir pacotes de moedas no MERCADO.</li>
     </ul>
@@ -296,7 +297,7 @@
       <li>Todo dia, fora da área habitável, aparece o BAÚ DO DIA (grande e brilhando). O sobrevivente que abrir primeiro leva moedas e itens, com chance de ganhar uma ficha para criar um item ou uma empresa.</li>
       <li>Mais ou menos a cada 15 minutos aparece um baú pequeno em algum lugar do mapa, com 20 a 70 moedas. Ele fica lá até alguém abrir, e podem haver no máximo 2 baús esperando no mapa.</li>
       <li>Para ter um terreno, pare em um dos terrenos livres (com uma placa no meio) e reivindique. Depois volte para a nave e registre no Mercado (aba IMÓVEIS).</li>
-      <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói.</li>
+      <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói. Quem é engenheiro constrói a própria casa sem pagar mão de obra.</li>
       <li>Com uma picareta, você pode minerar na borda pedregosa do mapa para encontrar itens (20% de chance a cada tentativa). Depois de 60 tentativas você cansa e descansa 40 minutos, ou chama um médico, que cobra o dobro.</li>
       <li>Para construir uma casa ou um prédio, ou para instalar um outdoor, é preciso contratar um engenheiro.</li>
       <li>Quem acabou de acordar fica protegido contra invasão por 3 dias. Depois disso, se alguém ficar 15 minutos parado no seu terreno, ele invade e leva 5% das suas moedas (ou um item simples). Para se proteger, contrate um guarda em SERVIÇOS (24 horas). Cada terreno só pode ser invadido 1 vez por dia.</li>
@@ -338,7 +339,7 @@
         <details style="margin-top:12px"><summary class="dica" style="cursor:pointer;color:var(--verde2)">Regras do trabalho e trocar de profissão</summary>
         <p class="dica" id="missaoRegra"></p>
         <div id="trocaBox" style="margin-top:14px">
-          <label for="trocaFuncao">Trocar de profissão <span class="dica" id="trocaRegra">(1 vez por semana)</span></label>
+          <label for="trocaFuncao">Trocar de profissão <span class="dica" id="trocaRegra">(a profissão dura 1 dia)</span></label>
           <div class="linha"><select id="trocaFuncao"></select><button class="btn sec mini" type="button" id="btnTrocaFuncao">TROCAR</button></div>
           <p class="dica" id="trocaInfo" style="margin:4px 0 0"></p>
         </div>
@@ -953,6 +954,7 @@
     estado.medicos = d.medicos || []; estado.guardas = d.guardas || []; estado.pesquisa = d.pesquisa || null; estado.titulos = d.titulos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
+    if (d.lider) { document.getElementById("liderNave").hidden = false; document.getElementById("liderNome").textContent = d.lider; }
     if (d.mercado && d.mercado.cofre != null) { document.getElementById("cofreNave").hidden = false; document.getElementById("cofreValor").textContent = Number(d.mercado.cofre).toLocaleString("pt-BR"); }
     desenharServicos();
     estado.leilao = d.leilao || null; desenharLeilao(); desenharFaixaLeilao(); estado.bauzinhos = d.bauzinhos || [];
@@ -1862,11 +1864,12 @@
     }
     if (sel.dataset.f !== f) { sel.value = f; sel.dataset.f = f; }
     var dTroca = V && V.trocaDias != null ? Number(V.trocaDias) : 7, prox = (Number(eu.funcaoDesde) || 0) + dTroca * 86400000;
-    document.getElementById("trocaRegra").textContent = dTroca ? "(1 vez a cada " + dTroca + " dias)" : "(liberado a qualquer momento, fase de testes)";
+    document.getElementById("trocaRegra").textContent = dTroca ? (dTroca === 1 ? "(a profissão dura 1 dia; depois você pode trocar)" : "(1 vez a cada " + dTroca + " dias)") : "(liberado a qualquer momento, fase de testes)";
     document.getElementById("trocaInfo").textContent = Date.now() < prox ? "Próxima troca liberada em " + new Date(prox).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Você já pode trocar de profissão.";
     desenharMissao();
   }
   var assinaturaBotoes = "";
+  function maoDe(it) { return minhaFuncao() === "engenheiro" ? 0 : (it.maoDeObra || 0); }
   function desenharMissao() {
     var R = regras(), V = vida(); if (!R || !logado()) return;
     var f = minhaFuncao(), trabalhando = missao.modo === "consertando";
@@ -1938,7 +1941,7 @@
     if (r.produziu) mensagemMapa("Você produziu: " + (COMIDAS[r.produziu] || r.produziu) + "!");
     if (missao.trabalho === "construir" && missao.obra && r.estado !== "doente") {
       missao.obra.progresso = (missao.obra.progresso || 0) + 1;
-      if (missao.obra.progresso >= missao.obra.total) { mensagemMapa("Obra concluída! Você recebeu " + missao.obra.mao + " moedas de mão de obra."); missao.obra = null; pararMissao(); missao.modo = "parado"; atualizarPerfil(); carregar(); }
+      if (missao.obra.progresso >= missao.obra.total) { mensagemMapa(missao.obra.mao ? "Obra concluída! Você recebeu " + missao.obra.mao + " moedas de mão de obra." : "Obra concluída! A sua casa ficou pronta."); missao.obra = null; pararMissao(); missao.modo = "parado"; atualizarPerfil(); carregar(); }
     }
     if (r.boostAte != null) eu.boostAte = r.boostAte;
     if (r.horaGuarda) mensagemMapa("Hora completa de guarda: +" + r.horaGuarda + " moedas!");
@@ -2402,7 +2405,7 @@
   function marcarFaltaMoedas() {
     if (!estado.mercado) return;
     var tenho = logado() ? Number(eu.moedas) || 0 : null, precos = {};
-    estado.mercado.itens.forEach(function (i) { precos[i.id] = i.preco + (i.maoDeObra || 0); });
+    estado.mercado.itens.forEach(function (i) { precos[i.id] = i.preco + maoDe(i); });
     var cartoes = [].slice.call(document.querySelectorAll("#mercado [data-item]"));
     var reg = document.getElementById("cartaoRegistro"), T = lotesCfg(); if (reg && T) { reg.dataset.preco = T.preco; cartoes.push(reg); }
     cartoes.forEach(function (el) {
@@ -2436,7 +2439,7 @@
     estado.mercado.itens.forEach(function (it) {
       if (it.oculto) return;
       var lista = document.getElementById("loja-" + (SUB_DA_CAT[it.cat] || "ferramentas"));
-      var c = cartaoLoja(it.nome, it.preco.toLocaleString("pt-BR") + " moedas" + (it.maoDeObra ? " + " + it.maoDeObra.toLocaleString("pt-BR") + " de mão de obra" : ""), it.desc + (it.maoDeObra ? " Um engenheiro online constrói a sua casa; se nenhum aceitar a obra em 24 horas, a nave constrói sozinha." : ""), "TROCAR");
+      var c = cartaoLoja(it.nome, it.preco.toLocaleString("pt-BR") + " moedas" + (maoDe(it) ? " + " + maoDe(it).toLocaleString("pt-BR") + " de mão de obra" : it.maoDeObra ? " (você é engenheiro: mão de obra grátis)" : ""), it.desc + (it.maoDeObra ? " Um engenheiro online constrói a sua casa; se nenhum aceitar a obra em 24 horas, a nave constrói sozinha." : ""), "TROCAR");
       c.el.dataset.item = it.id;
       if (it.base || it.terreno) { var inp = document.createElement("input"); inp.maxLength = it.base ? 28 : 40; inp.placeholder = it.base ? "Nome da sua base" : "Frase do outdoor (até 40 letras)"; c.el.insertBefore(inp, c.botao); }
       c.botao.onclick = function () { trocar(it, c.el, c.botao); };
@@ -2504,17 +2507,17 @@
       return;
     }
     if (it.base && lugar.length < 2) { inp.focus(); return mensagem("msgMercado", "Dê um nome para a sua base antes de trocar."); }
-    var total = it.preco + (it.maoDeObra || 0);
+    var total = it.preco + maoDe(it);
     if (it.id === "outdoor" && meus.indexOf("outdoor_guardado") >= 0) total = 0;
     if (total && (Number(eu.moedas) || 0) < total) return mensagem("msgMercado", "Moedas insuficientes: você tem " + (Number(eu.moedas) || 0) + " e precisa de " + total + ". Adquira moedas acima.");
-    if (it.maoDeObra && !estado.engenheirosOnline && !btn.dataset.avisado) { btn.dataset.avisado = "1"; mensagem("msgMercado", "Não há engenheiro online agora. Você pode adquirir mesmo assim: a obra fica esperando um engenheiro e, se nenhum aceitar em 24 horas, a nave constrói sozinha. Toque de novo para continuar."); return; }
+    if (maoDe(it) && !estado.engenheirosOnline && !btn.dataset.avisado) { btn.dataset.avisado = "1"; mensagem("msgMercado", "Não há engenheiro online agora. Você pode adquirir mesmo assim: a obra fica esperando um engenheiro e, se nenhum aceitar em 24 horas, a nave constrói sozinha. Toque de novo para continuar."); return; }
     if (!btn.dataset.confirmar) { btn.dataset.confirmar = "1"; btn.textContent = "CONFIRMAR (" + total + ")"; return; }
     btn.disabled = true; btn.textContent = "TROCANDO...";
     enviar(credenciais({ acao: "comprar", item: it.id, lugar: lugar })).then(function (r) {
       if (!r.ok) { desenharItens(); return mensagem("msgMercado", r.erro || "Não deu certo. Tente de novo."); }
       aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
       if (it.gas) { eu.gas = true; salvarEu(); }
-      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua obra aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : r.ate ? it.nome + " ativa até " + new Date(r.ate).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "!" : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
+      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra && r.obra.propria ? "Obra aberta! Como você é engenheiro, você mesmo constrói: entre no plantão (painel TRABALHO) para a obra andar." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua obra aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : r.ate ? it.nome + " ativa até " + new Date(r.ate).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "!" : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
       if (r.obra) atualizarPerfil();
       carregar();
     });
@@ -2810,6 +2813,7 @@
       if (p.conselheiro) linhas.unshift(["Título", "🏛️ Conselheiro(a) da Assembleia"]);
       if (p.titulo) linhas.unshift(["Nobreza", "👑 " + nomeTitulo(p.titulo, p.visual, p.nome)]);
       if (p.apoiador) linhas.unshift(["Selo", "🚀 Apoiador(a) da Nave"]);
+      if (p.lider) linhas.unshift(["Cargo", "👑 Líder da Nave"]);
       linhas.forEach(function (l) {
         var dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = l[0];
         if (l[0] === "Instagram" && p.instagram) { var a = document.createElement("a"); a.href = "https://instagram.com/" + String(p.instagram).replace(/^@/, ""); a.target = "_blank"; a.rel = "noopener"; a.textContent = p.instagram; a.style.color = "var(--verde2)"; dd.appendChild(a); }
