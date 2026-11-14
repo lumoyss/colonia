@@ -794,18 +794,21 @@
     if (n) { var c = centroLote(n); return [c[0], c[1] + 4]; }
     return posTerreno(i);
   }
+  // área da placa do outdoor: o terreno do dono e os terrenos vizinhos dele na mesma linha
+  function areaOutdoor(n) {
+    var T = lotesCfg(), dono = estado.donos[n], col = (n - 1) % T.colunas, lin = Math.floor((n - 1) / T.colunas), c0 = col, c1 = col;
+    var meu = function (c) { var m = lin * T.colunas + c + 1; return c >= 0 && c < T.colunas && estado.donos[m] === dono && !estado.aVenda[m] && T.nave.indexOf(m) < 0 && !temCasaNoLote(m); };
+    while (meu(c0 - 1)) c0--; while (meu(c1 + 1)) c1++;
+    var x = (T.x0 || 0) + c0 * T.l + 3, y = (T.y0 || 0) + lin * T.a + 5;
+    return { x: x, y: y, w: (c1 - c0 + 1) * T.l - 6, h: T.a - 17, pernas: 9 };
+  }
+  function temCasaNoLote(m) { var achou = false; estado.terrenos.forEach(function (t) { if (estado.lotePorNome && estado.lotePorNome[t.dono] === m) achou = true; }); return achou; }
   function desenharLotes() {
     var T = lotesCfg(); if (!T) return;
     var meu = meuBoneco(), aqui = meu ? loteEm(meu.x, meu.y) : 0;
     for (var n = 1; n <= T.colunas * T.linhas; n++) {
       if (T.nave.indexOf(n) >= 0) continue;
       var x0 = (T.x0 || 0) + ((n - 1) % T.colunas) * T.l, y0 = (T.y0 || 0) + Math.floor((n - 1) / T.colunas) * T.a, dono = estado.donos[n];
-      if (dono && estado.outdoors && estado.outdoors[n]) {
-        var ox = x0 + T.l / 2, oy = y0 + T.a - 6;
-        mctx.fillStyle = "#3a2a1c"; mctx.fillRect(ox - 12, oy - 6, 2, 7); mctx.fillRect(ox + 10, oy - 6, 2, 7);
-        mctx.fillStyle = "#1a1410"; mctx.fillRect(ox - 15, oy - 12, 30, 7);
-        mctx.fillStyle = "#E9C46A"; mctx.fillRect(ox - 14, oy - 11, 28, 5);
-      }
       if (dono) {
         mctx.fillStyle = estado.aVenda[n] ? "rgba(224,122,58,.18)" : "rgba(63,167,160,.16)"; mctx.fillRect(x0 + 2, y0 + 2, T.l - 4, T.a - 4);
         mctx.fillStyle = estado.aVenda[n] ? "#E07A3A" : "#7FD6C8";
@@ -823,6 +826,16 @@
         mctx.fillStyle = "#F3E9D6"; mctx.fillRect(cx0 - 3, cy0 - 5, 7, 1); mctx.fillRect(cx0 - 3, cy0 - 3, 5, 1);
       }
     }
+    if (estado.outdoors) Object.keys(estado.outdoors).forEach(function (k) {
+      var n = +k; if (!estado.donos[n]) return;
+        var A = areaOutdoor(n);
+        mctx.fillStyle = "rgba(0,0,0,.25)"; mctx.fillRect(A.x + 2, A.y + A.h + 1, A.w, 3);
+        for (var pe = A.x + 6; pe < A.x + A.w; pe += 24) { mctx.fillStyle = "#3a2a1c"; mctx.fillRect(pe, A.y + A.h, 2, A.pernas); }
+        mctx.fillStyle = "#3a2a1c"; mctx.fillRect(A.x + A.w - 8, A.y + A.h, 2, A.pernas);
+        mctx.fillStyle = "#1a1410"; mctx.fillRect(A.x, A.y, A.w, A.h);
+        mctx.fillStyle = "#E9C46A"; mctx.fillRect(A.x + 1, A.y + 1, A.w - 2, A.h - 2);
+        mctx.fillStyle = "#f3d98a"; mctx.fillRect(A.x + 1, A.y + 1, A.w - 2, 1);
+    });
   }
   var recon = null, avisoAte = 0; // recon = { lote, inicio, pronto }
   function avisoTerreno(t) { document.getElementById("terrenoInfo").textContent = t; avisoAte = Date.now() + 5000; }
@@ -1022,10 +1035,8 @@
       rotulo("LIVRE · " + nl, (cl[0] - cx) * esc, (cl[1] + 6 - cy) * esc, "#0B161C", "rgba(127,214,200,.85)"); cctx.restore();
     }
     if (LT && estado.outdoors) Object.keys(estado.outdoors).forEach(function (n) {
-      var c = centroLote(+n), ox = c[0], oy = c[1] + LT.a / 2 - 6; if (!dentro(ox, oy)) return;
-      cctx.save(); cctx.font = Math.round(Math.min(esc * 2.6, 7 / tela)) + "px 'Press Start 2P', monospace";
-      rotulo("“" + estado.outdoors[n] + "”", (ox - cx) * esc, (oy - 13 - cy) * esc, "#1a1410", "#E9C46A");
-      cctx.restore();
+      var A = areaOutdoor(+n); if (!dentro(A.x + A.w / 2, A.y + A.h / 2)) return;
+      escreverNaPlaca(estado.outdoors[n], (A.x + 3 - cx) * esc, (A.y + 2 - cy) * esc, (A.w - 6) * esc, (A.h - 4) * esc);
     });
     if (vivos.length <= 120) vivos.forEach(function (b) {
       if (dentro(b.x, b.y)) rotulo(b.nome, (b.x - cx) * esc, (b.y + 4 - cy) * esc, b === meu ? "#0B161C" : "#F3E9D6", b === meu ? "#E07A3A" : "rgba(11,22,28,.75)");
@@ -1144,6 +1155,27 @@
     }
   }
   setInterval(function () { desenharTorre(false); }, 1000);
+  // escreve a frase do outdoor do maior tamanho que couber na placa (até 4 linhas)
+  function escreverNaPlaca(txt, x, y, w, h) {
+    var palavras = String(txt).split(/\s+/), melhor = null;
+    cctx.save(); cctx.textAlign = "center";
+    for (var tam = Math.floor(h / 1.4); tam >= 5; tam--) {
+      cctx.font = tam + "px 'Press Start 2P', monospace";
+      var linhas = [], atual = "", ok = true;
+      for (var i = 0; i < palavras.length; i++) {
+        var teste = atual ? atual + " " + palavras[i] : palavras[i];
+        if (cctx.measureText(teste).width <= w) atual = teste;
+        else { if (!atual) { ok = false; break; } linhas.push(atual); atual = palavras[i]; if (cctx.measureText(atual).width > w) { ok = false; break; } }
+      }
+      if (atual) linhas.push(atual);
+      if (ok && linhas.length * tam * 1.45 <= h && linhas.length <= 4) { melhor = { tam: tam, linhas: linhas }; break; }
+    }
+    if (!melhor) { cctx.font = "5px 'Press Start 2P', monospace"; melhor = { tam: 5, linhas: [String(txt).slice(0, 30)] }; }
+    cctx.font = melhor.tam + "px 'Press Start 2P', monospace"; cctx.fillStyle = "#1a1410";
+    var alt = melhor.linhas.length * melhor.tam * 1.45, y0 = y + (h - alt) / 2;
+    melhor.linhas.forEach(function (l, k) { cctx.fillText(l, x + w / 2, y0 + (k + 1) * melhor.tam * 1.45 - melhor.tam * 0.3); });
+    cctx.restore();
+  }
   function rotulo(txt, x, y, cor, fundo) {
     var w = cctx.measureText(txt).width, h = parseInt(cctx.font, 10);
     cctx.fillStyle = fundo; cctx.fillRect(x - w / 2 - 3, y - 1, w + 6, h + 5);
