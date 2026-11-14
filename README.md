@@ -141,6 +141,7 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - A cada 14 a 16 minutos aparece um **baú pequeno** em algum lugar do mapa, com 40 a 90 moedas. Ele fica no mapa até alguém abrir; no máximo 2 esperando ao mesmo tempo. Números no topo do `Codigo.gs` (BAUZINHO_...).
 
 ### Moderação (na planilha)
+- **Automático no rádio:** mensagens com palavrões ou ofensas não são enviadas; quem insistir 3 vezes fica 10 minutos sem rádio. Máximo de 5 mensagens por minuto e não dá para repetir a mesma mensagem. A lista de palavras fica no topo do `Codigo.gs` (PALAVRAS_PROIBIDAS): pode acrescentar ou tirar.
 - Apagar uma mensagem: aba **Chat**, escreva `apagado` na coluna **status** da mensagem.
 - Silenciar alguém: aba **Sobreviventes**, escreva `sim` na coluna **banido**.
 - Dar ou tirar moedas: aba **Sobreviventes**, mude o número na coluna **moedas**.

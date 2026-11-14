@@ -144,6 +144,15 @@ const TAXA_CLA = 0.10;               // 10% da entrada no clã fica com a colôn
 // GUARDAS: silenciam no rádio; quem foi silenciado pode reclamar.
 // Você decide na aba Silenciados: escreva "certo" ou "abuso" na coluna decisao.
 const SILENCIO_MINUTOS = 5, GUARDA_BONUS = 20;
+// RÁDIO: proteção automática contra ofensas e flood
+const CHAT_MAX_POR_MINUTO = 5;       // mais que isso em 1 minuto é bloqueado
+const CHAT_OFENSAS_PARA_SILENCIAR = 3; // 3 mensagens ofensivas bloqueadas = silenciado automático
+const CHAT_SILENCIO_AUTO_MIN = 10;
+// Palavras bloqueadas no rádio (sem acento, minúsculas). Pode acrescentar ou tirar à vontade.
+const PALAVRAS_PROIBIDAS = ['porra', 'caralho', 'krl', 'crl', 'merda', 'puta', 'puto', 'putaria', 'fdp', 'pqp', 'cu', 'cuzao', 'buceta', 'boceta',
+  'xoxota', 'xereca', 'viado', 'bicha', 'sapatao', 'traveco', 'arrombado', 'arrombada', 'otario', 'otaria', 'idiota', 'imbecil', 'babaca',
+  'cretino', 'cretina', 'retardado', 'retardada', 'mongol', 'vagabundo', 'vagabunda', 'vadia', 'corno', 'corna', 'desgracado', 'desgracada',
+  'foda', 'fodase', 'foder', 'fuder', 'fudido', 'fudida', 'punheta', 'pica', 'vsf', 'vtnc', 'tnc', 'escroto', 'escrota', 'nojento', 'nojenta', 'lixo humano'];
 // LEILÃO DO VÍDEO: quem der o maior lance tem o @ divulgado no vídeo.
 // Quem é superado recebe as moedas de volta na hora. Fecha todo dia às LEILAO_HORA (horário de Brasília).
 // O vencedor escreve a frase do que quer divulgar; aparece no e-mail diário e na aba Leiloes.
@@ -1249,18 +1258,54 @@ function enviarChat_(ss, d) {
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente para falar no rádio.' };
   if (String(s.dados[C_BANIDO - 1]).trim()) return { ok: false, erro: 'Você foi silenciado no rádio da nave.' };
   const mudo = Number(s.dados[C_MUDO_ATE - 1]) || 0;
+  if (mudo > Date.now() && CacheService.getScriptCache().get('mudoauto_' + s.dados[0])) return { ok: false, erro: 'Você está sem rádio por linguagem ofensiva. Volta a falar em ' + Math.ceil((mudo - Date.now()) / 60000) + ' min.' };
   if (mudo > Date.now()) return { ok: false, mudo: true, erro: 'Um guarda silenciou você no rádio. Você volta a falar em ' + Math.ceil((mudo - Date.now()) / 60000) + ' min. Se foi injusto, toque em RECLAMAR.' };
   const texto = limpar_(d.texto, 280);
   if (!texto) return { ok: false, erro: 'Escreva uma mensagem.' };
 
-  const cache = CacheService.getScriptCache();
-  const chaveTempo = 'ultimo_' + s.dados[0];
+  const cache = CacheService.getScriptCache(), num = s.dados[0];
+  const chaveTempo = 'ultimo_' + num;
   if (cache.get(chaveTempo)) return { ok: false, erro: 'Calma! Espere alguns segundos entre as mensagens.' };
+  // flood: no máximo CHAT_MAX_POR_MINUTO mensagens por minuto, e nada de repetir a mesma mensagem
+  let janela = []; try { janela = JSON.parse(cache.get('janela_' + num) || '[]'); } catch (e) { janela = []; }
+  const agora = Date.now(); janela = janela.filter(function (t) { return agora - t < 60000; });
+  if (janela.length >= CHAT_MAX_POR_MINUTO) return { ok: false, erro: 'Você mandou muitas mensagens seguidas. Espere ' + Math.ceil((60000 - (agora - janela[0])) / 1000) + ' segundos.' };
+  const normal = normalizarTexto_(texto);
+  if (cache.get('ultimotexto_' + num) === normal) return { ok: false, erro: 'Você já mandou essa mensagem. Não repita, por favor.' };
+  // ofensas: bloqueia a mensagem; depois de algumas, silencia automático
+  if (temOfensa_(normal)) {
+    const n = (Number(cache.get('ofensas_' + num)) || 0) + 1;
+    cache.put('ofensas_' + num, String(n), 21600);
+    if (n >= CHAT_OFENSAS_PARA_SILENCIAR) {
+      s.aba.getRange(s.linha, C_MUDO_ATE).setValue(agora + CHAT_SILENCIO_AUTO_MIN * 60000);
+      cache.put('ofensas_' + num, '0', 21600);
+      cache.put('mudoauto_' + num, '1', CHAT_SILENCIO_AUTO_MIN * 60);
+      avisoRadio_(ss, s.dados[2] + ' ficou sem rádio por ' + CHAT_SILENCIO_AUTO_MIN + ' minutos por linguagem ofensiva.');
+      return { ok: false, erro: 'Você ficou sem rádio por ' + CHAT_SILENCIO_AUTO_MIN + ' minutos por insistir em linguagem ofensiva.' };
+    }
+    return { ok: false, erro: 'Sua mensagem não foi enviada: tem palavras ofensivas. Seja gentil no rádio (' + n + ' de ' + CHAT_OFENSAS_PARA_SILENCIAR + ' avisos).' };
+  }
   cache.put(chaveTempo, '1', 4);
+  janela.push(agora); cache.put('janela_' + num, JSON.stringify(janela), 120);
+  cache.put('ultimotexto_' + num, normal, 600);
 
   ss.getSheetByName(ABA_CHAT).appendRow([new Date(), s.dados[0], texto_(String(s.dados[2])), texto_(texto), '']);
   cache.remove('chat');
   return { ok: true };
+}
+
+function normalizarTexto_(t) {
+  return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[0@4]/g, function (c) { return c === '0' ? 'o' : 'a'; }).replace(/1/g, 'i').replace(/3/g, 'e').replace(/5|\$/g, 's').replace(/7/g, 't')
+    .replace(/[^a-z ]+/g, ' ').replace(/(.)\1+/g, '$1').replace(/\s+/g, ' ').trim();
+}
+function temOfensa_(normal) {
+  const palavras = ' ' + normal + ' ', junto = normal.replace(/ /g, '');
+  return PALAVRAS_PROIBIDAS.some(function (p) {
+    const n = normalizarTexto_(p);
+    if (palavras.indexOf(' ' + n + ' ') >= 0) return true;              // palavra inteira
+    return n.length >= 5 && junto.indexOf(n.replace(/ /g, '')) >= 0;   // palavrões longos escritos com espaço ou grudados (c a r a l h o)
+  });
 }
 
 /* ---------- Resumo diário no seu e-mail (o Claude lê por aqui) ---------- */
