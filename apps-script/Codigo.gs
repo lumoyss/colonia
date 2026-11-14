@@ -309,7 +309,7 @@ function doPost(e) {
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_,
       curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
-      silenciar: silenciar_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
+      silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
     if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'trabalhar', 'plantao', 'reconhecer', 'amigo', 'objetivo'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
@@ -857,6 +857,7 @@ function trocarOutdoor_(ss, d) {
   if ((p.itens ? p.itens.split(',') : []).indexOf('outdoor') < 0) return { ok: false, erro: 'Você ainda não tem um outdoor.' };
   const frase = limpar_(d.texto, 40);
   if (!frase) return { ok: false, erro: 'Escreva a frase do seu outdoor.' };
+  const proib = regraOutdoor_(s.dados, frase); if (proib) return proib;
   s.aba.getRange(s.linha, C_OUTDOOR).setValue(texto_(frase));
   p.outdoor = frase;
   return p;
@@ -909,6 +910,7 @@ function anunciar_(ss, d) {
   if (o.anuncio) return { ok: false, erro: 'Esse outdoor já tem um anúncio até ' + Utilities.formatDate(new Date(o.anuncio.ate), 'America/Sao_Paulo', 'dd/MM HH:mm') + '.' };
   const texto = limpar_(d.texto, 40);
   if (!texto) return { ok: false, erro: 'Escreva a mensagem do anúncio.' };
+  const proib = regraOutdoor_(s.dados, texto); if (proib) return proib;
   const p = perfilDe_(s);
   if (p.moedas < o.preco) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + o.preco + '.' };
   p.moedas -= o.preco; salvarPerfil_(s, p);
@@ -1495,6 +1497,33 @@ function torresPublicas_(ss, todas) {
       top: top, oferta: t.status === 'oferta' ? { nome: nomes[t.ofertaNumero] || '', ate: t.ofertaAte } : null,
       dono: t.dono, nomeCla: t.nomeCla, precoEntrada: t.precoEntrada, membros: membros[t.id] || 0, descobridor: t.descobridor };
   });
+}
+
+/* ---------- Outdoor: mesmas regras do rádio ---------- */
+function regraOutdoor_(l, texto) {
+  if ((Number(l[C_MUDO_ATE - 1]) || 0) > Date.now() || CacheService.getScriptCache().get('mudoauto_' + l[0])) return { ok: false, erro: 'Você está sem rádio agora, e as mesmas regras valem para o outdoor. Espere o tempo acabar.' };
+  if (temOfensa_(normalizarTexto_(texto))) return { ok: false, erro: 'Essa frase tem palavras proibidas na colônia. O outdoor segue as mesmas regras do rádio.' };
+  return null;
+}
+// Guarda tira do mapa uma frase ofensiva de outdoor (do dono ou do anúncio pago). Quem escreveu fica sem rádio por 5 min e pode reclamar.
+function censurarOutdoor_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  if (funcaoDe_(s.dados) !== 'guarda') return { ok: false, erro: 'Só guardas podem tirar frases de outdoor.' };
+  const dono = linhaPorNumero_(ss, d.numero);
+  if (!dono || !tem_(String(dono.dados[C_ITENS - 1] || ''), 'outdoor')) return { ok: false, erro: 'Esse outdoor não existe mais.' };
+  const o = outdoorDe_(dono.dados);
+  let texto, autor;
+  if (o.anuncio) { texto = o.anuncio.texto; autor = linhas_(ss.getSheetByName(ABA_SOBREVIVENTES)).filter(function (l) { return String(l[2]) === o.anuncio.autor; })[0]; }
+  else { if (!o.texto) return { ok: false, erro: 'Esse outdoor está sem frase.' }; texto = o.texto; autor = dono.dados; }
+  if (autor && String(autor[0]) === String(s.dados[0])) return { ok: false, erro: 'A frase é sua: troque você mesmo.' };
+  if (o.anuncio) { dono.aba.getRange(dono.linha, C_OUT_ANUNCIO).setValue(''); dono.aba.getRange(dono.linha, C_OUT_ATE).setValue(0); }
+  else dono.aba.getRange(dono.linha, C_OUTDOOR).setValue('');
+  if (autor) { const a = linhaPorNumero_(ss, autor[0]); if (a) a.aba.getRange(a.linha, C_MUDO_ATE).setValue(Date.now() + SILENCIO_MINUTOS * 60000); }
+  const id = 'S' + Date.now().toString(36).toUpperCase();
+  ss.getSheetByName(ABA_SILENCIO).appendRow([id, new Date(), s.dados[0], texto_(String(s.dados[2])), autor ? autor[0] : '', texto_(String(autor ? autor[2] : o.anuncio.autor)), texto_('OUTDOOR de ' + o.dono + ': ' + texto), '', '', '']);
+  avisoRadio_(ss, 'O guarda ' + s.dados[2] + ' tirou uma frase do outdoor de ' + o.dono + '.');
+  return { ok: true };
 }
 
 /* ---------- Guardas: silenciar no rádio ---------- */

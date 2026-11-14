@@ -414,6 +414,12 @@
         <p class="dica">Pague ao dono de um outdoor para a sua mensagem aparecer no mapa. A colônia fica com uma pequena taxa.</p>
         <div class="msg" id="msgAnuncio" role="status"></div>
         <div class="loja fila" id="anuncios"></div>
+        <div id="fiscalBox" hidden>
+          <h3 class="pix cat" style="margin-top:20px">FISCALIZAR OUTDOORS (GUARDA)</h3>
+          <p class="dica">O outdoor segue as mesmas regras do rádio. Se tiver frase ofensiva, tire do mapa: quem escreveu fica 5 minutos sem rádio e pode reclamar. Use com justiça, a colônia confere.</p>
+          <div class="msg" id="msgFiscal" role="status"></div>
+          <div class="loja fila" id="fiscalLista"></div>
+        </div>
       </div>
       <div class="sub" data-sub="moedas">
         <h3 class="pix cat">MOEDAS</h3>
@@ -715,7 +721,7 @@
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
     estado.leilao = d.leilao || null; desenharLeilao(); estado.bauzinhos = d.bauzinhos || [];
-    calcularDonos(); desenharAlugueis(); desenharAnuncios(); if (logado()) desenharExtras();
+    calcularDonos(); desenharAlugueis(); desenharAnuncios(); desenharFiscal(); if (logado()) desenharExtras();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
     desenharOfertas();
     document.getElementById("total").textContent = estado.total;
@@ -1470,7 +1476,7 @@
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
     marcarFaltaMoedas();
-    desenharItens(); mostrarMissao(); desenharOfertas(); desenharInventario(); desenharAlugueis(); desenharFormIdeia(); desenharExtras();
+    desenharItens(); mostrarMissao(); desenharOfertas(); desenharInventario(); desenharFiscal(); desenharAlugueis(); desenharFormIdeia(); desenharExtras();
   }
   document.getElementById("formLogin").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -2071,6 +2077,26 @@
         enviar(credenciais({ acao: "anunciar", numero: o.numero, texto: t })).then(function (r) {
           if (!r.ok) { mensagem("msgAnuncio", r.erro || "Não deu certo."); carregar(); return; }
           aplicarPerfil(r); salvarEu(); mensagem("msgAnuncio", "Seu anúncio está no outdoor de " + o.dono + "!", true); carregar();
+        });
+      };
+      box.appendChild(c.el);
+    });
+  }
+
+  function desenharFiscal() {
+    var fb = document.getElementById("fiscalBox"), guarda = logado() && eu.funcao === "guarda"; fb.hidden = !guarda; if (!guarda) return;
+    var box = document.getElementById("fiscalLista"); box.innerHTML = "";
+    var lista = (estado.outdoorsLista || []).filter(function (o) { return (o.anuncio ? o.anuncio.texto : o.texto) && o.dono !== eu.nome; });
+    if (!lista.length) { var v = document.createElement("p"); v.className = "dica"; v.textContent = "Nenhum outdoor com frase para conferir agora."; box.appendChild(v); return; }
+    lista.forEach(function (o) {
+      var t = o.anuncio ? o.anuncio.texto : o.texto, quem = o.anuncio ? o.anuncio.autor + " (anúncio)" : o.dono;
+      var c = cartaoLoja("Outdoor de " + o.dono, "“" + t + "”", "Escrito por " + quem + ".", "TIRAR FRASE");
+      c.botao.onclick = function () {
+        if (!c.botao.dataset.confirmar) { c.botao.dataset.confirmar = "1"; c.botao.textContent = "CONFIRMAR: É OFENSIVA"; return; }
+        c.botao.disabled = true;
+        enviar(credenciais({ acao: "censurar_outdoor", numero: o.numero })).then(function (r) {
+          if (!r.ok) { c.botao.disabled = false; return mensagem("msgFiscal", r.erro || "Não deu certo."); }
+          mensagem("msgFiscal", "Frase retirada. A colônia vai conferir o seu trabalho.", true); carregar();
         });
       };
       box.appendChild(c.el);

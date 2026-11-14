@@ -157,3 +157,9 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - No Mercado tem a aba INVENTÁRIO: uma grade com espaços, e cada item aparece com ícone e quantidade. Tocando num item dá para vestir/tirar, comer, usar ficha ou vender.
 - Para vender, a pessoa escolhe quantas unidades e o preço de cada uma. Quem compra também escolhe quantas quer levar. Terreno é sempre um de cada vez.
 - Na aba Ofertas da planilha apareceu a coluna "quantidade" (quantas unidades ainda sobram). Rode o setup uma vez para criar o título dela.
+
+## Outdoor com as regras do rádio
+
+- Frase de outdoor e anúncio pago passam pelo mesmo filtro de palavrões do rádio. Quem está sem rádio também não pode trocar a frase.
+- Guardas veem, no Mercado (aba TERRENO), a lista "FISCALIZAR OUTDOORS" e podem tirar uma frase ofensiva. Quem escreveu fica 5 minutos sem rádio.
+- Isso cai na mesma aba Silenciados (a coluna "mensagens" começa com "OUTDOOR de ..."). Você decide igual ao rádio: "certo" (guarda ganha bônus) ou "abuso" (guarda perde a função).
