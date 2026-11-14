@@ -418,7 +418,7 @@ function doPost(e) {
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
-    if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'trabalhar', 'plantao', 'reconhecer', 'amigo', 'objetivo'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
+    if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'trabalhar', 'plantao', 'reconhecer', 'amigo', 'objetivo', 'assembleia', 'entrar_assembleia', 'falar_assembleia', 'votar', 'checkin', 'invadir', 'descansar_casa', 'minerar', 'oferta', 'pesquisar'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
     return json_(r);
   } finally {
     trava.releaseLock();
@@ -505,8 +505,8 @@ function perfil_(ss, d) {
   p.precoSeguranca = Number(s.dados[C_SEG_PRECO - 1]) || 0;
   p.pesquisa = Number(s.dados[C_PESQUISA - 1]) || 0;
   const ultimoMin = Number(s.dados[C_ON_DIA - 1]) || 0, agoraP = Date.now();
-  if (agoraP - ultimoMin >= 55000) { // conta 1 minuto online (o site pede o perfil 1 vez por minuto)
-    const minutos = (Number(s.dados[C_ON_MIN - 1]) || 0) + (agoraP - ultimoMin < 150000 ? 1 : 0);
+  if (agoraP - ultimoMin >= 55000) { // soma o tempo online (o site pede o perfil a cada 3 minutos)
+    const gap = agoraP - ultimoMin, minutos = (Number(s.dados[C_ON_MIN - 1]) || 0) + (gap < 6 * 60000 ? Math.round(gap / 60000) : 0);
     s.aba.getRange(s.linha, C_ON_DIA).setValue(agoraP); s.aba.getRange(s.linha, C_ON_MIN).setValue(minutos); s.dados[C_ON_MIN - 1] = minutos;
   }
   p.horasOnline = Math.floor((Number(s.dados[C_ON_MIN - 1]) || 0) / 60); p.assembleias = assembleiasDe_(ss, p.numero);

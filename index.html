@@ -2875,7 +2875,7 @@
     if (TESTE || document.hidden || radioTimer) return;
     fetch(API + "?chat=1").then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) registrarFalas(d.mensagens); }).catch(function () {});
   }
-  setInterval(ouvirFalas, 10000); setTimeout(ouvirFalas, 1500);
+  setInterval(ouvirFalas, 20000); setTimeout(ouvirFalas, 1500);
   function radioLigado(on) {
     if (on) atualizarPerfil().then(desenharMudo);
     clearInterval(radioTimer); radioTimer = null;
@@ -3076,7 +3076,7 @@
   document.getElementById("toastAviso").onclick = abrirAvisos;
   document.getElementById("avisosFechar").onclick = function () { document.getElementById("avisosModal").hidden = true; };
   document.getElementById("avisosModal").addEventListener("click", function (ev) { if (ev.target === this) this.hidden = true; });
-  setInterval(function () { if (logado() && !document.hidden) atualizarPerfil(); }, 60000);
+  setInterval(function () { if (logado() && !document.hidden) atualizarPerfil(); }, 180000);
 
   /* ---------------- assembleia ---------------- */
   var assTimer = null, assEstado = null;
