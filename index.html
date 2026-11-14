@@ -304,7 +304,7 @@
       <li>Mais ou menos a cada 15 minutos aparece um baú pequeno em algum lugar do mapa, com 20 a 70 moedas. Ele fica lá até alguém abrir, e podem haver no máximo 2 baús esperando no mapa.</li>
       <li>Para ter um terreno, pare em um dos terrenos livres (com uma placa no meio) e reivindique. Depois volte para a nave e registre no Mercado (aba IMÓVEIS).</li>
       <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói. Quem é engenheiro constrói a própria casa sem pagar mão de obra.</li>
-      <li>Com uma picareta, você pode minerar na borda pedregosa do mapa para encontrar itens (20% de chance a cada tentativa). Depois de 60 tentativas você cansa e descansa 40 minutos, ou chama um médico, que cobra o dobro.</li>
+      <li>Todo sobrevivente acorda com uma picareta velha que aguenta 60 mineradas; depois é preciso adquirir uma picareta nova no Mercado. Com a picareta, você pode minerar na borda pedregosa do mapa para encontrar itens (20% de chance a cada tentativa). Depois de 60 tentativas você cansa e descansa 40 minutos, ou chama um médico, que cobra o dobro.</li>
       <li>Para construir uma casa ou um prédio, ou para instalar um outdoor, é preciso contratar um engenheiro.</li>
       <li>Quem acabou de acordar fica protegido contra invasão por 3 dias. Depois disso, se alguém ficar 15 minutos parado no seu terreno, ele invade e leva 5% das suas moedas (ou um item simples). Para se proteger, contrate um guarda em SERVIÇOS (24 horas). Cada terreno só pode ser invadido 1 vez por dia.</li>
       <li>Quem some do jogo por 7 dias perde o terreno e a construção. O terreno volta a ficar livre para outra pessoa registrar.</li>
@@ -1133,7 +1133,7 @@
       else info.textContent = "Reconhecimento do Terreno " + recon.lote + " feito! Volte para a nave e registre o terreno no Mercado.";
       return;
     }
-    if (naZonaDeMineracao(meu.x, meu.y)) { info.textContent = "Zona de mineração: aqui não tem terrenos." + (tem(eu.itens, "picareta") ? "" : " Com uma picareta dá para minerar."); recon = null; return; }
+    if (naZonaDeMineracao(meu.x, meu.y)) { info.textContent = "Zona de mineração: aqui não tem terrenos." + (temPicareta() ? (tem(eu.itens, "picareta") ? "" : " Sua picareta velha aguenta mais " + picaretaVelhaUsos() + " mineradas.") : " Sua picareta velha quebrou: adquira uma picareta nova no Mercado para minerar."); recon = null; return; }
     if (n && estado.donos[n]) {
       recon = null;
       if (inv) { var mi = Math.min(INVASAO_MIN, Math.floor((Date.now() - inv.inicio) / 60000)); info.textContent = "🚨 Invadindo o Terreno " + n + " de " + estado.donos[n] + "... " + mi + " de " + INVASAO_MIN + " minutos. Fique aqui dentro."; return; }
@@ -1434,7 +1434,7 @@
     var bb = document.getElementById("btnBau"); if (bb.hidden === !!perto) bb.hidden = !perto;
     var pertoZ = !!bauzinhoPerto(meu);
     var bz = document.getElementById("btnBauzinho"); if (bz.hidden === !!pertoZ) bz.hidden = !pertoZ;
-    var pode = meu && !meu.tx && tem(eu.itens, "picareta") && naZonaDeMineracao(meu.x, meu.y);
+    var pode = meu && !meu.tx && temPicareta() && naZonaDeMineracao(meu.x, meu.y);
     var bm = document.getElementById("btnMinerar"); if (bm.hidden === !!pode) bm.hidden = !pode;
     requestAnimationFrame(quadro);
   }
@@ -1654,6 +1654,8 @@
     });
   });
 
+  function picaretaVelhaUsos() { return eu && eu.picaretaVelha != null ? Number(eu.picaretaVelha) : 60; }
+  function temPicareta() { return !!eu && (tem(eu.itens, "picareta") || picaretaVelhaUsos() > 0); }
   var mineraAte = 0;
   document.getElementById("btnMinerar").addEventListener("click", function () {
     var bt = this, meu = meuBoneco(); if (!meu) return;
@@ -1666,6 +1668,7 @@
       aplicarPerfil(r); salvarEu();
       if (meuBoneco()) meuBoneco().minerouAte = Date.now() + 1500;
       var resto = r.mineradasMax ? " (" + r.mineradas + " de " + r.mineradasMax + " antes de cansar)" : "";
+      if (r.picaretaVelha != null) { resto += " Picareta velha: " + r.picaretaVelha + " usos." ; if (r.picaretaVelha <= 0) mensagemMapa("Sua picareta velha quebrou! Adquira uma picareta nova no Mercado (Ferramentas) para continuar minerando.", 8000); else if (r.picaretaVelha <= 10 && r.achou) mensagemMapa("Sua picareta velha está quase quebrando: restam " + r.picaretaVelha + " usos.", 5000); }
       if (r.cansouMineracao) mensagemMapa("Você cansou de minerar. Descanse 40 minutos ou chame um médico em Serviços.", 8000);
       if (r.achou) premio("VOCÊ MINEROU!", [r.achou]); else if (!r.cansouMineracao) mensagemMapa("Só pedra dessa vez... tente de novo daqui a pouco." + resto);
     });
@@ -1808,7 +1811,7 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias", "mineracaoAte", "email"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias", "mineracaoAte", "email", "picaretaVelha"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
     if (r.avisos !== undefined) desenharSino();
     if (r.reliquias) registrarReliquias(r.reliquias);
     if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(fazerCheckin, 1500); }

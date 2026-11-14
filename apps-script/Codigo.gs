@@ -51,7 +51,7 @@ const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
   C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43,
   C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47,
-  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56, C_CONSERTO_DIA = 57, C_EMAIL = 58, C_EMAIL_DIA = 59;
+  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56, C_CONSERTO_DIA = 57, C_EMAIL = 58, C_EMAIL_DIA = 59, C_PICARETA_VELHA = 60;
 // E-MAIL (opcional, com consentimento no cadastro): só avisos importantes, no máximo 1 por pessoa por dia.
 // A conta gratuita do Google manda para no máximo 100 pessoas por dia; paramos com folga.
 const EMAIL_FOLGA = 10, EMAIL_NOME = 'Nave Orion';
@@ -162,6 +162,7 @@ const MAO_DE_OBRA = { base: 1000, base_grande: 3000, outdoor: 100 };
 const OBRA_MINUTOS = 10;        // tempo que o engenheiro fica construindo
 const OBRA_PRAZO_HORAS = 24;    // sem engenheiro até lá, a nave constrói sozinha
 // Picareta: minerar fora da zona dos terrenos
+const PICARETA_VELHA_USOS = 60;   // Lucas 14/11: todo mundo chega com uma picareta velha que aguenta 60 mineradas
 const MINERAR_SEGUNDOS = 30;       // tempo entre uma minerada e outra
 const MINERAR_CHANCE = 0.2;     // chance de achar um recurso (Lucas 14/11: era 40%)
 // Mineração cansa: depois de MINERAR_LIMITE tentativas, descansa MINERAR_DESCANSO_MIN minutos (ou chama médico, que cobra MEDICO_MINERACAO_X vezes)
@@ -331,7 +332,7 @@ function resetarJogo() {
 
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador', 'conserto_dia', 'email', 'email_enviado_dia']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador', 'conserto_dia', 'email', 'email_enviado_dia', 'picareta_velha_usos']);
   colunas_(garantirAba_(ss, ABA_INVASOES), ['data', 'lote', 'invasor_numero', 'invasor', 'dono_numero', 'dono', 'levou']);
   colunas_(garantirAba_(ss, ABA_SEGURANCA), ['data', 'dono_numero', 'dono', 'guarda_numero', 'guarda', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
@@ -517,7 +518,7 @@ function perfilDe_(s) {
     moedas: Number(l[C_MOEDAS - 1]) || 0, itens: String(l[C_ITENS - 1] || ''), chave: String(l[C_CHAVE - 1]), outdoor: String(l[C_OUTDOOR - 1] || ''), veste: vesteDe_(l), gas: temGas_(l), ar: arDe_(l), fome: Number(l[C_FOME - 1]) || 0, doenteAte: Number(l[C_DOENTE_ATE - 1]) || 0,
     kitAte: kitAte_(l), funcao: funcaoDe_(l), funcaoDesde: Number(l[C_FUNCAO_DATA - 1]) || 0, pontos: Number(l[C_PONTOS - 1]) || 0, precoConsulta: Number(l[C_MEDICO_PRECO - 1]) || MEDICO_MIN,
     objetivo: String(l[C_OBJETIVO - 1] || ''), cla: String(l[C_CLA - 1] || ''), mudoAte: Number(l[C_MUDO_ATE - 1]) || 0,
-    amigos: String(l[C_AMIGOS - 1] || ''), mineracaoAte: mineracaoDe_(l).ate, descansoAte: Number(l[C_DESCANSO - 1]) || 0, boostAte: Number(l[C_BOOST_ATE - 1]) || 0, ofertaAte: Number(l[C_OFERTA_ATE - 1]) || 0 };
+    amigos: String(l[C_AMIGOS - 1] || ''), mineracaoAte: mineracaoDe_(l).ate, picaretaVelha: picaretaVelha_(l), descansoAte: Number(l[C_DESCANSO - 1]) || 0, boostAte: Number(l[C_BOOST_ATE - 1]) || 0, ofertaAte: Number(l[C_OFERTA_ATE - 1]) || 0 };
 }
 
 function perfil_(ss, d) {
@@ -1787,11 +1788,13 @@ function vestir_(ss, d) {
 }
 
 /* ---------- Picareta: minerar fora da zona dos terrenos ---------- */
+function picaretaVelha_(l) { const v = l[C_PICARETA_VELHA - 1]; return v === '' || v == null ? PICARETA_VELHA_USOS : Number(v) || 0; }
 function minerar_(ss, d) {
   const s = acharSobrevivente_(ss, d);
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
   const p = perfilDe_(s);
-  if (!tem_(p.itens, 'picareta')) return { ok: false, erro: 'Você precisa de uma picareta. Tem no Mercado.' };
+  const velha = picaretaVelha_(s.dados), usaVelha = !tem_(p.itens, 'picareta');
+  if (usaVelha && velha <= 0) return { ok: false, erro: 'Sua picareta velha quebrou. Adquira uma picareta nova no Mercado (Ferramentas) para continuar minerando.' };
   if (!p.gas) return { ok: false, erro: 'Sem gás de oxigênio você está doente e não consegue minerar. Adquira gás no Mercado.' };
   if (loteEm_(Number(d.x), Number(d.y)) !== -1) return { ok: false, erro: 'Aqui é zona de terrenos. Vá para a borda pedregosa do mapa para minerar.' };
   const agora = Date.now(), ultimo = Number(s.dados[C_MINERAR - 1]) || 0;
@@ -1801,6 +1804,7 @@ function minerar_(ss, d) {
   if (mc.ate > agora) return { ok: false, cansadoMineracao: true, mineracaoAte: mc.ate, erro: 'Você está cansado de minerar. Descanse ' + Math.ceil((mc.ate - agora) / 60000) + ' minutos ou chame um médico em Serviços.' };
   if (agora - ultimo < espera * 1000) return { ok: false, erro: 'Sua picareta precisa esfriar. Tente de novo em ' + Math.ceil((espera * 1000 - (agora - ultimo)) / 1000) + ' segundos.', espera: Math.ceil((espera * 1000 - (agora - ultimo)) / 1000) };
   s.aba.getRange(s.linha, C_MINERAR).setValue(agora);
+  if (usaVelha) s.aba.getRange(s.linha, C_PICARETA_VELHA).setValue(velha - 1);
   const feitas = (agora - ultimo > MINERAR_DESCANSO_MIN * 60000 ? 0 : mc.feitas) + 1, cansou = feitas >= MINERAR_LIMITE;
   const ateM = cansou ? agora + MINERAR_DESCANSO_MIN * 60000 : 0;
   s.aba.getRange(s.linha, C_MINERACAO).setValue((cansou ? 0 : feitas) + '|' + ateM);
@@ -1817,6 +1821,7 @@ function minerar_(ss, d) {
     salvarPerfil_(s, p);
     ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Mineração: ' + achou, 0]);
   }
+  if (usaVelha) p.picaretaVelha = velha - 1;
   p.achou = achou; p.espera = espera; p.mineradas = feitas; p.mineradasMax = MINERAR_LIMITE; if (cansou) { p.mineracaoAte = ateM; p.cansouMineracao = true; }
   return p;
 }
@@ -2421,7 +2426,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 59)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 60)).getValues();
 }
 
 function gerarChave_() {
