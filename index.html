@@ -299,7 +299,7 @@
       <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói.</li>
       <li>Com uma picareta, você pode minerar na borda pedregosa do mapa para encontrar itens (20% de chance a cada tentativa). Depois de 60 tentativas você cansa e descansa 40 minutos, ou chama um médico, que cobra o dobro.</li>
       <li>Para construir uma casa ou um prédio, ou para instalar um outdoor, é preciso contratar um engenheiro.</li>
-      <li>Se alguém ficar 15 minutos parado no seu terreno, ele invade e leva 5% das suas moedas (ou um item simples). Para se proteger, contrate um guarda em SERVIÇOS (24 horas). Cada terreno só pode ser invadido 1 vez por dia.</li>
+      <li>Quem acabou de acordar fica protegido contra invasão por 3 dias. Depois disso, se alguém ficar 15 minutos parado no seu terreno, ele invade e leva 5% das suas moedas (ou um item simples). Para se proteger, contrate um guarda em SERVIÇOS (24 horas). Cada terreno só pode ser invadido 1 vez por dia.</li>
       <li>Quem some do jogo por 7 dias perde o terreno e a construção. O terreno volta a ficar livre para outra pessoa registrar.</li>
       <li>No menu NAVE ORION ficam o Mercado, a Assembleia, o Ranking, o Centro de Pesquisa (entregue recursos do planeta e ganhe moedas e pontos de pesquisa) e os Títulos de Nobreza (Cavaleiro ou Princesa, Barão, Conde e Duque).</li>
     </ul>
@@ -2790,6 +2790,7 @@
         ["Amigos", p.amigos.length ? p.amigos.map(function (a) { return a.nome; }).join(", ") : "—"]];
       if (p.conselheiro) linhas.unshift(["Título", "🏛️ Conselheiro(a) da Assembleia"]);
       if (p.titulo) linhas.unshift(["Nobreza", "👑 " + nomeTitulo(p.titulo, p.visual, p.nome)]);
+      if (p.apoiador) linhas.unshift(["Selo", "🚀 Apoiador(a) da Nave"]);
       linhas.forEach(function (l) {
         var dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = l[0];
         if (l[0] === "Instagram" && p.instagram) { var a = document.createElement("a"); a.href = "https://instagram.com/" + String(p.instagram).replace(/^@/, ""); a.target = "_blank"; a.rel = "noopener"; a.textContent = p.instagram; a.style.color = "var(--verde2)"; dd.appendChild(a); }

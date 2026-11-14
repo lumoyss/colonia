@@ -49,7 +49,8 @@ const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
   C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43,
   C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47,
-  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55;
+  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56;
+const PROTECAO_NOVATO_DIAS = 3; // quem acordou há menos de 3 dias não pode ser invadido
 const FERRAMENTA_DIAS = 7; // caixa de ferramentas e vassoura valem 7 dias
 // online_dia (col. 12) guarda o último minuto contado; online_minutos (col. 13) soma o tempo online total.
 
@@ -306,7 +307,7 @@ function resetarJogo() {
 
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador']);
   colunas_(garantirAba_(ss, ABA_INVASOES), ['data', 'lote', 'invasor_numero', 'invasor', 'dono_numero', 'dono', 'levou']);
   colunas_(garantirAba_(ss, ABA_SEGURANCA), ['data', 'dono_numero', 'dono', 'guarda_numero', 'guarda', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
@@ -597,6 +598,8 @@ function confirmar_(ss, d) {
     for (let j = 0; j < lsS.length; j++) {
       if (String(lsS[j][0]) === String(ls[i][2])) {
         sobr.getRange(j + 2, C_MOEDAS).setValue((Number(lsS[j][C_MOEDAS - 1]) || 0) + moedas);
+        if (!Number(lsS[j][C_APOIADOR - 1])) sobr.getRange(j + 2, C_APOIADOR).setValue(Date.now());
+        avisoRadio_(ss, '🚀 ' + lsS[j][2] + ' trouxe suprimentos para a nave! Obrigado, Apoiador(a) da Nave!');
         if (String(ls[i][4]) === 'boasvindas') {
           sobr.getRange(j + 2, C_OFERTA_ATE).setValue(-1);
           sobr.getRange(j + 2, C_CAIXA_ATE).setValue(Math.max(Date.now(), Number(lsS[j][C_CAIXA_ATE - 1]) || 0) + OFERTA_CAIXA_DIAS * 86400000);
@@ -1343,6 +1346,8 @@ function invadir_(ss, d) {
     avisoRadio_(ss, '🏚️ O Terreno ' + n + ' estava abandonado e agora está livre. ' + s.dados[2] + ' chegou primeiro!');
     return { ok: true, liberado: true, lote: n };
   }
+  if (agora - new Date(dono.dados[C_DATA - 1]).getTime() < PROTECAO_NOVATO_DIAS * 86400000)
+    return { ok: false, erro: dono.dados[2] + ' acordou há menos de ' + PROTECAO_NOVATO_DIAS + ' dias e ainda está protegido(a) contra invasão.', parar: true };
   const seg = segurancaDe_(ss, dono.dados[0]);
   if (seg) return { ok: false, erro: 'Esse terreno está protegido pelo guarda ' + seg.guarda + '.', parar: true };
   const inv = ss.getSheetByName(ABA_INVASOES), limite = agora - INVASAO_INTERVALO_HORAS * 3600000;
@@ -1816,7 +1821,7 @@ function perfilPublico_(numero) {
   return { ok: true, numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], historia: l[5], visual: String(l[6] || ''),
     itens: String(l[C_ITENS - 1] || ''), veste: vesteDe_(l), desde: new Date(l[C_DATA - 1]).getTime(), moedas: Number(l[C_MOEDAS - 1]) || 0,
     objetivo: String(l[C_OBJETIVO - 1] || ''), amigos: amigos.map(function (n) { return { numero: n, nome: nomes[n] }; }),
-    casa: casa, aluga: aluga ? true : false, titulo: String(l[C_TITULO - 1] || ''), gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0, conselheiro: conselheiro_(ss, l[0]) };
+    casa: casa, aluga: aluga ? true : false, titulo: String(l[C_TITULO - 1] || ''), apoiador: !!Number(l[C_APOIADOR - 1]), gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0, conselheiro: conselheiro_(ss, l[0]) };
 }
 function amigo_(ss, d) {
   const s = acharSobrevivente_(ss, d);
@@ -2339,7 +2344,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 55)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 56)).getValues();
 }
 
 function gerarChave_() {
