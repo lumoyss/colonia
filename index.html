@@ -1810,7 +1810,7 @@
   }
 
   /* ---------------- inventário (grade com espaços) ---------------- */
-  var ICONES = { base: "🏠", base_grande: "🏢", outdoor: "🪧", gas: "🧪", racao: "🥫", comida: "🥕", refeicao: "🍲", bone: "🧢", calca: "👖", chapeu: "🤠", colete: "🦺", vestido: "👗",
+  var ICONES = { base: "🏠", base_grande: "🏢", outdoor: "🪧", outdoor_guardado: "🪧", gas: "🧪", racao: "🥫", comida: "🥕", refeicao: "🍲", bone: "🧢", calca: "👖", chapeu: "🤠", colete: "🦺", vestido: "👗",
     capacete_dourado: "⛑️", bota_dourada: "👢", calca_dourada: "👖", blusa_dourada: "👕", traje_dourado: "✨", mochila: "🎒", picareta: "⛏️", ferramentas: "🧰",
     ficha_item: "🎟️", ficha_empresa: "🏭", cristal: "💎", peca: "⚙️", minerio: "🪨", semente: "🌱", fossil: "🦴" };
   var COMIVEIS = { comida: "sacia 4h de trabalho", refeicao: "sacia 8h de trabalho", racao: "sacia 4h de trabalho" };
@@ -1903,6 +1903,9 @@
     }));
     if (id === "ficha_item" || id === "ficha_empresa") ac.appendChild(acaoInv("USAR", false, function () {
       irPara("entrar"); setTimeout(function () { var cb = document.getElementById("criarBox"); if (cb) cb.scrollIntoView({ behavior: "smooth", block: "center" }); }, 200);
+    }));
+    if (id === "outdoor_guardado") ac.appendChild(acaoInv("MONTAR NO TERRENO", false, function () {
+      irSub("imoveis"); setTimeout(function () { var o = document.querySelector('[data-item="outdoor"]'); if (o) { o.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" }); var i = o.querySelector("input"); if (i) i.focus(); } }, 150);
     }));
     if (id === "picareta") { var dp = document.createElement("p"); dp.className = "dica"; dp.textContent = "Para usar: leve o bonequinho para a borda pedregosa do mapa e toque em MINERAR."; d.appendChild(dp); }
     if (!vendivel(id)) return;
@@ -2018,6 +2021,7 @@
       if (!ja && on && !semTerreno && el.dataset.item === "outdoor" && casa) { b.disabled = true; b.textContent = "SEU TERRENO JÁ TEM CASA"; i.hidden = true; delete b.dataset.confirmar; return; }
       if (!ja && on && !semTerreno && (el.dataset.item === "base" || el.dataset.item === "base_grande") && meus.indexOf("outdoor") >= 0) { b.disabled = true; b.textContent = "TIRE O OUTDOOR PRIMEIRO"; i.hidden = true; delete b.dataset.confirmar; return; }
       b.disabled = ja || !on || semTerreno; b.textContent = ja ? "JÁ É SEU" : semTerreno && on ? "PRECISA DE UM TERRENO" : "TROCAR"; delete b.dataset.confirmar;
+      if (!ja && on && !semTerreno && el.dataset.item === "outdoor" && meus.indexOf("outdoor_guardado") >= 0) b.textContent = "MONTAR O SEU (GRÁTIS)";
       if (i) i.hidden = ja || semTerreno;
     });
   }
@@ -2045,7 +2049,8 @@
     }
     if (it.base && lugar.length < 2) { inp.focus(); return mensagem("msgMercado", "Dê um nome para a sua base antes de trocar."); }
     var total = it.preco + (it.maoDeObra || 0);
-    if ((Number(eu.moedas) || 0) < total) return mensagem("msgMercado", "Moedas insuficientes: você tem " + (Number(eu.moedas) || 0) + " e precisa de " + total + ". Adquira moedas acima.");
+    if (it.id === "outdoor" && meus.indexOf("outdoor_guardado") >= 0) total = 0;
+    if (total && (Number(eu.moedas) || 0) < total) return mensagem("msgMercado", "Moedas insuficientes: você tem " + (Number(eu.moedas) || 0) + " e precisa de " + total + ". Adquira moedas acima.");
     if (it.maoDeObra && !estado.engenheirosOnline && !btn.dataset.avisado) { btn.dataset.avisado = "1"; mensagem("msgMercado", "Não há engenheiro online agora. Você pode adquirir mesmo assim: a obra fica esperando um engenheiro e, se nenhum aceitar em 24 horas, a nave constrói sozinha. Toque de novo para continuar."); return; }
     if (!btn.dataset.confirmar) { btn.dataset.confirmar = "1"; btn.textContent = "CONFIRMAR (" + total + ")"; return; }
     btn.disabled = true; btn.textContent = "TROCANDO...";
@@ -2053,7 +2058,7 @@
       if (!r.ok) { desenharItens(); return mensagem("msgMercado", r.erro || "Não deu certo. Tente de novo."); }
       aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
       if (it.gas) { eu.gas = true; salvarEu(); }
-      mensagem("msgMercado", it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua casa aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
+      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua casa aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
       if (r.obra) atualizarPerfil();
       carregar();
     });
@@ -2076,12 +2081,12 @@
     };
     var tirar = document.createElement("button"); tirar.type = "button"; tirar.className = "btn sec"; tirar.textContent = "TIRAR O OUTDOOR (PARA CONSTRUIR)"; tirar.style.marginTop = "10px";
     tirar.onclick = function () {
-      if (!tirar.dataset.confirmar) { tirar.dataset.confirmar = "1"; tirar.textContent = "CONFIRMAR: TIRAR (SEM REEMBOLSO)"; return; }
+      if (!tirar.dataset.confirmar) { tirar.dataset.confirmar = "1"; tirar.textContent = "CONFIRMAR: TIRAR (VAI PARA O INVENTÁRIO)"; return; }
       delete tirar.dataset.confirmar; tirar.disabled = true;
       enviar(credenciais({ acao: "tirar_outdoor" })).then(function (r) {
         tirar.disabled = false; tirar.textContent = "TIRAR O OUTDOOR (PARA CONSTRUIR)";
         if (!r.ok) return mensagem("msgMercado", r.erro || "Não deu certo.");
-        aplicarPerfil(r); salvarEu(); mensagem("msgMercado", "Outdoor retirado. Seu terreno está livre para construir.", true); carregar();
+        aplicarPerfil(r); salvarEu(); mensagem("msgMercado", "Outdoor retirado e guardado no seu inventário (dá para vender ou montar de novo). Seu terreno está livre para construir.", true); carregar();
       });
     };
     var lo = document.createElement("label"); lo.textContent = "Divulgar um item seu à venda no outdoor"; lo.style.marginTop = "12px";

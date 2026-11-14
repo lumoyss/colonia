@@ -179,6 +179,8 @@ const ITENS = [
     desc: 'Um prédio no seu terreno, com placa. Voto com peso 2. Você pode alugar os 8 apartamentos para outros sobreviventes.' },
   { id: 'outdoor', cat: 'Residência', nome: 'Outdoor', preco: 300, terreno: true, fixo: true,
     desc: 'Uma placa grande num terreno SEM construção, com a frase que você quiser (até 40 letras). Você pode cobrar de quem quiser anunciar nele. Para construir depois, é só tirar o outdoor.' },
+  { id: 'outdoor_guardado', cat: 'Residência', nome: 'Outdoor desmontado', preco: 300, oculto: true,
+    desc: 'Um outdoor guardado no inventário. Monte de novo num terreno sem construção (Mercado → IMÓVEIS) ou venda para outro sobrevivente.' },
   { id: 'gas', cat: 'Oxigênio e comida', nome: 'Gás de oxigênio', preco: GAS_PRECO, gas: true,
     desc: 'Enche o seu tanque de ar: dura 24 horas parado ou 12 horas trabalhando. Sem ar o seu sobrevivente fica doente.' },
   { id: 'racao', cat: 'Oxigênio e comida', nome: 'Ração da nave', preco: RACAO_PRECO, consumivel: true, comida: FOME_LIMITE,
@@ -477,7 +479,7 @@ function comprar_(ss, d) {
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente primeiro.' };
   const item = ITENS.filter(function (i) { return i.id === d.item; })[0];
   if (!item) return { ok: false, erro: 'Item inválido.' };
-  if (item.oculto) return { ok: false, erro: 'Essa ficha só aparece no baú do dia (ou no mercado dos sobreviventes).' };
+  if (item.oculto) return { ok: false, erro: 'Esse item não é vendido na loja da nave. Procure no mercado dos sobreviventes.' };
 
   const p = perfilDe_(s);
   const meus = p.itens ? p.itens.split(',') : [];
@@ -499,6 +501,15 @@ function comprar_(ss, d) {
     return p;
   }
   if (meus.indexOf(item.id) >= 0) return { ok: false, erro: 'Você já tem esse item.' };
+  if (item.id === 'outdoor') { const fr = limpar_(d.lugar, 40), proib = fr && regraOutdoor_(s.dados, fr); if (proib) return proib; }
+  if (item.id === 'outdoor' && meus.indexOf('outdoor_guardado') >= 0) { // monta o outdoor guardado, sem pagar de novo
+    if (!meus.some(function (i) { return /^lote_/.test(i); })) return { ok: false, erro: 'Para montar o outdoor você precisa de um terreno.' };
+    if (temCasa_(p.itens)) return { ok: false, erro: 'O outdoor só pode ficar num terreno sem construção. Seu terreno já tem casa.' };
+    const fr = limpar_(d.lugar, 40); if (!fr) return { ok: false, erro: 'Escreva a frase do seu outdoor.' };
+    tirarItem_(meus, 'outdoor_guardado'); meus.push('outdoor'); p.itens = meus.join(','); salvarPerfil_(s, p);
+    s.aba.getRange(s.linha, C_OUTDOOR).setValue(texto_(fr)); p.outdoor = fr; p.montado = true;
+    return p;
+  }
   const mao = item.base ? (MAO_DE_OBRA[item.id] || 0) : 0;
   if (item.base && obrasDe_(ss, p.numero).length) return { ok: false, erro: 'Você já tem uma obra em andamento. Espere ela terminar.' };
   if (p.moedas < item.preco + mao) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + (item.preco + mao) + (mao ? ' (casa + mão de obra do engenheiro)' : '') + '.' };
@@ -895,6 +906,7 @@ function tirarOutdoor_(ss, d) {
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
   const p = perfilDe_(s), lista = p.itens ? p.itens.split(',') : [];
   if (!tirarItem_(lista, 'outdoor')) return { ok: false, erro: 'Você não tem outdoor.' };
+  lista.push('outdoor_guardado'); // o outdoor não some: vai para o inventário (dá para vender ou montar de novo)
   if (Number(s.dados[C_OUT_ATE - 1]) > Date.now()) return { ok: false, erro: 'Tem um anúncio pago no seu outdoor até ' + Utilities.formatDate(new Date(Number(s.dados[C_OUT_ATE - 1])), 'America/Sao_Paulo', 'dd/MM HH:mm') + '. Espere ele acabar.' };
   p.itens = lista.join(','); salvarPerfil_(s, p);
   [C_OUTDOOR, C_OUT_PRECO, C_OUT_ANUNCIO, C_OUT_AUTOR, C_OUT_ATE, C_OUT_OFERTA, C_ANUNCIO_OFERTA].forEach(function (c) { s.aba.getRange(s.linha, c).setValue(''); });
