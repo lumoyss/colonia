@@ -717,17 +717,19 @@
     for (i = 0; i < 16; i++) { x = r() * W | 0; y = r() * H | 0; c.fillStyle = "#3FA7A0"; c.fillRect(x, y, 1, 3); c.fillRect(x - 1, y + 1, 3, 1); c.fillStyle = "#c9f0e8"; c.fillRect(x, y, 1, 1); }
     // trilhas
     c.fillStyle = "#d8875a"; c.fillRect(OFX, OFY + 154, 480, 4); c.fillRect(OFX + 238, OFY, 4, 300);
-    // nave pousada (no meio do mapa)
-    var nx = NAVE.x - 18, ny = NAVE.y - 14;
-    c.fillStyle = "#3a4a52"; c.fillRect(nx, ny + 6, 36, 22); c.fillStyle = "#F3E9D6"; c.fillRect(nx + 2, ny + 4, 32, 20);
-    c.fillStyle = "#c9bfac"; c.fillRect(nx + 2, ny + 18, 32, 6); c.fillStyle = "#3FA7A0"; c.fillRect(nx + 8, ny + 8, 6, 4); c.fillRect(nx + 22, ny + 8, 6, 4);
-    c.fillStyle = "#E07A3A"; c.fillRect(nx + 14, ny, 8, 4); c.fillStyle = "#7A2E22"; c.fillRect(nx + 15, ny + 24, 6, 4);
-    // cúpulas antigas espalhadas
-    [[80, 60], [400, 70], [110, 240], [370, 230], [190, 40], [300, 270]].map(function (p) { return [p[0] + OFX, p[1] + OFY]; }).forEach(function (p) {
-      c.fillStyle = "#1f5c58"; c.fillRect(p[0] - 9, p[1] + 4, 18, 3);
-      c.fillStyle = "#7FD6C8"; c.fillRect(p[0] - 8, p[1] - 2, 16, 6); c.fillRect(p[0] - 6, p[1] - 4, 12, 2); c.fillRect(p[0] - 3, p[1] - 5, 6, 1);
-      c.fillStyle = "#c9f0e8"; c.fillRect(p[0] - 5, p[1] - 3, 2, 2);
-    });
+    // nave pousada (no meio do mapa), vista de cima: bico para a direita, asas, motores atrás
+    var X = NAVE.x, Y = NAVE.y, px = function (cor, x, y, w, h) { c.fillStyle = cor; c.fillRect(X + x, Y + y, w, h); };
+    px("rgba(60,20,10,.28)", -30, -6, 64, 18); px("rgba(60,20,10,.22)", -16, -18, 26, 36);
+    px("#5d6d75", -14, -20, 22, 6); px("#5d6d75", -18, -16, 26, 4); px("#5d6d75", -14, 10, 22, 6); px("#5d6d75", -18, 8, 26, 4);
+    px("#8fa0a8", -12, -20, 18, 2); px("#8fa0a8", -12, 14, 18, 2);
+    px("#E07A3A", -18, -16, 4, 2); px("#E07A3A", -18, 10, 4, 2);
+    px("#3a4a52", -26, -9, 52, 18); px("#F3E9D6", -24, -8, 46, 16); px("#c9bfac", -24, 3, 46, 5);
+    px("#F3E9D6", 22, -6, 6, 12); px("#F3E9D6", 28, -4, 4, 8); px("#c9bfac", 22, 3, 6, 3); px("#3a4a52", 32, -3, 1, 6);
+    px("#1f5c58", 18, -5, 10, 8); px("#3FA7A0", 19, -4, 8, 6); px("#c9f0e8", 20, -4, 3, 2);
+    for (var jn = -16; jn <= 8; jn += 6) { px("#3FA7A0", jn, -5, 3, 2); }
+    px("#7A2E22", -6, 5, 10, 3); px("#E07A3A", -24, -1, 46, 1);
+    px("#2a3438", -32, -8, 7, 6); px("#2a3438", -32, 2, 7, 6); px("#E07A3A", -34, -7, 2, 4); px("#E07A3A", -34, 3, 2, 4); px("#E8C25A", -35, -6, 1, 2); px("#E8C25A", -35, 4, 1, 2);
+    px("#9a8f7c", -3, 9, 6, 8);
     // antena
     c.fillStyle = "#F3E9D6"; c.fillRect(OFX + 300, OFY + 150, 1, 12); c.fillStyle = "#E07A3A"; c.fillRect(OFX + 299, OFY + 149, 3, 1);
   }
@@ -782,6 +784,11 @@
         mctx.fillStyle = n === aqui ? "#F3E9D6" : "rgba(243,233,214,.35)";
         [[2, 2], [T.l - 4, 2], [2, T.a - 4], [T.l - 4, T.a - 4]].forEach(function (q) { mctx.fillRect(x0 + q[0], y0 + q[1], 2, 2); });
         if (n === aqui) { mctx.fillStyle = "rgba(243,233,214,.08)"; mctx.fillRect(x0 + 2, y0 + 2, T.l - 4, T.a - 4); }
+        var cx0 = x0 + T.l / 2, cy0 = y0 + T.a / 2; // placa de "terreno livre"
+        mctx.fillStyle = "#5a3418"; mctx.fillRect(cx0, cy0 - 2, 1, 7);
+        mctx.fillStyle = "#3a2a1c"; mctx.fillRect(cx0 - 6, cy0 - 7, 13, 6);
+        mctx.fillStyle = n === aqui ? "#7FD6C8" : "#3FA7A0"; mctx.fillRect(cx0 - 5, cy0 - 6, 11, 4);
+        mctx.fillStyle = "#F3E9D6"; mctx.fillRect(cx0 - 3, cy0 - 5, 7, 1); mctx.fillRect(cx0 - 3, cy0 - 3, 5, 1);
       }
     }
   }
@@ -976,6 +983,12 @@
       rotulo((estado.aVenda[n] ? "À VENDA · " : "") + estado.donos[n], (c[0] - cx) * esc, (c[1] - LT.a / 2 + 2 - cy) * esc, "#F3E9D6", estado.aVenda[n] ? "rgba(224,122,58,.85)" : "rgba(63,167,160,.75)");
       cctx.restore();
     });
+    if (LT && ZOOM >= 2.5) for (var nl = 1; nl <= LT.colunas * LT.linhas; nl++) {
+      if (LT.nave.indexOf(nl) >= 0 || estado.donos[nl]) continue;
+      var cl = centroLote(nl); if (!dentro(cl[0], cl[1])) continue;
+      cctx.save(); cctx.font = Math.round(Math.min(esc * 2.2, 6 / tela)) + "px 'Press Start 2P', monospace";
+      rotulo("LIVRE · " + nl, (cl[0] - cx) * esc, (cl[1] + 6 - cy) * esc, "#0B161C", "rgba(127,214,200,.85)"); cctx.restore();
+    }
     if (LT && estado.outdoors) Object.keys(estado.outdoors).forEach(function (n) {
       var c = centroLote(+n), ox = c[0], oy = c[1] + LT.a / 2 - 6; if (!dentro(ox, oy)) return;
       cctx.save(); cctx.font = Math.round(Math.min(esc * 2.6, 7 / tela)) + "px 'Press Start 2P', monospace";
@@ -1155,8 +1168,13 @@
     meu.ax = cam.x + (ev.clientX - r.left) / r.width * VW;
     meu.ay = cam.y + (ev.clientY - r.top) / r.height * VH + 7;
     meu.explorando = true; cam.livre = false;
+    var nt = loteEm(meu.ax, meu.ay - 7), T2 = lotesCfg();
+    if (nt && T2) {
+      if (estado.donos[nt]) mensagemMapa("Terreno " + nt + (estado.aVenda[nt] ? ": à venda no mercado dos sobreviventes." : ": de " + estado.donos[nt] + "."), 6000);
+      else mensagemMapa("Terreno " + nt + " está LIVRE! Para pegar: vá até ele, toque em REIVINDICAR e fique " + T2.minutos + " minutos lá dentro; depois volte para a nave e registre no Mercado por " + T2.preco + " moedas. Seja o primeiro: aproveite que a colônia está só começando!", 9000);
+    }
   }
-  function mensagemMapa(t) { var el = document.getElementById("bauInfo"); el.textContent = t; clearTimeout(mensagemMapa.t); mensagemMapa.t = setTimeout(desenharBauInfo, 4000); }
+  function mensagemMapa(t, ms) { var el = document.getElementById("bauInfo"); el.textContent = t; clearTimeout(mensagemMapa.t); mensagemMapa.t = setTimeout(desenharBauInfo, ms || 4000); }
   function desenharBauInfo() {
     var b = estado.bau, el = document.getElementById("bauInfo");
     if (!b) { el.textContent = "A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação."; return; }
