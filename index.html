@@ -111,6 +111,11 @@
   nav.subabas button[aria-pressed=true]{background:var(--fundo3);color:var(--creme);border-color:var(--verde)}
   .sub{display:none}.sub.ativo{display:block}
   .falta{background:none;border:2px dashed #E8C25A;color:#E8C25A;font-family:"Press Start 2P",monospace;font-size:8px;padding:8px 6px;cursor:pointer;line-height:1.6}
+  body{padding-bottom:64px}
+  .musica{position:fixed;left:8px;bottom:8px;opacity:.92;z-index:50;display:flex;align-items:center;gap:6px;background:var(--fundo2);border:3px solid var(--fundo3);padding:4px 6px}
+  .musica button{width:34px;height:32px;margin:0;padding:0;font-size:18px;background:var(--fundo);color:var(--creme);border:2px solid var(--verde);cursor:pointer}
+  .musica input{width:80px;accent-color:var(--verde)}
+  .musica input[hidden]{display:none}
   .inv-grade{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:var(--fundo2);padding:8px;border:3px solid var(--fundo3)}
   .slot{aspect-ratio:1;background:var(--fundo);border:2px solid var(--fundo3);position:relative;font-size:26px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;color:var(--creme);font-family:inherit;min-width:0}
   .slot.vazio{cursor:default;background:#0e1c22}
@@ -397,14 +402,12 @@
       <div class="msg" id="msgMercado" role="status"></div>
       <nav class="subabas" id="subabas">
         <button type="button" data-sub="inventario" aria-pressed="false" id="subInventario" hidden>INVENTÁRIO</button>
-        <button type="button" data-sub="terreno" aria-pressed="true">TERRENO</button>
-        <button type="button" data-sub="moedas" aria-pressed="false">MOEDAS</button>
-        <button type="button" data-sub="vida" aria-pressed="false">AR E COMIDA</button>
-        <button type="button" data-sub="ferramentas" aria-pressed="false">FERRAMENTAS</button>
+        <button type="button" data-sub="imoveis" aria-pressed="true">IMÓVEIS</button>
+        <button type="button" data-sub="loja" aria-pressed="false">LOJA DA NAVE</button>
         <button type="button" data-sub="roupas" aria-pressed="false">ROUPAS</button>
-        <button type="button" data-sub="leilao" aria-pressed="false">LEILÃO</button>
-        <button type="button" data-sub="alugueis" aria-pressed="false">ALUGUÉIS</button>
         <button type="button" data-sub="sobreviventes" aria-pressed="false">ENTRE JOGADORES</button>
+        <button type="button" data-sub="moedas" aria-pressed="false">MOEDAS</button>
+        <button type="button" data-sub="leilao" aria-pressed="false">LEILÃO</button>
       </nav>
       <div class="sub" data-sub="inventario">
         <h3 class="pix cat">SEU INVENTÁRIO</h3>
@@ -414,7 +417,7 @@
         <div class="inv-grade" id="invGrade"></div>
         <div class="inv-det" id="invDet" hidden></div>
       </div>
-      <div class="sub ativo" data-sub="terreno">
+      <div class="sub ativo" data-sub="imoveis">
         <h3 class="pix cat">TERRENO, CASA E OUTDOOR</h3>
         <div class="loja fila"><div id="registroTerreno" style="display:contents"></div><div id="loja-terreno" style="display:contents"></div></div>
         <p class="deslize">deslize para o lado →</p>
@@ -428,27 +431,27 @@
           <div class="msg" id="msgFiscal" role="status"></div>
           <div class="loja fila" id="fiscalLista"></div>
         </div>
+        <h3 class="pix cat" style="margin-top:20px">ALUGUÉIS</h3>
+        <p class="dica">Sem casa? Alugue uma casa ou um apartamento de outro sobrevivente. Quem mora de aluguel descansa como quem tem casa.</p>
+        <div class="msg" id="msgAluguel" role="status"></div>
+        <div class="loja fila" id="alugueis"></div>
+        <div id="meusImoveis"></div>
       </div>
       <div class="sub" data-sub="moedas">
         <h3 class="pix cat">MOEDAS</h3>
         <div class="loja fila" id="pacotes"></div>
         <p class="dica" style="margin-top:8px">As moedas só valem dentro da Nave Orion e não podem ser trocadas de volta por dinheiro.</p>
       </div>
-      <div class="sub" data-sub="vida"><h3 class="pix cat">OXIGÊNIO E COMIDA</h3><div class="loja fila" id="loja-vida"></div><p class="deslize">deslize para o lado →</p></div>
-      <div class="sub" data-sub="ferramentas"><h3 class="pix cat">FERRAMENTAS</h3><div class="loja fila" id="loja-ferramentas"></div><p class="deslize">deslize para o lado →</p></div>
+      <div class="sub" data-sub="loja">
+        <h3 class="pix cat">OXIGÊNIO E COMIDA</h3><div class="loja fila" id="loja-vida"></div><p class="deslize">deslize para o lado →</p>
+        <h3 class="pix cat" style="margin-top:20px">FERRAMENTAS</h3><div class="loja fila" id="loja-ferramentas"></div><p class="deslize">deslize para o lado →</p>
+      </div>
       <div class="sub" data-sub="roupas"><h3 class="pix cat">ROUPAS E ACESSÓRIOS</h3><div class="loja fila" id="loja-roupas"></div><p class="deslize">deslize para o lado →</p></div>
       <div class="sub" data-sub="leilao">
         <h3 class="pix cat">LEILÃO DO VÍDEO</h3>
         <p class="dica">Quer que o seu @ (ou o seu produto) seja divulgado no próximo vídeo da Nave Orion? Dê um lance em moedas. Se alguém der mais, as suas moedas voltam na hora. Quem tiver o maior lance quando o leilão fechar ganha a divulgação e escreve o que quer divulgar.</p>
         <div class="msg" id="msgLeilao" role="status"></div>
         <div id="leilaoBox"></div>
-      </div>
-      <div class="sub" data-sub="alugueis">
-        <h3 class="pix cat">ALUGUÉIS</h3>
-        <p class="dica">Sem casa? Alugue uma casa ou um apartamento de outro sobrevivente. Quem mora de aluguel descansa como quem tem casa.</p>
-        <div class="msg" id="msgAluguel" role="status"></div>
-        <div class="loja fila" id="alugueis"></div>
-        <div id="meusImoveis"></div>
       </div>
       <div class="sub" data-sub="sobreviventes">
         <h3 class="pix cat">MERCADO DOS SOBREVIVENTES</h3>
@@ -504,6 +507,7 @@
 </main>
 
 <script src="config.js"></script>
+<div class="musica" id="musica"><button type="button" id="musicaBtn" aria-label="Ligar música ambiente" title="Música ambiente">🎵</button><input type="range" id="musicaVol" min="0" max="100" value="40" aria-label="Volume da música" hidden></div>
 <script>
 (function () {
   "use strict";
@@ -904,7 +908,7 @@
   setInterval(verTerreno, 1000);
   document.getElementById("btnTerreno").addEventListener("click", function () {
     var bt = this;
-    if (bt.dataset.acao === "mercado") { irPara("mercado"); irSub("terreno"); (document.getElementById("cartaoRegistro") || document.getElementById("subabas")).scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    if (bt.dataset.acao === "mercado") { irPara("mercado"); irSub("imoveis"); (document.getElementById("cartaoRegistro") || document.getElementById("subabas")).scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if (bt.dataset.acao !== "reivindicar") return;
     var n = Number(bt.dataset.lote);
     recon = { lote: n, inicio: Date.now(), pronto: false, enviando: true }; bt.hidden = true;
@@ -1480,7 +1484,7 @@
       document.getElementById("contaItens").textContent = "🎒 INVENTÁRIO (" + nItens + ")";
     }
     document.getElementById("subInventario").hidden = !on;
-    if (!on && document.querySelector('.sub.ativo[data-sub="inventario"]')) irSub("terreno");
+    if (!on && document.querySelector('.sub.ativo[data-sub="inventario"]')) irSub("imoveis");
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
     marcarFaltaMoedas();
@@ -1584,7 +1588,7 @@
       if (trabalhando || missao.modo === "plantao") botao("PARAR", "sec", pararTudo);
       else if (missao.modo !== "descansando" && !doente()) {
         modos.forEach(function (m) {
-          if (m === "consertar" && semKit()) botao("COMPRAR KIT DE FERRAMENTAS (CONSERTAR)", "sec", function () { irPara("mercado"); irSub("ferramentas"); var k = document.querySelector('[data-item="ferramentas"]'); if (k) k.scrollIntoView({ behavior: "smooth", block: "center" }); });
+          if (m === "consertar" && semKit()) botao("COMPRAR KIT DE FERRAMENTAS (CONSERTAR)", "sec", function () { irPara("mercado"); irSub("loja"); var k = document.querySelector('[data-item="ferramentas"]'); if (k) k.scrollIntoView({ behavior: "smooth", block: "center" }); });
           else botao(BOTAO_TRAB[m], m === modos[0] ? "" : "sec", function () { comecar(m); });
         });
         if (plantao) botao(f === "medico" ? "FICAR DE PLANTÃO (CURAR DOENTES)" : "FICAR DE PLANTÃO (CONSTRUIR CASAS)", "", comecarPlantao);
@@ -2443,6 +2447,48 @@
   setInterval(carregar, 30000);
   requestAnimationFrame(quadro);
 })();
+
+  /* ---------------- música ambiente (gerada na hora, sem arquivo) ---------------- */
+  (function () {
+    var btn = document.getElementById("musicaBtn"), vol = document.getElementById("musicaVol"), ac = null, mestre = null, ligada = false, timers = [];
+    function ler(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
+    function gravar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    vol.value = ler("musica_vol", "40");
+    var ESCALA = [220, 246.94, 261.63, 329.63, 392, 440, 493.88, 523.25, 659.25, 783.99]; // lá menor, clima de espaço
+    function montar() {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      mestre = ac.createGain(); mestre.gain.value = 0;
+      var eco = ac.createDelay(2), volta = ac.createGain(), filtroEco = ac.createBiquadFilter();
+      eco.delayTime.value = 0.75; volta.gain.value = 0.45; filtroEco.type = "lowpass"; filtroEco.frequency.value = 1800;
+      eco.connect(filtroEco); filtroEco.connect(volta); volta.connect(eco); filtroEco.connect(mestre);
+      mestre.connect(ac.destination); ac.eco = eco;
+      // fundo grave contínuo, com filtro que "respira"
+      var f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 400; f.Q.value = 4;
+      var lfo = ac.createOscillator(), lfoG = ac.createGain(); lfo.frequency.value = 0.05; lfoG.gain.value = 250; lfo.connect(lfoG); lfoG.connect(f.frequency); lfo.start();
+      var gd = ac.createGain(); gd.gain.value = 0.16; f.connect(gd); gd.connect(mestre);
+      [55, 82.41, 110.3].forEach(function (hz, i) { var o = ac.createOscillator(); o.type = i === 1 ? "triangle" : "sawtooth"; o.frequency.value = hz; o.detune.value = (i - 1) * 6; o.connect(f); o.start(); });
+    }
+    function nota(hz, dur, alto, onda) {
+      var t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.type = onda || "sine"; o.frequency.value = hz; g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(alto, t + dur * 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(mestre); g.connect(ac.eco); o.start(t); o.stop(t + dur + 0.1);
+    }
+    function acorde() { if (!ligada) return; var b = Math.floor(Math.random() * 5); [0, 2, 4].forEach(function (k) { nota(ESCALA[b + k] / 2, 9, 0.05, "triangle"); }); timers.push(setTimeout(acorde, 8000 + Math.random() * 4000)); }
+    function brilho() { if (!ligada) return; nota(ESCALA[Math.floor(Math.random() * ESCALA.length)] * 2, 2.5, 0.035); timers.push(setTimeout(brilho, 1800 + Math.random() * 4200)); }
+    function volume() { if (mestre) mestre.gain.setTargetAtTime(ligada ? (Number(vol.value) / 100) * 0.6 : 0, ac.currentTime, 0.4); }
+    function ligar(sim) {
+      ligada = sim; gravar("musica_on", sim ? "1" : "0");
+      timers.forEach(clearTimeout); timers = [];
+      if (sim) { if (!ac) montar(); if (ac.state === "suspended") ac.resume(); acorde(); brilho(); }
+      volume(); vol.hidden = !sim; btn.textContent = sim ? "🔊" : "🎵";
+      btn.setAttribute("aria-label", sim ? "Desligar música" : "Ligar música ambiente");
+    }
+    btn.onclick = function () { ligar(!ligada); };
+    vol.oninput = function () { gravar("musica_vol", vol.value); volume(); btn.textContent = Number(vol.value) ? "🔊" : "🔇"; };
+    // quem deixou ligada da última vez: volta a tocar no primeiro toque na página (o navegador exige um toque)
+    if (ler("musica_on", "0") === "1") document.addEventListener("pointerdown", function primeiro(ev) { document.removeEventListener("pointerdown", primeiro); if (!ligada && ev.target !== btn) ligar(true); });
+  })();
 </script>
 </body>
 </html>
