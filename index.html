@@ -297,7 +297,7 @@
       <li>Mais ou menos a cada 15 minutos aparece um baú pequeno em algum lugar do mapa, com 20 a 70 moedas. Ele fica lá até alguém abrir, e podem haver no máximo 2 baús esperando no mapa.</li>
       <li>Para ter um terreno, pare em um dos terrenos livres (com uma placa no meio) e reivindique. Depois volte para a nave e registre no Mercado (aba IMÓVEIS).</li>
       <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói.</li>
-      <li>Com uma picareta, você pode minerar na borda pedregosa do mapa para encontrar itens.</li>
+      <li>Com uma picareta, você pode minerar na borda pedregosa do mapa para encontrar itens (20% de chance a cada tentativa). Depois de 60 tentativas você cansa e descansa 40 minutos, ou chama um médico, que cobra o dobro.</li>
       <li>Para construir uma casa ou um prédio, ou para instalar um outdoor, é preciso contratar um engenheiro.</li>
       <li>Se alguém ficar 15 minutos parado no seu terreno, ele invade e leva 5% das suas moedas (ou um item simples). Para se proteger, contrate um guarda em SERVIÇOS (24 horas). Cada terreno só pode ser invadido 1 vez por dia.</li>
       <li>Quem some do jogo por 7 dias perde o terreno e a construção. O terreno volta a ficar livre para outra pessoa registrar.</li>
@@ -1605,11 +1605,13 @@
     bt.disabled = true; bt.textContent = "MINERANDO...";
     enviar(credenciais({ acao: "minerar", x: Math.round(meu.x), y: Math.round(meu.y) })).then(function (r) {
       bt.disabled = false; bt.textContent = "MINERAR AQUI";
-      if (!r.ok) { if (r.espera) mineraAte = Date.now() + r.espera * 1000; mensagemMapa(r.erro || "Não deu para minerar."); return; }
+      if (!r.ok) { if (r.espera) mineraAte = Date.now() + r.espera * 1000; if (r.mineracaoAte) { eu.mineracaoAte = r.mineracaoAte; salvarEu(); } mensagemMapa(r.erro || "Não deu para minerar.", r.cansadoMineracao ? 7000 : 4000); return; }
       mineraAte = Date.now() + (r.espera || 30) * 1000;
       aplicarPerfil(r); salvarEu();
       if (meuBoneco()) meuBoneco().minerouAte = Date.now() + 1500;
-      if (r.achou) premio("VOCÊ MINEROU!", [r.achou]); else mensagemMapa("Só pedra dessa vez... tente de novo daqui a pouco.");
+      var resto = r.mineradasMax ? " (" + r.mineradas + " de " + r.mineradasMax + " antes de cansar)" : "";
+      if (r.cansouMineracao) mensagemMapa("Você cansou de minerar. Descanse 40 minutos ou chame um médico em Serviços.", 8000);
+      if (r.achou) premio("VOCÊ MINEROU!", [r.achou]); else if (!r.cansouMineracao) mensagemMapa("Só pedra dessa vez... tente de novo daqui a pouco." + resto);
     });
   });
 
@@ -1748,7 +1750,7 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias", "mineracaoAte"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
     if (r.avisos !== undefined) desenharSino();
     if (r.reliquias) registrarReliquias(r.reliquias);
     if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(fazerCheckin, 1500); }
@@ -2064,16 +2066,18 @@
     var on = logado(), meuNome = on ? eu.nome : "";
     var meds = (estado.medicos || []).filter(function (m) { return m.nome !== meuNome; });
     var engs = estado.engenheiros, minhas = on ? (estado.obras || []).filter(function (o) { return o.dono === eu.nome; }) : [];
-    var assin = JSON.stringify([meds, engs, minhas, on, on && doente(), on && cansado()]);
+    var cansMin = on && Number(eu.mineracaoAte) > Date.now();
+    var assin = JSON.stringify([meds, engs, minhas, on, on && doente(), on && cansado(), cansMin]);
     if (ulM.dataset.assin === assin) return; ulM.dataset.assin = assin;
     var dM = document.getElementById("servMedDica"), dE = document.getElementById("servEngDica");
-    var estouDoente = on && (doente() || cansado());
+    var estouDoente = on && (doente() || cansado() || cansMin), dobro = cansMin && !doente() && !cansado();
     dM.textContent = !on ? "Entre com o seu sobrevivente para chamar um médico." : doente() ? "Você está doente. Chame um médico para ser curado na hora." : cansado() ? "Você está cansado. O médico cura na hora e você trabalha 30 minutos direto sem cansar." : "Você está bem. O médico pode ser chamado quando você ficar doente (sem ar ou sem comida) ou cansado (depois de 1 hora de trabalho).";
     ulM.innerHTML = "";
     if (!meds.length) { var v = document.createElement("li"); v.textContent = "Nenhum médico de plantão agora."; ulM.appendChild(v); }
     meds.forEach(function (m) {
-      ulM.appendChild(itemServ({ nome: m.nome, extra: m.preco + " moedas a consulta" }, m.numero, "CHAMAR", estouDoente, function (b) {
-        if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + m.preco + ")"; return; }
+      var precoM = m.preco * (dobro ? 2 : 1);
+      ulM.appendChild(itemServ({ nome: m.nome, extra: precoM + " moedas a consulta" + (dobro ? " (cansaço de mineração custa o dobro)" : "") }, m.numero, "CHAMAR", estouDoente, function (b) {
+        if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + precoM + ")"; return; }
         b.disabled = true;
         enviar(credenciais({ acao: "chamar_medico", numero: m.numero })).then(function (r) {
           b.disabled = false; delete b.dataset.confirmar; b.textContent = "CHAMAR";
