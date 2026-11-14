@@ -284,7 +284,8 @@
     </ul>
     <h4>Sobreviver</h4>
     <ul>
-      <li>Para consertar a nave, você precisa do kit de ferramentas. Assim que um sobrevivente acorda, ele(a) tem direito a 1 dia de ferramentas grátis.</li>
+      <li>Qualquer um pode consertar a nave. Com a caixa de ferramentas (vale 7 dias) você ganha o dobro. Quem acaba de acordar ganha 1 dia de caixa grátis. A vassoura (7 dias) dá o dobro de pontos limpando a torre do clã.</li>
+      <li>Faça check-in todo dia: 20, 30, 40, 50, 60 e 80 moedas, e no 7º dia um baú especial com 150 moedas e um item exclusivo com o seu nome, que libera os títulos de nobreza (um por semana). Se faltar um dia, volta ao dia 1.</li>
       <li>Coma a cada 4 horas de trabalho e mantenha ar no tanque (veja as barras de ar e fome no seu INVENTÁRIO).</li>
       <li>Sem comida ou sem ar, você fica doente por 1 hora (ou pode pagar um médico para te curar).</li>
       <li>Consertando a nave você ganha 1 moeda a cada 15 segundos (2 com a caixa de ferramentas). Depois de 1 hora seguida trabalhando, você cansa: sem casa, descansa 20 minutos na nave; com casa (própria ou alugada), 5 minutos em casa ou 10 minutos se preferir ficar fora explorando ou minerando. Um médico cura o cansaço na hora e você trabalha 30 minutos direto.</li>
@@ -940,7 +941,7 @@
     estado.total = d.total || estado.sobreviventes.length;
     if (d.mercado) { estado.mercado = d.mercado; montarMercado(); }
     if (d.chat) { document.getElementById("abaRadio").hidden = false; document.getElementById("menuRadio").hidden = false; }
-    estado.ofertas = d.ofertas || [];
+    estado.ofertas = d.ofertas || []; estado.ofertas.forEach(function (o) { if (o.nomeItem) { var mm = {}; mm[o.item] = o.nomeItem; registrarReliquias(mm); } });
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
     estado.medicos = d.medicos || []; estado.guardas = d.guardas || []; estado.pesquisa = d.pesquisa || null; estado.titulos = d.titulos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
@@ -1747,8 +1748,10 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
     if (r.avisos !== undefined) desenharSino();
+    if (r.reliquias) registrarReliquias(r.reliquias);
+    if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(fazerCheckin, 1500); }
     if (r.ofertaAte !== undefined && typeof mostrarOferta === "function") mostrarOferta();
     if (typeof missao !== "undefined" && missao && Number(r.descansoAte) > Date.now() && missao.modo === "parado") { missao.modo = "descansando"; missao.descanso = Math.ceil((r.descansoAte - Date.now()) / 1000); missao.temBase = typeof temCasa === "function" ? temCasa() : missao.temBase; }
     if (r.veste !== undefined && typeof bonecos !== "undefined" && eu && bonecos[eu.nome]) bonecos[eu.nome].itens = eu.veste;
@@ -2225,7 +2228,7 @@
 
   /* ---------------- inventário (grade com espaços) ---------------- */
   var ICONES = { base: "🏠", base_grande: "🏢", outdoor: "🪧", outdoor_guardado: "🪧", gas: "🧪", racao: "🥫", comida: "🥕", refeicao: "🍲", bone: "🧢", calca: "👖", chapeu: "🤠", colete: "🦺", vestido: "👗",
-    capacete_dourado: "⛑️", bota_dourada: "👢", calca_dourada: "👖", blusa_dourada: "👕", traje_dourado: "✨", mochila: "🎒", picareta: "⛏️", ferramentas: "🧰",
+    capacete_dourado: "⛑️", bota_dourada: "👢", calca_dourada: "👖", blusa_dourada: "👕", traje_dourado: "✨", mochila: "🎒", picareta: "⛏️", ferramentas: "🧰", vassoura: "🧹",
     ficha_item: "🎟️", ficha_empresa: "🏭", cristal: "💎", peca: "⚙️", minerio: "🪨", semente: "🌱", fossil: "🦴",
     sucata: "🔩", parafusos: "🔧", garrafa: "🍾", relogio: "⌚", radio_velho: "📻", moeda_antiga: "🪙", espada_alien: "🗡️", armadura_alien: "🛡️", peca_nave: "🛠️", ticket_assembleia: "🎫", ticket_pauta: "📜", jaqueta_orion: "🧥" };
   var COMIVEIS = { comida: "sacia 4h de trabalho", refeicao: "sacia 8h de trabalho", racao: "sacia 4h de trabalho" };
@@ -2350,8 +2353,23 @@
 
   /* ---------------- mercado ---------------- */
   var mercadoPronto = false;
+  var NOMES_RELIQ = {}, checkinPedido = false;
+  function registrarReliquias(m) {
+    var ic = { cavaleiro: "🗡️", barao: "🔫", conde: "🎖️", duque: "🚀" };
+    Object.keys(m || {}).forEach(function (id) { if (!m[id]) return; NOMES_RELIQ[id] = m[id]; var t = /^reliquia_([a-z]+)_/.exec(id); ICONES[id] = (t && ic[t[1]]) || "🏅"; });
+  }
+  function fazerCheckin() {
+    if (!logado()) return;
+    enviar(credenciais({ acao: "checkin" })).then(function (r) {
+      if (!r.ok || r.jaFeito) { if (r.checkin) eu.checkin = r.checkin; return; }
+      aplicarPerfil(r); salvarEu();
+      mostrarToast(r.itemExclusivo ? "🎁 Baú especial do check-in! +" + r.ganhou + " moedas e " + r.nomeExclusivo + "!" : "✅ Check-in dia " + r.checkin.dia + " de 7: +" + r.ganhou + " moedas. Volte amanhã!");
+      if (typeof desenharInventario === "function") desenharInventario();
+    });
+  }
   function nomeItem(id) {
     var lt = /^lote_(\d+)$/.exec(id); if (lt) return "Terreno " + lt[1];
+    if (/^reliquia_/.test(id)) return NOMES_RELIQ[id] || "Item exclusivo";
     if (estado.criados && estado.criados[id]) return (estado.criados[id].tipo === "empresa" ? "Empresa: " : "") + estado.criados[id].nome;
     if (id === "comida") return "Comida"; if (id === "refeicao") return "Refeição";
     var m = estado.mercado; if (!m) return null;
@@ -2425,6 +2443,12 @@
         b.disabled = !on || cheio || des; b.textContent = des ? "DESEMPREGADO NÃO PRECISA" : cheio ? "TANQUE AINDA CHEIO" : "ENCHER O TANQUE"; delete b.dataset.confirmar; return;
       }
       if (el.dataset.item === "racao") { b.disabled = !on; if (!b.dataset.confirmar) b.textContent = "ADQUIRIR"; return; }
+      if (el.dataset.item === "ferramentas" || el.dataset.item === "vassoura") {
+        var ateF = !on ? 0 : el.dataset.item === "vassoura" ? Number(eu.vassouraAte) || 0 : Number(eu.kitAte) || 0;
+        b.disabled = !on || ateF === -1;
+        if (!b.dataset.confirmar) b.textContent = ateF === -1 ? "VOCÊ JÁ TEM PARA SEMPRE" : ateF > Date.now() ? "RENOVAR (+7 DIAS) · ATÉ " + new Date(ateF).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "ADQUIRIR (7 DIAS)";
+        return;
+      }
       if (on && eu.obra && eu.obra.item === el.dataset.item) { b.disabled = true; b.textContent = eu.obra.status === "em obra" ? "EM OBRA (" + (eu.obra.engenheiro || "engenheiro") + ")" : "AGUARDANDO ENGENHEIRO"; if (i) i.hidden = true; delete b.dataset.confirmar; return; }
       var semTerreno = !!i && lotesCfg() && !meus.some(function (x) { return /^lote_/.test(x); });
       var dono = el.querySelector(".outdoor-dono"); if (dono) { dono.hidden = !ja; if (ja && dono.desenharOferta) dono.desenharOferta(); }
@@ -2477,7 +2501,7 @@
       if (!r.ok) { desenharItens(); return mensagem("msgMercado", r.erro || "Não deu certo. Tente de novo."); }
       aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
       if (it.gas) { eu.gas = true; salvarEu(); }
-      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua obra aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
+      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua obra aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : r.ate ? it.nome + " ativa até " + new Date(r.ate).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "!" : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
       if (r.obra) atualizarPerfil();
       carregar();
     });
@@ -2983,14 +3007,14 @@
     var lista = estado.titulos || [], atual = on ? eu.titulo || "" : "";
     var idx = lista.map(function (t) { return t.id; }).indexOf(atual), fem = on && lerVisual(eu.visual, eu.nome).corpo === 1;
     document.getElementById("titMeu").textContent = !on ? "Entre com o seu sobrevivente para ver o seu progresso." :
-      "Você: " + (atual ? "👑 " + nomeTitulo(atual, eu.visual, eu.nome) : "sem título ainda") + " · " + (eu.horasOnline || 0) + " horas online · " + (eu.assembleias || 0) + " Assembleias.";
+      "Você: " + (atual ? "👑 " + nomeTitulo(atual, eu.visual, eu.nome) : "sem título ainda") + " · " + (eu.horasOnline || 0) + " horas online · " + (eu.assembleias || 0) + " Assembleias · check-in dia " + ((eu.checkin && eu.checkin.dia) || 0) + " de 7 (" + ((eu.checkin && eu.checkin.semanas) || 0) + " semana(s) completa(s)).";
     ul.innerHTML = "";
     lista.forEach(function (t, i) {
       var li = document.createElement("li"), sp = document.createElement("span");
-      sp.textContent = (i <= idx ? "✅ " : "👑 ") + (fem ? t.fem : t.nome + " / " + t.fem) + " · " + t.horas + "h online, " + t.assembleias + " Assembleias, " + t.preco.toLocaleString("pt-BR") + " moedas";
+      sp.textContent = (i <= idx ? "✅ " : "👑 ") + (fem ? t.fem : t.nome + " / " + t.fem) + " · " + t.horas + "h online, " + t.assembleias + " Assembleias, " + t.preco.toLocaleString("pt-BR") + " moedas" + (t.item ? " + item exclusivo (" + i + "ª semana de check-in)" : "");
       li.appendChild(sp);
       if (on && i === idx + 1) {
-        var pronto = (eu.horasOnline || 0) >= t.horas && (eu.assembleias || 0) >= t.assembleias;
+        var pronto = (eu.horasOnline || 0) >= t.horas && (eu.assembleias || 0) >= t.assembleias && (!t.item || tem(eu.itens, "reliquia_" + t.id + "_" + eu.numero));
         var b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = pronto ? "RECEBER" : "AINDA NÃO"; b.disabled = !pronto;
         b.onclick = function () {
           if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + t.preco + ")"; return; }

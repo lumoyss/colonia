@@ -49,17 +49,31 @@ const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
   C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43,
   C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47,
-  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52;
+  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54;
+const FERRAMENTA_DIAS = 7; // caixa de ferramentas e vassoura valem 7 dias
 // online_dia (col. 12) guarda o último minuto contado; online_minutos (col. 13) soma o tempo online total.
 
 /* ---------- TÍTULOS DE NOBREZA ---------- */
 // Horas online + Assembleias de que participou + pagamento em moedas. Um título de cada vez, em ordem.
+// Do Cavaleiro em diante precisa do item exclusivo do título (vem no baú especial do check-in, 1 por semana completa).
 const TITULOS = [
-  { id: 'cavaleiro', nome: 'Cavaleiro', fem: 'Princesa', horas: 15, assembleias: 5, preco: 300 },
-  { id: 'barao', nome: 'Barão', fem: 'Baronesa', horas: 40, assembleias: 15, preco: 500 },
-  { id: 'conde', nome: 'Conde', fem: 'Condessa', horas: 100, assembleias: 30, preco: 1000 },
-  { id: 'duque', nome: 'Duque', fem: 'Duquesa', horas: 200, assembleias: 60, preco: 2000 }
+  { id: 'escudeiro', nome: 'Escudeiro', fem: 'Escudeira', horas: 1, assembleias: 1, preco: 50 },
+  { id: 'cavaleiro', nome: 'Cavaleiro', fem: 'Princesa', horas: 15, assembleias: 5, preco: 300, item: true },
+  { id: 'barao', nome: 'Barão', fem: 'Baronesa', horas: 40, assembleias: 15, preco: 500, item: true },
+  { id: 'conde', nome: 'Conde', fem: 'Condessa', horas: 100, assembleias: 30, preco: 1000, item: true },
+  { id: 'duque', nome: 'Duque', fem: 'Duquesa', horas: 200, assembleias: 60, preco: 2000, item: true }
 ];
+// Itens exclusivos com o nome da pessoa (id: reliquia_<titulo>_<numero>). Podem ser vendidos como item de colecionador,
+// mas só o dono original usa para pegar o título.
+const RELIQUIAS = {
+  cavaleiro: { masc: 'Espada de Cavaleiro de ', fem: 'Espada de Princesa de ' },
+  barao: { masc: 'Pistola laser do Barão ', fem: 'Pistola laser da Baronesa ' },
+  conde: { masc: 'Insígnia do Conde ', fem: 'Insígnia da Condessa ' },
+  duque: { masc: 'Miniatura da Nave Orion do Duque ', fem: 'Miniatura da Nave Orion da Duquesa ' }
+};
+const ORDEM_RELIQUIAS = ['cavaleiro', 'barao', 'conde', 'duque'];
+/* ---------- CHECK-IN DIÁRIO (7 dias seguidos; faltou um dia, volta ao dia 1) ---------- */
+const CHECKIN_MOEDAS = [20, 30, 40, 50, 60, 80, 150]; // dia 7 = baú especial (+ item exclusivo da semana)
 
 /* ---------- CENTRO DE PESQUISA (dentro da nave) ---------- */
 // Recursos do planeta vendidos para a nave: moedas + pontos de pesquisa (1 ponto por moeda).
@@ -248,8 +262,10 @@ const ITENS = [
   { id: 'mochila', cat: 'Acessórios', nome: 'Mochila de oxigênio', preco: 150, slot: 'costas', desc: 'Tanque extra de ar: com ela o seu ar dura o dobro (48 horas parado, 24 horas trabalhando) e você gasta menos gás. Aparece nas costas do bonequinho.' },
   { id: 'picareta', cat: 'Ferramentas', nome: 'Picareta', preco: 300,
     desc: 'Leve o seu bonequinho para fora da zona dos terrenos (a borda pedregosa do mapa) e minere. Dá para achar recursos e, às vezes, itens especiais.' },
-  { id: 'ferramentas', cat: 'Ferramentas', nome: 'Caixa de ferramentas', preco: 100,
-    desc: 'Com ela você ganha o dobro consertando a nave (2 moedas a cada 15 s) e o mecânico vale 3 pontos. Quem acorda ganha uma caixa emprestada por 1 dia; adquirindo, é sua para sempre.' },
+  { id: 'ferramentas', cat: 'Ferramentas', nome: 'Caixa de ferramentas', preco: 150, dias: FERRAMENTA_DIAS, coluna: C_CAIXA_ATE,
+    desc: 'Vale 7 dias. Com ela você ganha o dobro consertando a nave (2 moedas a cada 15 s) e o mecânico vale 3 pontos. Quem acorda ganha uma caixa emprestada por 1 dia.' },
+  { id: 'vassoura', cat: 'Ferramentas', nome: 'Vassoura', preco: 150, dias: FERRAMENTA_DIAS, coluna: C_VASSOURA_ATE,
+    desc: 'Vale 7 dias. Limpar a torre do clã com a vassoura dá o dobro de pontos.' },
   { id: 'ticket_assembleia', cat: 'Assembleia', nome: 'Ticket da Assembleia', preco: 0, oculto: true,
     desc: 'Use para entrar na Assembleia do dia (comentar e votar nas pautas) ou para mandar uma ideia direto para a história. Dá para vender para outros sobreviventes.' },
   { id: 'ticket_pauta', cat: 'Assembleia', nome: 'Ticket de Pauta', preco: 0, oculto: true,
@@ -269,7 +285,7 @@ const SLOTS_ANTIGOS = { traje_dourado: 'tronco,pernas' };
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate']);
   colunas_(garantirAba_(ss, ABA_INVASOES), ['data', 'lote', 'invasor_numero', 'invasor', 'dono_numero', 'dono', 'levou']);
   colunas_(garantirAba_(ss, ABA_SEGURANCA), ['data', 'dono_numero', 'dono', 'guarda_numero', 'guarda', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
@@ -350,12 +366,12 @@ function doGet(e) {
     terrenos: { x0: LOTE_X0, y0: LOTE_Y0, l: LOTE_L, a: LOTE_A, colunas: LOTE_COLUNAS, linhas: LOTE_LINHAS, nave: LOTES_DA_NAVE, preco: TERRENO_PRECO, minutos: TERRENO_MINUTOS, porPessoa: TERRENOS_POR_PESSOA }
   };
   const ofertas = linhas_(ss.getSheetByName(ABA_OFERTAS)).filter(function (l) { return l[6] === 'aberta'; }).slice(-100).reverse().map(function (l) {
-    return { id: l[0], vendedor: l[3], item: l[4], preco: l[5], qtd: qtdOferta_(l) };
+    return { id: l[0], vendedor: l[3], item: l[4], preco: l[5], qtd: qtdOferta_(l), nomeItem: /^reliquia_/.test(String(l[4])) ? nomeReliquia_(ss, String(l[4])) : undefined };
   });
   const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
   const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
   const resposta = { ok: true, bauzinhos: bauzinhos_().lista, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
-    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, guardas: guardasSeguranca_(todas), titulos: TITULOS, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
+    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, guardas: guardasSeguranca_(todas), titulos: TITULOS, checkinMoedas: CHECKIN_MOEDAS, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
     obras: ss.getSheetByName(ABA_OBRAS) ? obrasAbertas_(ss) : [], funcoes: funcoes,
     torres: ss.getSheetByName(ABA_TORRES) ? torresPublicas_(ss, todas) : [], leilao: ss.getSheetByName(ABA_LEILOES) ? leilaoPublico_(ss) : null, criados: ss.getSheetByName(ABA_CRIACOES) ? criadosPublicos_(ss) : {},
     ofertas: ofertas, bau: bau, mapa: { l: MAPA_L, a: MAPA_A } };
@@ -378,7 +394,7 @@ function doPost(e) {
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_, outdoor_oferta: outdoorOferta_,
-      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, pesquisar: pesquisar_, titulo: pegarTitulo_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
+      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, pesquisar: pesquisar_, titulo: pegarTitulo_, checkin: checkin_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
@@ -476,6 +492,7 @@ function perfil_(ss, d) {
   }
   p.horasOnline = Math.floor((Number(s.dados[C_ON_MIN - 1]) || 0) / 60); p.assembleias = assembleiasDe_(ss, p.numero);
   p.titulo = String(s.dados[C_TITULO - 1] || '');
+  p.vassouraAte = Number(s.dados[C_VASSOURA_ATE - 1]) || 0; p.checkin = checkinEstado_(s.dados); p.reliquias = nomesReliquias_(ss, p.itens);
   return p;
 }
 
@@ -600,6 +617,14 @@ function comprar_(ss, d) {
     salvarPerfil_(s, p);
     ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), item.nome, item.preco]);
     return p;
+  }
+  if (item.dias) { // ferramenta por tempo: soma 7 dias
+    if (p.moedas < item.preco) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + item.preco + '.' };
+    const ate = Math.max(Date.now(), Number(s.dados[item.coluna - 1]) || 0) + item.dias * 86400000;
+    p.moedas -= item.preco; s.aba.getRange(s.linha, C_MOEDAS).setValue(p.moedas); s.aba.getRange(s.linha, item.coluna).setValue(ate);
+    ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), item.nome + ' (' + item.dias + ' dias)', item.preco]);
+    if (item.id === 'ferramentas') p.kitAte = kitAte_(linhaPorNumero_(ss, p.numero).dados); else p.vassouraAte = ate;
+    p.ate = ate; return p;
   }
   if (meus.indexOf(item.id) >= 0) return { ok: false, erro: 'Você já tem esse item.' };
   if (item.id === 'outdoor') { const fr = limpar_(d.lugar, 40), proib = fr && regraOutdoor_(s.dados, fr); if (proib) return proib; }
@@ -732,7 +757,7 @@ function trabalhar_(ss, d) {
   } else if (modo === 'construir') {
     avancarObra_(ss, obra, l);
   } else if (modo === 'torre') {
-    pontos = funcao === 'explorador' ? 2 : 1;
+    pontos = (funcao === 'explorador' ? 2 : 1) * ((Number(l[C_VASSOURA_ATE - 1]) || 0) > agora ? 2 : 1);
     somarTorre_(ss, torre, l[0], pontos);
   }
   if (produziu) {
@@ -1176,6 +1201,7 @@ function avisar_(ss, numero, texto) {
   } catch (e) { /* aviso nunca pode quebrar a ação principal */ }
 }
 function nomeDoItem_(id) {
+  if (/^reliquia_/.test(id)) return nomeReliquia_(planilha_(), id);
   if (/^lote_/.test(id)) return 'Terreno ' + id.replace('lote_', '');
   const i = ITENS.filter(function (x) { return x.id === id; })[0] || achados_().filter(function (x) { return x.id === id; })[0];
   if (i) return i.nome;
@@ -1346,6 +1372,8 @@ function pegarTitulo_(ss, d) {
   if (!t) return { ok: false, erro: 'Você já tem o título mais alto.' };
   if (d.id && d.id !== t.id) return { ok: false, erro: 'Os títulos vêm em ordem. O próximo é ' + t.nome + '.' };
   const horas = Math.floor((Number(s.dados[C_ON_MIN - 1]) || 0) / 60), ass = assembleiasDe_(ss, s.dados[0]);
+  if (t.item && !tem_(String(s.dados[C_ITENS - 1] || ''), 'reliquia_' + t.id + '_' + s.dados[0]))
+    return { ok: false, erro: 'Para ' + (feminino_(s.dados) ? t.fem : t.nome) + ' você precisa do item exclusivo com o seu nome. Ele vem no baú especial do check-in (7 dias seguidos).' };
   if (horas < t.horas || ass < t.assembleias) return { ok: false, erro: 'Para ' + t.nome + ' você precisa de ' + t.horas + ' horas online (tem ' + horas + ') e ' + t.assembleias + ' Assembleias (tem ' + ass + ').' };
   const p = perfilDe_(s);
   if (p.moedas < t.preco) return { ok: false, erro: 'O título custa ' + t.preco + ' moedas e você tem ' + p.moedas + '.' };
@@ -1353,6 +1381,43 @@ function pegarTitulo_(ss, d) {
   ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Título: ' + t.nome, t.preco]);
   avisoRadio_(ss, '👑 ' + p.nome + ' recebeu um título de nobreza!');
   p.titulo = t.id; p.horasOnline = horas; p.assembleias = ass;
+  return p;
+}
+
+/* ---------- Check-in e itens exclusivos ---------- */
+function feminino_(l) { return String(l[C_VISUAL - 1] || '').split(',')[5] === '1'; }
+function nomeReliquia_(ss, id) {
+  const m = /^reliquia_([a-z]+)_(\d+)$/.exec(id); if (!m || !RELIQUIAS[m[1]]) return '';
+  const l = (linhaPorNumero_(ss, m[2]) || {}).dados;
+  return l ? RELIQUIAS[m[1]][feminino_(l) ? 'fem' : 'masc'] + l[2] : RELIQUIAS[m[1]].masc.trim();
+}
+function nomesReliquias_(ss, itens) {
+  const r = {}; String(itens || '').split(',').forEach(function (i) { if (/^reliquia_/.test(i) && !r[i]) r[i] = nomeReliquia_(ss, i); }); return r;
+}
+function checkinEstado_(l) {
+  const a = String(l[C_CHECKIN - 1] || '').split('|'), hoje = diaHoje_();
+  const ontem = Utilities.formatDate(new Date(Date.now() - 86400000), 'America/Sao_Paulo', 'yyyy-MM-dd');
+  const seq = a[0] === hoje || a[0] === ontem ? Number(a[1]) || 0 : 0;
+  return { feitoHoje: a[0] === hoje, dia: seq, semanas: Number(a[2]) || 0 };
+}
+function checkin_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const e = checkinEstado_(s.dados);
+  if (e.feitoHoje) return { ok: true, jaFeito: true, checkin: e };
+  const dia = e.dia % 7 + 1, moedas = CHECKIN_MOEDAS[dia - 1], p = perfilDe_(s);
+  let semanas = e.semanas, item = '';
+  p.moedas += moedas;
+  if (dia === 7) {
+    const tipo = ORDEM_RELIQUIAS[semanas];
+    if (tipo) { item = 'reliquia_' + tipo + '_' + p.numero; p.itens = (p.itens ? p.itens + ',' : '') + item; }
+    semanas++;
+  }
+  salvarPerfil_(s, p);
+  s.aba.getRange(s.linha, C_CHECKIN).setValue(diaHoje_() + '|' + dia + '|' + semanas);
+  if (item) { const nome = nomeReliquia_(ss, item); avisar_(ss, p.numero, '🎁 Baú especial do check-in: +' + moedas + ' moedas e ' + nome + '!'); avisoRadio_(ss, '🎁 ' + p.nome + ' completou 7 dias de check-in e ganhou: ' + nome + '!'); }
+  p.checkin = { feitoHoje: true, dia: dia, semanas: semanas }; p.ganhou = moedas; p.itemExclusivo = item;
+  p.reliquias = nomesReliquias_(ss, p.itens); if (item) p.nomeExclusivo = p.reliquias[item];
   return p;
 }
 
@@ -1463,7 +1528,7 @@ function registrarTerreno_(ss, d) {
 
 /* ---------- Mercado entre jogadores ---------- */
 function vendivel_(id) {
-  return /^lote_\d+$/.test(id) || /^criado_/.test(id) || id === 'ficha_item' || id === 'ficha_empresa' || id === 'comida' || id === 'refeicao' || achados_().some(function (r) { return r.id === id; }) || ITENS.some(function (i) { return i.id === id && !i.base && !i.fixo && !i.gas && !i.consumivel; });
+  return /^lote_\d+$/.test(id) || /^criado_/.test(id) || /^reliquia_[a-z]+_\d+$/.test(id) || id === 'ficha_item' || id === 'ficha_empresa' || id === 'comida' || id === 'refeicao' || achados_().some(function (r) { return r.id === id; }) || ITENS.some(function (i) { return i.id === id && !i.base && !i.fixo && !i.gas && !i.consumivel; });
 }
 
 function vender_(ss, d) {
@@ -2242,7 +2307,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 52)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 54)).getValues();
 }
 
 function gerarChave_() {
