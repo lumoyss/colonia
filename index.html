@@ -199,6 +199,14 @@
   .bola-inv .qtd{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:var(--laranja);color:#fff;font-family:"Press Start 2P",monospace;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
   #invModal .caixa{max-width:520px}
   nav.abas{display:none!important}
+  .sino{position:fixed;right:8px;top:8px;z-index:60;width:46px;height:44px;background:var(--fundo2);border:3px solid var(--verde);font-size:22px;line-height:1;cursor:pointer;padding:0}
+  .sino .qtd{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:#D93B3B;color:#fff;font-family:"Press Start 2P",monospace;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  .sino .qtd[hidden]{display:none}
+  .toast-aviso{position:fixed;right:8px;top:60px;z-index:61;max-width:min(320px,calc(100vw - 16px));background:var(--fundo2);border:3px solid var(--laranja);color:var(--creme);padding:10px 12px;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:pointer}
+  .avisos-lista{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+  .avisos-lista li{background:var(--fundo);border-left:4px solid var(--fundo3);padding:8px 10px;font-size:15px}
+  .avisos-lista li.novo{border-left-color:var(--laranja)}
+  .avisos-lista small{display:block;color:var(--apagado);font-size:12px;margin-top:2px}
   .aviso-teste{background:var(--ferrugem);color:var(--creme);text-align:center;font-size:14px;padding:6px 10px}
   footer{text-align:center;color:var(--apagado);font-size:14px;margin-top:28px}
   footer a{color:var(--verde2)}
@@ -228,6 +236,8 @@
   <button type="button" class="item" data-menu="ranking" id="menuRanking" hidden><span class="ic">🏆</span>RANKING</button>
   <button type="button" class="item" data-menu="como"><span class="ic">❓</span>COMO JOGAR</button>
 </nav>
+<button type="button" class="sino" id="sino" aria-label="Avisos" hidden>🔔<span class="qtd" id="sinoQtd" hidden>0</span></button>
+<div class="toast-aviso" id="toastAviso" role="status" hidden></div>
 <button type="button" class="bola-inv" id="bolaInv" aria-label="Abrir inventário" hidden>🎒<span class="qtd" id="bolaInvQtd">0</span></button>
 <main>
   <header>
@@ -506,6 +516,12 @@
     </div>
   </section>
 
+  <div class="modal" id="avisosModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="avisosTit">
+    <button type="button" class="fechar" id="avisosFechar" aria-label="Fechar">X</button>
+    <h3 class="pix cat" id="avisosTit">🔔 AVISOS</h3>
+    <p class="dica" style="margin:0">O que aconteceu com você no jogo: vendas, obras, aluguéis, leilão e mais.</p>
+    <ul class="avisos-lista" id="avisosLista"></ul>
+  </div></div>
   <div class="modal" id="invModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-label="Inventário">
     <button type="button" class="fechar" id="invFechar" aria-label="Fechar">X</button>
       <div id="invBox">
@@ -1609,7 +1625,8 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    if (r.avisos !== undefined) desenharSino();
     if (r.veste !== undefined && typeof bonecos !== "undefined" && eu && bonecos[eu.nome]) bonecos[eu.nome].itens = eu.veste;
   }
   function atualizarPerfil() {
@@ -1630,6 +1647,7 @@
       document.getElementById("contaItens").textContent = "🎒 INVENTÁRIO (" + nItens + ")";
     }
     document.getElementById("bolaInv").hidden = !on;
+    document.getElementById("sino").hidden = !on; desenharSino();
     document.getElementById("menuInv").hidden = !on;
     document.getElementById("menuTrabalho").hidden = !on;
     document.getElementById("menuPerfilTxt").textContent = on ? "MEU PERFIL" : "ENTRAR";
@@ -2729,6 +2747,51 @@
   }
   document.querySelectorAll("[data-aba]").forEach(function (b) { b.onclick = function () { irPara(b.dataset.aba); }; });
   document.querySelectorAll("[data-ir]").forEach(function (b) { b.onclick = function (ev) { ev.preventDefault(); irPara(b.dataset.ir); }; });
+  /* ---------------- sininho de avisos ---------------- */
+  var sinoUltimo = null;
+  function avisoVisto() { try { return Number(localStorage.getItem("colonia_aviso_visto_" + (eu && eu.nome))) || 0; } catch (e) { return 0; } }
+  function quandoFoi(t) {
+    var m = Math.floor((Date.now() - t) / 60000);
+    return m < 1 ? "agora" : m < 60 ? "há " + m + " min" : m < 1440 ? "há " + Math.floor(m / 60) + " h" : "há " + Math.floor(m / 1440) + " dia(s)";
+  }
+  function desenharSino() {
+    var q = document.getElementById("sinoQtd"); if (!q) return;
+    var lista = (logado() && eu.avisos) || [], visto = avisoVisto();
+    var novos = lista.filter(function (a) { return a.t > visto; });
+    q.textContent = novos.length > 9 ? "9+" : String(novos.length); q.hidden = !novos.length;
+    var topo = lista[0] ? lista[0].t : 0;
+    if (sinoUltimo !== null && topo > sinoUltimo && novos.length) mostrarToast(lista[0].texto);
+    sinoUltimo = topo;
+    if (!document.getElementById("avisosModal").hidden) desenharAvisos();
+  }
+  var toastTimer = null;
+  function mostrarToast(txt) {
+    var t = document.getElementById("toastAviso"); t.textContent = "🔔 " + txt; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 6000);
+  }
+  function desenharAvisos() {
+    var ul = document.getElementById("avisosLista"), lista = (logado() && eu.avisos) || [], visto = avisoVisto();
+    ul.innerHTML = "";
+    if (!lista.length) { var v = document.createElement("li"); v.textContent = "Nenhum aviso ainda. Quando alguém comprar algo seu, alugar sua casa ou contratar você, aparece aqui."; ul.appendChild(v); return; }
+    lista.forEach(function (a) {
+      var li = document.createElement("li"), sm = document.createElement("small");
+      if (a.t > visto) li.className = "novo";
+      li.textContent = a.texto; sm.textContent = quandoFoi(a.t); li.appendChild(sm); ul.appendChild(li);
+    });
+  }
+  function abrirAvisos() {
+    fecharMenu(); document.getElementById("toastAviso").hidden = true;
+    desenharAvisos(); document.getElementById("avisosModal").hidden = false;
+    var lista = (eu && eu.avisos) || [];
+    try { if (lista[0]) localStorage.setItem("colonia_aviso_visto_" + eu.nome, String(lista[0].t)); } catch (e) {}
+    document.getElementById("sinoQtd").hidden = true;
+  }
+  document.getElementById("sino").onclick = abrirAvisos;
+  document.getElementById("toastAviso").onclick = abrirAvisos;
+  document.getElementById("avisosFechar").onclick = function () { document.getElementById("avisosModal").hidden = true; };
+  document.getElementById("avisosModal").addEventListener("click", function (ev) { if (ev.target === this) this.hidden = true; });
+  setInterval(function () { if (logado() && !document.hidden) atualizarPerfil(); }, 60000);
+
   /* ---------------- menu ☰ e inventário ---------------- */
   function abrirInventario() {
     if (!logado()) { irPara("entrar"); return; }
@@ -2751,7 +2814,7 @@
   document.getElementById("menuBtn").onclick = abrirMenu;
   document.getElementById("menuFechar").onclick = fecharMenu;
   document.getElementById("menuFundo").onclick = fecharMenu;
-  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") { fecharMenu(); fecharInventario(); } });
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") { fecharMenu(); fecharInventario(); document.getElementById("avisosModal").hidden = true; } });
   function rolar(el, bloco) { if (el) el.scrollIntoView({ behavior: "smooth", block: bloco || "start" }); }
   document.querySelectorAll("#menuGaveta [data-menu]").forEach(function (b) {
     b.onclick = function () {

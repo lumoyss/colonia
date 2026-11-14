@@ -29,6 +29,9 @@ const ABA_TORRES = 'Torres';
 const ABA_SILENCIO = 'Silenciados';
 const ABA_CRIACOES = 'Criacoes';
 const ABA_LEILOES = 'Leiloes';
+const ABA_AVISOS = 'Avisos';
+const AVISOS_LER = 400;   // o sininho lê só os últimos avisos da planilha (mais rápido)
+const AVISOS_POR_PESSOA = 20;
 const TIPOS_IDEIA = ['historia', 'profissao', 'lugar', 'outro'];
 
 // Colunas da aba Sobreviventes (1 = A)
@@ -220,6 +223,7 @@ function setup() {
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
   colunas_(garantirAba_(ss, ABA_COMPRAS), ['data', 'numero', 'nome', 'item', 'preco_moedas']);
   colunas_(garantirAba_(ss, ABA_CHAT), ['data', 'numero', 'nome', 'texto', 'status']);
+  colunas_(garantirAba_(ss, ABA_AVISOS), ['data', 'numero', 'texto']);
   colunas_(garantirAba_(ss, ABA_OBRAS), ['id', 'data', 'dono_numero', 'dono', 'item', 'nome_da_casa', 'mao_de_obra', 'status', 'engenheiro_numero', 'engenheiro', 'progresso', 'ultimo_sinal']);
   colunas_(garantirAba_(ss, ABA_ALUGUEIS), ['data', 'imovel', 'dono_numero', 'dono', 'inquilino_numero', 'inquilino', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_TORRES), ['id', 'nome', 'status', 'pontos', 'meta', 'preco', 'contribuicoes', 'recusaram', 'oferta_numero', 'oferta_ate', 'dono_numero', 'dono', 'nome_do_cla', 'preco_entrada', 'descoberta_por', 'descoberta_em']);
@@ -400,6 +404,7 @@ function perfil_(ss, d) {
     .slice(-10).map(function (c) { return { id: String(c[0]), tipo: String(c[4]), ideia: String(c[5]), status: String(c[7] || 'pendente'), nome: String(c[8] || '') }; }) : [];
   const sil = ultimoSilencio_(ss, p.numero);
   p.silencio = sil && p.mudoAte > Date.now() - 86400000 ? { id: sil.id, guarda: sil.guarda, reclamou: !!sil.reclamacao, decisao: sil.decisao } : null;
+  p.avisos = avisosDe_(ss, p.numero);
   return p;
 }
 
@@ -724,6 +729,7 @@ function chamarMedico_(ss, d) {
   p.moedas -= preco; salvarPerfil_(s, p);
   s.aba.getRange(s.linha, C_DOENTE_ATE).setValue(0);
   creditar_(ss, med[0], preco);
+  avisar_(ss, med[0], '🩺 ' + p.nome + ' chamou você e pagou ' + preco + ' moedas pela consulta.');
   ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Consulta com ' + med[2], preco]);
   p.doenteAte = 0; p.curadoPor = String(med[2]);
   return p;
@@ -752,6 +758,7 @@ function aceitarObra_(ss, d) {
   o.aba.getRange(o.linha, 8).setValue('em obra'); o.aba.getRange(o.linha, 9).setValue(s.dados[0]);
   o.aba.getRange(o.linha, 10).setValue(texto_(String(s.dados[2]))); o.aba.getRange(o.linha, 11).setValue(0); o.aba.getRange(o.linha, 12).setValue(Date.now());
   s.aba.getRange(s.linha, C_PLANTAO).setValue(Date.now());
+  avisar_(ss, o.dono, '🏗️ O engenheiro ' + s.dados[2] + ' começou a construir “' + o.nome + '”.');
   return { ok: true, obra: { id: o.id, dono: o.donoNome, item: o.item, nome: o.nome, mao: o.mao, progresso: 0, total: OBRA_MINUTOS } };
 }
 // Área de Serviços: o dono da casa escolhe um engenheiro de plantão para a sua obra.
@@ -768,12 +775,17 @@ function chamarEngenheiro_(ss, d) {
   if (obrasDoEngenheiro_(ss, eng[0]).length) return { ok: false, erro: 'Esse engenheiro já está numa obra. Escolha outro.' };
   o.aba.getRange(o.linha, 8).setValue('em obra'); o.aba.getRange(o.linha, 9).setValue(eng[0]);
   o.aba.getRange(o.linha, 10).setValue(texto_(String(eng[2]))); o.aba.getRange(o.linha, 11).setValue(0); o.aba.getRange(o.linha, 12).setValue(Date.now());
+  avisar_(ss, eng[0], '🏗️ ' + s.dados[2] + ' contratou você para construir “' + o.nome + '”. Fique de plantão para a obra andar.');
   return { ok: true, engenheiro: String(eng[2]) };
 }
 function avancarObra_(ss, o, l) {
   const prog = o.progresso + 1;
   o.aba.getRange(o.linha, 11).setValue(prog); o.aba.getRange(o.linha, 12).setValue(Date.now());
-  if (prog >= OBRA_MINUTOS) { concluirObra_(ss, o, 'pronta'); creditar_(ss, l[0], o.mao); }
+  if (prog >= OBRA_MINUTOS) {
+    concluirObra_(ss, o, 'pronta'); creditar_(ss, l[0], o.mao);
+    avisar_(ss, o.dono, '🏠 Sua obra “' + o.nome + '” ficou pronta! Construída por ' + l[2] + '.');
+    avisar_(ss, l[0], '💰 Obra “' + o.nome + '” terminada: +' + o.mao + ' moedas de mão de obra.');
+  }
 }
 function concluirObra_(ss, o, status) {
   o.aba.getRange(o.linha, 8).setValue(status);
@@ -896,6 +908,29 @@ function trocarOutdoor_(ss, d) {
 }
 
 /* ---------- Outdoor: anúncios pagos e taxas ---------- */
+/* ---------- Sininho: avisos para cada jogador ---------- */
+function avisar_(ss, numero, texto) {
+  try {
+    if (!numero) return;
+    let aba = ss.getSheetByName(ABA_AVISOS);
+    if (!aba) { aba = ss.insertSheet(ABA_AVISOS); aba.appendRow(['data', 'numero', 'texto']); }
+    aba.appendRow([new Date(), numero, texto_(String(texto))]);
+  } catch (e) { /* aviso nunca pode quebrar a ação principal */ }
+}
+function nomeDoItem_(id) {
+  if (/^lote_/.test(id)) return 'Terreno ' + id.replace('lote_', '');
+  const i = ITENS.filter(function (x) { return x.id === id; })[0] || RECURSOS.filter(function (x) { return x.id === id; })[0];
+  if (i) return i.nome;
+  return COMIDAS[id] ? COMIDAS[id].nome : '';
+}
+function avisosDe_(ss, numero) {
+  const aba = ss.getSheetByName(ABA_AVISOS); if (!aba || aba.getLastRow() < 2) return [];
+  const n = Math.min(AVISOS_LER, aba.getLastRow() - 1);
+  return aba.getRange(aba.getLastRow() - n + 1, 1, n, 3).getValues()
+    .filter(function (l) { return String(l[1]) === String(numero); })
+    .slice(-AVISOS_POR_PESSOA).reverse()
+    .map(function (l) { return { t: new Date(l[0]).getTime(), texto: String(l[2]) }; });
+}
 function creditar_(ss, numero, valor) {
   const l = linhaPorNumero_(ss, numero); if (!l || !valor) return;
   l.aba.getRange(l.linha, C_MOEDAS).setValue((Number(l.dados[C_MOEDAS - 1]) || 0) + valor);
@@ -959,6 +994,7 @@ function anunciar_(ss, d) {
   fresco.aba.getRange(fresco.linha, C_ANUNCIO_OFERTA).setValue(ofertaId);
   ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Anúncio no outdoor de ' + o.dono + ': ' + texto, o.preco]);
   cobrarTaxa_(ss, taxa, 'Taxa de anúncio (outdoor de ' + o.dono + ')');
+  avisar_(ss, fresco.dados[0], '🪧 ' + p.nome + ' anunciou no seu outdoor: +' + (o.preco - taxa) + ' moedas.');
   p.anuncioAte = ate;
   return p;
 }
@@ -1084,6 +1120,7 @@ function comprarOferta_(ss, d) {
   const taxa = /^lote_/.test(String(o.dados[4])) ? Math.floor(preco * TAXA_TERRENO) : 0;
   if (vend) vend.aba.getRange(vend.linha, C_MOEDAS).setValue((Number(vend.dados[C_MOEDAS - 1]) || 0) + preco - taxa);
   if (taxa) cobrarTaxa_(ss, taxa, 'Taxa de venda de terreno');
+  if (vend) avisar_(ss, vend.dados[0], '🛒 ' + p.nome + ' comprou ' + qtd + 'x ' + (nomeDoItem_(String(o.dados[4])) || o.dados[4]) + ' de você: +' + (preco - taxa) + ' moedas.');
   o.aba.getRange(o.linha, 10).setValue(tem - qtd);
   if (tem - qtd <= 0) o.aba.getRange(o.linha, 7).setValue('vendida');
   o.aba.getRange(o.linha, 8).setValue(p.numero);
@@ -1243,6 +1280,7 @@ function alugar_(ss, d) {
   p.moedas -= im.preco; salvarPerfil_(s, p);
   const taxa = Math.floor(im.preco * TAXA_ALUGUEL);
   creditar_(ss, im.donoNumero, im.preco - taxa);
+  avisar_(ss, im.donoNumero, '🔑 ' + p.nome + ' alugou “' + im.nome + '” por ' + ALUGUEL_DIAS + ' dias: +' + (im.preco - taxa) + ' moedas.');
   cobrarTaxa_(ss, taxa, 'Taxa de aluguel (' + im.nome + ')');
   const aba = ss.getSheetByName(ABA_ALUGUEIS), semana = ALUGUEL_DIAS * 86400000;
   let ate;
@@ -1525,6 +1563,7 @@ function entrarCla_(ss, d) {
   s.aba.getRange(s.linha, C_MOEDAS).setValue(moedas - t.precoEntrada);
   s.aba.getRange(s.linha, C_CLA).setValue(t.id);
   creditar_(ss, t.donoNumero, t.precoEntrada - taxa); cobrarTaxa_(ss, taxa, 'Taxa de entrada no clã ' + t.nomeCla);
+  avisar_(ss, t.donoNumero, '🏰 ' + s.dados[2] + ' entrou no seu clã: +' + (t.precoEntrada - taxa) + ' moedas.');
   ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), s.dados[0], texto_(String(s.dados[2])), 'Entrou no clã ' + t.nomeCla, t.precoEntrada]);
   return perfil_(ss, d);
 }
@@ -1645,7 +1684,7 @@ function processarSilencios_(ss) {
     const dec = String(l[8] || '').trim().toLowerCase();
     if (!dec || String(l[9])) return;
     const g = linhaPorNumero_(ss, l[2]);
-    if (g && dec === 'certo') creditar_(ss, l[2], GUARDA_BONUS);
+    if (g && dec === 'certo') { creditar_(ss, l[2], GUARDA_BONUS); avisar_(ss, l[2], '👮 Seu silenciamento de ' + l[5] + ' foi aprovado: +' + GUARDA_BONUS + ' moedas.'); }
     if (g && dec === 'abuso' && funcaoDe_(g.dados) === 'guarda') { g.aba.getRange(g.linha, C_FUNCAO).setValue('livre'); g.aba.getRange(g.linha, C_FUNCAO_DATA).setValue(0); }
     if (dec === 'abuso') { const a = linhaPorNumero_(ss, l[4]); if (a) a.aba.getRange(a.linha, C_MUDO_ATE).setValue(0); }
     aba.getRange(i + 2, 10).setValue(dec === 'certo' ? 'bônus de ' + GUARDA_BONUS + ' pago' : dec === 'abuso' ? 'guarda perdeu a função' : 'ok');
@@ -1683,6 +1722,7 @@ function processarCriacoes_(ss) {
     else { lista.push('ficha_' + (String(l[4]) === 'empresa' ? 'empresa' : 'item')); creditar_(ss, l[2], Number(l[6]) || 0); }
     p.aba.getRange(p.linha, C_ITENS).setValue(lista.join(','));
     aba.getRange(i + 2, 10).setValue(st === 'aprovado' ? 'entregue' : 'devolvido');
+    avisar_(ss, l[2], st === 'aprovado' ? '✨ Sua criação foi aprovada e já está no seu inventário!' : '↩️ Sua criação não foi aprovada. A ficha e as moedas voltaram para você.');
   });
 }
 function criadosPublicos_(ss) {
@@ -1715,6 +1755,7 @@ function fecharLeilao_(ss) {
   if (a.topo) {
     ss.getSheetByName(ABA_LEILOES).appendRow([id, new Date(a.fecha), a.topo.numero, texto_(a.topo.nome), texto_(a.topo.insta || ''), a.topo.valor, '', 'esperando frase']);
     cobrarTaxa_(ss, a.topo.valor, 'Leilão do vídeo ' + id);
+    avisar_(ss, a.topo.numero, '🏆 Você venceu o leilão do vídeo! Escreva a frase do anúncio no Mercado → LEILÃO.');
     avisoRadio_(ss, a.topo.nome + ' venceu o leilão do vídeo com ' + a.topo.valor + ' moedas! O @ vai ser divulgado no próximo vídeo.');
   }
   const novo = { fecha: proximoFechamento_(Date.now()), topo: null }; salvarLeilao_(novo);
@@ -1730,7 +1771,7 @@ function lance_(ss, d) {
   const meu = a.topo && String(a.topo.numero) === String(s.dados[0]);
   const moedas = Number(s.dados[C_MOEDAS - 1]) || 0, disponivel = moedas + (meu ? a.topo.valor : 0);
   if (disponivel < valor) return { ok: false, erro: 'Você tem ' + disponivel + ' moedas para esse lance.' };
-  if (a.topo && !meu) creditar_(ss, a.topo.numero, a.topo.valor); // quem foi superado recebe de volta
+  if (a.topo && !meu) { creditar_(ss, a.topo.numero, a.topo.valor); avisar_(ss, a.topo.numero, '🔨 Seu lance no leilão foi superado por ' + s.dados[2] + '. Suas ' + a.topo.valor + ' moedas voltaram.'); } // quem foi superado recebe de volta
   s.aba.getRange(s.linha, C_MOEDAS).setValue(disponivel - valor);
   const insta = limpar_(d.instagram, 31).replace(/^@*/, '') || String(s.dados[3] || '');
   a.topo = { numero: s.dados[0], nome: String(s.dados[2]), insta: insta, valor: valor }; salvarLeilao_(a);
