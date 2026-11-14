@@ -35,7 +35,7 @@ const ABA_PAUTAS = 'Pautas', ABA_ASSEMBLEIA = 'Assembleia', ABA_VOTOS = 'Votos',
 const TICKETS_CADASTRO = { ticket_assembleia: 4, ticket_pauta: 1 }; // quem acorda ganha 5 tickets
 const PAUTAS_POR_DIA = 3, VOTACAO_FECHA_HORA = 22;
 /* ---------- OFERTA DE BOAS-VINDAS ---------- */
-const OFERTA_REAIS = 2, OFERTA_MOEDAS = 1000, OFERTA_CAIXA_DIAS = 5, OFERTA_ROUPA = 'jaqueta_orion', OFERTA_MINUTOS = 60;
+const OFERTA_REAIS = 2, OFERTA_MOEDAS = 2000, OFERTA_CAIXA_DIAS = 5, OFERTA_ROUPA = 'jaqueta_orion', OFERTA_MINUTOS = 60;
 const OFERTA_DEPOIS_MIN = 15; // aparece ao abrir o Mercado depois de 15 min de jogo
 const AVISOS_LER = 400;   // o sininho lê só os últimos avisos da planilha (mais rápido)
 const AVISOS_POR_PESSOA = 20;
@@ -64,19 +64,19 @@ const GUARDA_MOEDAS_MIN = 3, GUARDA_BONUS_HORA = 70; // guarda: 3 moedas por min
 const GUARDAS_MAX = 5, MEDICOS_ONLINE_MAX = 6;
 const LIMITE_MINUTOS_DIA = 1440; // sem limite por dia (o descanso já segura)
 // Gás de oxigênio: sem gás o sobrevivente fica doente e não trabalha nem minera.
-const GAS_PRECO = 50;           // moedas; enche o tanque
+const GAS_PRECO = 30;           // moedas; enche o tanque
 const AR_MAX = 1440;            // o tanque cheio dura 24 horas parado; trabalhando gasta o dobro
 const GAS_GRATIS_NO_CADASTRO = true; // quem acorda ganha o primeiro tanque cheio
 // Comida: precisa comer a cada 4 horas de trabalho; quem passa disso fica doente
 const FOME_LIMITE = 240;
 const DOENTE_MINUTOS = 60;      // doente fica 1 hora sem trabalhar (ou chama um médico)
-const RACAO_PRECO = 30;         // ração da nave, para ninguém ficar sem comida
+const RACAO_PRECO = 20;         // ração da nave, para ninguém ficar sem comida
 // META DA NAVE: todo mundo consertando junto
 const META_NAVE = 1000000, ETAPA_NAVE = 50000;
 // PROFISSÕES
 const FUNCOES = {
   mecanico:     { nome: 'Mecânico(a)', desc: 'O melhor para consertar a nave. Ganha: 1 moeda a cada 15 s consertando (2 com caixa de ferramentas) e, com a caixa, vale 3 pontos da nave a cada 15 s (os outros fazem 1).' },
-  engenheiro:   { nome: 'Engenheiro(a)', desc: 'Constrói as casas e prédios e instala outdoors. Ganha: a mão de obra que o dono paga (+100 por casa, +500 por prédio, +100 por outdoor), e conserta a nave como todo mundo enquanto não tem obra.' },
+  engenheiro:   { nome: 'Engenheiro(a)', desc: 'Constrói as casas e prédios e instala outdoors. Ganha: a mão de obra que o dono paga (+1.000 por casa, +3.000 por prédio, +100 por outdoor), e conserta a nave como todo mundo enquanto não tem obra.' },
   agricultor:   { nome: 'Agricultor(a) e cozinheiro(a)', desc: 'Produz comida para a colônia. Ganha: 1 comida a cada 10 minutos cultivando, que você vende no mercado dos sobreviventes pelo preço que quiser (todo mundo precisa comer). Sem limite de vagas.' },
   minerador:    { nome: 'Minerador(a)', desc: 'Especialista em mineração. Ganha: minera na borda pedregosa do mapa com metade da espera (precisa de picareta) e vende o que achar. Também conserta a nave.' },
   explorador:   { nome: 'Explorador(a)', desc: 'Descobre o planeta. Ganha: vê o sinal das torres escondidas, desbloqueia torres 2x mais rápido (chance de virar dono de clã) e conserta a nave.' },
@@ -94,7 +94,7 @@ const VAGAS_MAX = { guarda: GUARDAS_MAX }; // número máximo de pessoas na prof
 const MEDICO_MIN = 50;          // preço mínimo da consulta
 const PLANTAO_SEGUNDOS = 180;   // conta como online quem mandou sinal nos últimos 3 minutos
 // OBRAS: casa precisa de engenheiro
-const MAO_DE_OBRA = { base: 100, base_grande: 500 };
+const MAO_DE_OBRA = { base: 1000, base_grande: 3000 };
 const OBRA_MINUTOS = 10;        // tempo que o engenheiro fica construindo
 const OBRA_PRAZO_HORAS = 24;    // sem engenheiro até lá, a nave constrói sozinha
 // Picareta: minerar fora da zona dos terrenos
@@ -148,8 +148,8 @@ const BAU_CHANCE_FICHA_ITEM = 0.25;  // chance de vir a ficha "Criar item"
 const BAU_CHANCE_FICHA_EMPRESA = 0.05; // chance de vir a ficha "Criar empresa"
 // BAÚ PEQUENO: aparece a cada 14 a 16 minutos num lugar do mapa, só com moedas
 const BAUZINHO_MINUTOS = 15, BAUZINHO_VARIA_SEG = 60, BAUZINHO_MIN = 20, BAUZINHO_MAX = 70, BAUZINHO_MAX_MAPA = 2;
-const CRIAR_ITEM_PRECO = 500;        // moedas para usar a ficha de criar item
-const CRIAR_EMPRESA_PRECO = 5000;    // moedas para usar a ficha de criar empresa (precisa ter terreno)
+const CRIAR_ITEM_PRECO = 1000;        // moedas para usar a ficha de criar item
+const CRIAR_EMPRESA_PRECO = 20000;    // moedas para usar a ficha de criar empresa (precisa ter terreno)
 
 /* ---------- TORRES DE CLÃ: construções antigas de outros seres ---------- */
 // Ficam escondidas na borda do mapa. Quem chega perto descobre a torre.
@@ -166,7 +166,7 @@ const TORRES = [
   { id: 'T7', nome: 'Torre Ametista', x: 64, y: 286 }
 ];
 const TORRE_META = 10000, TORRE_PONTOS_EXTRA = 500, TORRE_RAIO = 40;
-const TORRE_PRECO = 1000, TORRE_PRECO_MIN = 800, TORRE_DESCONTO = 10, TORRE_PRAZO_HORAS = 12;
+const TORRE_PRECO = 3000, TORRE_PRECO_MIN = 2400, TORRE_DESCONTO = 10, TORRE_PRAZO_HORAS = 12;
 const CLA_ENTRADA_PADRAO = 100;      // preço para entrar no clã (o dono muda)
 const TAXA_CLA = 0.10;               // 10% da entrada no clã fica com a colônia
 // GUARDAS: silenciam no rádio; quem foi silenciado pode reclamar.
@@ -185,7 +185,7 @@ const PALAVRAS_PROIBIDAS = ['porra', 'caralho', 'krl', 'crl', 'merda', 'puta', '
 // LEILÃO DO VÍDEO: quem der o maior lance tem o @ divulgado no vídeo.
 // Quem é superado recebe as moedas de volta na hora. Fecha todo dia às LEILAO_HORA (horário de Brasília).
 // O vencedor escreve a frase do que quer divulgar; aparece no e-mail diário e na aba Leiloes.
-const LEILAO_HORA = 20, LEILAO_MINIMO = 100, LEILAO_AUMENTO = 10;
+const LEILAO_HORA = 20, LEILAO_MINIMO = 50, LEILAO_AUMENTO = 10;
 const MAPA_L = 880, MAPA_A = 560;    // tamanho do mapa (o site usa o mesmo)
 
 /* ---------- TERRENOS: explorar, reconhecer e registrar ---------- */
@@ -213,16 +213,16 @@ const ITENS = [
     desc: 'Enche o seu tanque de ar: dura 24 horas parado ou 12 horas trabalhando. Sem ar o seu sobrevivente fica doente.' },
   { id: 'racao', cat: 'Oxigênio e comida', nome: 'Ração da nave', preco: RACAO_PRECO, consumivel: true, comida: FOME_LIMITE,
     desc: 'Sacia a fome por 4 horas de trabalho. A comida dos agricultores costuma sair mais barata no mercado dos sobreviventes.' },
-  { id: 'bone', cat: 'Roupas', nome: 'Boné', preco: 40, slot: 'cabeca', desc: 'Um boné vermelho.' },
+  { id: 'bone', cat: 'Roupas', nome: 'Boné', preco: 15, slot: 'cabeca', desc: 'Um boné vermelho.' },
   { id: 'calca', cat: 'Roupas', nome: 'Calça jeans', preco: 50, slot: 'pernas', desc: 'Calça azul por cima do traje.' },
-  { id: 'chapeu', cat: 'Roupas', nome: 'Chapéu', preco: 60, slot: 'cabeca', desc: 'Chapéu de explorador.' },
-  { id: 'colete', cat: 'Roupas', nome: 'Colete', preco: 70, slot: 'tronco', desc: 'Colete de couro por cima do traje.' },
-  { id: 'vestido', cat: 'Roupas', nome: 'Vestido', preco: 90, slot: 'tronco,pernas', desc: 'Vestido vermelho.' },
-  { id: 'capacete_dourado', cat: 'Roupa dourada', nome: 'Capacete dourado', preco: 500, slot: 'capacete', desc: 'Capacete de ouro que todo mundo vê no mapa.' },
-  { id: 'bota_dourada', cat: 'Roupa dourada', nome: 'Bota dourada', preco: 500, slot: 'pes', desc: 'Botas de ouro.' },
-  { id: 'calca_dourada', cat: 'Roupa dourada', nome: 'Calça dourada', preco: 700, slot: 'pernas', desc: 'Calça de ouro.' },
-  { id: 'blusa_dourada', cat: 'Roupa dourada', nome: 'Blusa dourada', preco: 800, slot: 'tronco', desc: 'Blusa de ouro.' },
-  { id: 'mochila', cat: 'Acessórios', nome: 'Mochila de oxigênio', preco: 150, slot: 'costas', desc: 'Um tanque de ar nas costas do seu bonequinho.' },
+  { id: 'chapeu', cat: 'Roupas', nome: 'Chapéu', preco: 40, slot: 'cabeca', desc: 'Chapéu de explorador.' },
+  { id: 'colete', cat: 'Roupas', nome: 'Colete', preco: 80, slot: 'tronco', desc: 'Colete de couro por cima do traje.' },
+  { id: 'vestido', cat: 'Roupas', nome: 'Vestido', preco: 100, slot: 'tronco,pernas', desc: 'Vestido vermelho.' },
+  { id: 'capacete_dourado', cat: 'Roupa dourada', nome: 'Capacete dourado', preco: 1200, slot: 'capacete', desc: 'Capacete de ouro que todo mundo vê no mapa.' },
+  { id: 'bota_dourada', cat: 'Roupa dourada', nome: 'Bota dourada', preco: 1000, slot: 'pes', desc: 'Botas de ouro.' },
+  { id: 'calca_dourada', cat: 'Roupa dourada', nome: 'Calça dourada', preco: 1800, slot: 'pernas', desc: 'Calça de ouro.' },
+  { id: 'blusa_dourada', cat: 'Roupa dourada', nome: 'Blusa dourada', preco: 2000, slot: 'tronco', desc: 'Blusa de ouro.' },
+  { id: 'mochila', cat: 'Acessórios', nome: 'Mochila de oxigênio', preco: 150, slot: 'costas', desc: 'Tanque extra de ar: com ela o seu ar dura o dobro (48 horas parado, 24 horas trabalhando) e você gasta menos gás. Aparece nas costas do bonequinho.' },
   { id: 'picareta', cat: 'Ferramentas', nome: 'Picareta', preco: 300,
     desc: 'Leve o seu bonequinho para fora da zona dos terrenos (a borda pedregosa do mapa) e minere. Dá para achar recursos e, às vezes, itens especiais.' },
   { id: 'ferramentas', cat: 'Ferramentas', nome: 'Caixa de ferramentas', preco: 100,
@@ -676,7 +676,7 @@ function trabalhar_(ss, d) {
   const boost = (Number(l[C_BOOST_ATE - 1]) || 0) > agora;
   if (modo !== 'vigiar' && !boost) turno++;
   progresso++;
-  if (!desemp) { fome++; ar = Math.max(0, ar - 1); cel(C_FOME, fome); cel(C_AR, ar); cel(C_AR_TS, agora); }
+  if (!desemp) { fome++; if (!tem_(String(l[C_ITENS - 1] || ''), 'mochila') || progresso % 2 === 0) ar = Math.max(0, ar - 1); cel(C_FOME, fome); cel(C_AR, ar); cel(C_AR_TS, agora); }
   let horaGuarda = 0;
   if (modo === 'consertar') {
     const caixa = temKit_(l);
@@ -1358,7 +1358,8 @@ function arDe_(l) {
     const v = l[C_GAS - 1], dia = v instanceof Date ? Utilities.formatDate(v, 'America/Sao_Paulo', 'yyyy-MM-dd') : String(v || '').replace(/^'/, '');
     return dia === hoje_() ? AR_MAX : 0;
   }
-  return Math.max(0, Math.round((Number(l[C_AR - 1]) || 0) - (Date.now() - ts) / 60000));
+  const mochila = tem_(String(l[C_ITENS - 1] || ''), 'mochila') ? 2 : 1; // mochila de oxigênio: o ar dura o dobro
+  return Math.max(0, Math.round((Number(l[C_AR - 1]) || 0) - (Date.now() - ts) / 60000 / mochila));
 }
 function temGas_(l) { return funcaoDe_(l) === 'desempregado' || arDe_(l) > 0; }
 function funcaoDe_(l) { let f = String(l[C_FUNCAO - 1] || ''); if (f === 'cozinheiro') f = 'agricultor'; return FUNCOES[f] ? f : (MAPA_PROFISSAO[String(l[C_PROF - 1])] || 'livre'); }

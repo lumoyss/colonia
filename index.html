@@ -535,7 +535,7 @@
     <h3 class="pix cat" id="ofertaTit">🎁 OFERTA DE BOAS-VINDAS</h3>
     <p class="dica" style="margin:0">Só uma vez e só por pouco tempo. Acaba em <b id="ofertaTempo2"></b>.</p>
     <canvas id="ofertaSprite" width="24" height="34"></canvas>
-    <ul style="text-align:left;line-height:1.7"><li><b>1.000 moedas</b></li><li><b>Caixa de ferramentas por 5 dias</b> (ganha o dobro consertando)</li><li><b>Jaqueta Orion</b>, roupa exclusiva que não existe no Mercado</li></ul>
+    <ul style="text-align:left;line-height:1.7"><li><b>2.000 moedas</b></li><li><b>Caixa de ferramentas por 5 dias</b> (ganha o dobro consertando)</li><li><b>Jaqueta Orion</b>, roupa exclusiva que não existe no Mercado</li></ul>
     <button class="btn" type="button" id="ofertaComprar">ADQUIRIR POR R$ 2</button>
     <div class="msg" id="msgOferta" role="status"></div>
   </div></div>
@@ -2161,7 +2161,7 @@
     function botao(dest, txt, f, off) { var b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = txt; b.disabled = !!off; b.onclick = function () { b.disabled = true; f(b); }; dest.appendChild(b); }
     function h(min) { return min >= 60 ? Math.floor(min / 60) + "h" + (min % 60 ? String(Math.round(min % 60)).padStart(2, "0") : "") : Math.round(min) + " min"; }
     if (des) { var p = document.createElement("p"); p.className = "dica"; p.style.margin = "0"; p.textContent = "Desempregado não gasta ar nem sente fome."; box.appendChild(p); return; }
-    var ba = linha("🧪 AR", ar ? "dura " + h(ar) + " parado" : "SEM AR: você fica doente", ar / V.arMax, "var(--verde)");
+    var ba = linha("🧪 AR", ar ? "dura " + h(ar * (tem(eu.itens, "mochila") ? 2 : 1)) + " parado" + (tem(eu.itens, "mochila") ? " (com mochila)" : "") : "SEM AR: você fica doente", ar / V.arMax, "var(--verde)");
     if (gas) botao(ba, ar > V.arMax * 0.75 ? "TANQUE CHEIO" : "ENCHER O AR (" + gas.preco + ")", function () {
       enviar(credenciais({ acao: "comprar", item: "gas" })).then(function (r) { depoisInv(r, "Tanque cheio! 24 horas de ar."); });
     }, ar > V.arMax * 0.75 || (Number(eu.moedas) || 0) < gas.preco);
@@ -2303,7 +2303,7 @@
     estado.mercado.itens.forEach(function (it) {
       if (it.oculto) return;
       var lista = document.getElementById("loja-" + (SUB_DA_CAT[it.cat] || "ferramentas"));
-      var c = cartaoLoja(it.nome, it.preco.toLocaleString("pt-BR") + " moedas" + (it.maoDeObra ? " + " + it.maoDeObra + " de mão de obra" : ""), it.desc + (it.maoDeObra ? " Um engenheiro online constrói a sua casa; se nenhum aceitar a obra em 24 horas, a nave constrói sozinha." : ""), "TROCAR");
+      var c = cartaoLoja(it.nome, it.preco.toLocaleString("pt-BR") + " moedas" + (it.maoDeObra ? " + " + it.maoDeObra.toLocaleString("pt-BR") + " de mão de obra" : ""), it.desc + (it.maoDeObra ? " Um engenheiro online constrói a sua casa; se nenhum aceitar a obra em 24 horas, a nave constrói sozinha." : ""), "TROCAR");
       c.el.dataset.item = it.id;
       if (it.base || it.terreno) { var inp = document.createElement("input"); inp.maxLength = it.base ? 28 : 40; inp.placeholder = it.base ? "Nome da sua base" : "Frase do outdoor (até 40 letras)"; c.el.insertBefore(inp, c.botao); }
       c.botao.onclick = function () { trocar(it, c.el, c.botao); };
