@@ -48,7 +48,30 @@ const C_VESTE = 20, C_GAS = 21, C_OBJETIVO = 22, C_AMIGOS = 23, C_MINERAR = 24, 
 const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
   C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43,
-  C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47;
+  C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47,
+  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52;
+// online_dia (col. 12) guarda o último minuto contado; online_minutos (col. 13) soma o tempo online total.
+
+/* ---------- TÍTULOS DE NOBREZA ---------- */
+// Horas online + Assembleias de que participou + pagamento em moedas. Um título de cada vez, em ordem.
+const TITULOS = [
+  { id: 'cavaleiro', nome: 'Cavaleiro', fem: 'Princesa', horas: 15, assembleias: 5, preco: 300 },
+  { id: 'barao', nome: 'Barão', fem: 'Baronesa', horas: 40, assembleias: 15, preco: 500 },
+  { id: 'conde', nome: 'Conde', fem: 'Condessa', horas: 100, assembleias: 30, preco: 1000 },
+  { id: 'duque', nome: 'Duque', fem: 'Duquesa', horas: 200, assembleias: 60, preco: 2000 }
+];
+
+/* ---------- CENTRO DE PESQUISA (dentro da nave) ---------- */
+// Recursos do planeta vendidos para a nave: moedas + pontos de pesquisa (1 ponto por moeda).
+const PESQUISA = { semente: 15, minerio: 35, peca: 40, cristal: 150, fossil: 100 };
+const PESQUISA_PONTOS_POR_MOEDA = 1;
+
+/* ---------- INVASÃO DE TERRENO e SEGURANÇA ---------- */
+// Ficar 15 min no terreno de outra pessoa leva 5% das moedas dela (ou 1 item simples).
+// Terreno de quem sumiu há 7 dias fica livre para ser registrado de novo (perde a construção).
+const INVASAO_MINUTOS = 15, INVASAO_PORCENTO = 5, INVASAO_INTERVALO_HORAS = 24, ABANDONO_DIAS = 7;
+const ABA_INVASOES = 'Invasoes', ABA_SEGURANCA = 'Seguranca', SEGURANCA_HORAS = 24;
+const ITENS_INVADIVEIS = ['sucata', 'parafusos', 'garrafa', 'relogio', 'radio_velho', 'moeda_antiga', 'semente', 'minerio', 'fossil', 'comida', 'racao', 'refeicao', 'bone', 'calca', 'chapeu', 'colete', 'vestido'];
 
 /* ---------- MISSÃO: consertar a nave (ganha moedas com o site aberto) ---------- */
 // Conserto: paga a cada 15 segundos (o site manda 1 sinal por minuto = 4 pagamentos de 15 s)
@@ -94,7 +117,7 @@ const VAGAS_MAX = { guarda: GUARDAS_MAX }; // número máximo de pessoas na prof
 const MEDICO_MIN = 50;          // preço mínimo da consulta
 const PLANTAO_SEGUNDOS = 180;   // conta como online quem mandou sinal nos últimos 3 minutos
 // OBRAS: casa precisa de engenheiro
-const MAO_DE_OBRA = { base: 1000, base_grande: 3000 };
+const MAO_DE_OBRA = { base: 1000, base_grande: 3000, outdoor: 100 };
 const OBRA_MINUTOS = 10;        // tempo que o engenheiro fica construindo
 const OBRA_PRAZO_HORAS = 24;    // sem engenheiro até lá, a nave constrói sozinha
 // Picareta: minerar fora da zona dos terrenos
@@ -246,7 +269,9 @@ const SLOTS_ANTIGOS = { traje_dourado: 'tronco,pernas' };
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo']);
+  colunas_(garantirAba_(ss, ABA_INVASOES), ['data', 'lote', 'invasor_numero', 'invasor', 'dono_numero', 'dono', 'levou']);
+  colunas_(garantirAba_(ss, ABA_SEGURANCA), ['data', 'dono_numero', 'dono', 'guarda_numero', 'guarda', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
   colunas_(garantirAba_(ss, ABA_TERRENOS), ['codigo', 'data', 'nome_do_lugar', 'dono', 'instagram', 'plano', 'valor', 'status', 'ref', 'aluguel_semana', 'dono_numero', 'item']);
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
@@ -330,7 +355,7 @@ function doGet(e) {
   const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
   const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
   const resposta = { ok: true, bauzinhos: bauzinhos_().lista, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
-    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista,
+    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, guardas: guardasSeguranca_(todas), titulos: TITULOS, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
     obras: ss.getSheetByName(ABA_OBRAS) ? obrasAbertas_(ss) : [], funcoes: funcoes,
     torres: ss.getSheetByName(ABA_TORRES) ? torresPublicas_(ss, todas) : [], leilao: ss.getSheetByName(ABA_LEILOES) ? leilaoPublico_(ss) : null, criados: ss.getSheetByName(ABA_CRIACOES) ? criadosPublicos_(ss) : {},
     ofertas: ofertas, bau: bau, mapa: { l: MAPA_L, a: MAPA_A } };
@@ -353,7 +378,7 @@ function doPost(e) {
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_, outdoor_oferta: outdoorOferta_,
-      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
+      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, pesquisar: pesquisar_, titulo: pegarTitulo_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
@@ -440,6 +465,17 @@ function perfil_(ss, d) {
   const sil = ultimoSilencio_(ss, p.numero);
   p.silencio = sil && p.mudoAte > Date.now() - 86400000 ? { id: sil.id, guarda: sil.guarda, reclamou: !!sil.reclamacao, decisao: sil.decisao } : null;
   p.avisos = avisosDe_(ss, p.numero);
+  if (Date.now() - (Number(s.dados[C_VISTO - 1]) || 0) > 5 * 60000) s.aba.getRange(s.linha, C_VISTO).setValue(Date.now());
+  const seg = segurancaDe_(ss, p.numero); p.segurancaAte = seg ? seg.ate : 0; p.segurancaGuarda = seg ? seg.guarda : '';
+  p.precoSeguranca = Number(s.dados[C_SEG_PRECO - 1]) || 0;
+  p.pesquisa = Number(s.dados[C_PESQUISA - 1]) || 0;
+  const ultimoMin = Number(s.dados[C_ON_DIA - 1]) || 0, agoraP = Date.now();
+  if (agoraP - ultimoMin >= 55000) { // conta 1 minuto online (o site pede o perfil 1 vez por minuto)
+    const minutos = (Number(s.dados[C_ON_MIN - 1]) || 0) + (agoraP - ultimoMin < 150000 ? 1 : 0);
+    s.aba.getRange(s.linha, C_ON_DIA).setValue(agoraP); s.aba.getRange(s.linha, C_ON_MIN).setValue(minutos); s.dados[C_ON_MIN - 1] = minutos;
+  }
+  p.horasOnline = Math.floor((Number(s.dados[C_ON_MIN - 1]) || 0) / 60); p.assembleias = assembleiasDe_(ss, p.numero);
+  p.titulo = String(s.dados[C_TITULO - 1] || '');
   return p;
 }
 
@@ -575,9 +611,9 @@ function comprar_(ss, d) {
     s.aba.getRange(s.linha, C_OUTDOOR).setValue(texto_(fr)); p.outdoor = fr; p.montado = true;
     return p;
   }
-  const mao = item.base ? (MAO_DE_OBRA[item.id] || 0) : 0;
-  if (item.base && obrasDe_(ss, p.numero).length) return { ok: false, erro: 'Você já tem uma obra em andamento. Espere ela terminar.' };
-  if (p.moedas < item.preco + mao) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + (item.preco + mao) + (mao ? ' (casa + mão de obra do engenheiro)' : '') + '.' };
+  const obra = item.base || item.id === 'outdoor', mao = obra ? (MAO_DE_OBRA[item.id] || 0) : 0;
+  if (obra && obrasDe_(ss, p.numero).length) return { ok: false, erro: 'Você já tem uma obra em andamento. Espere ela terminar.' };
+  if (p.moedas < item.preco + mao) return { ok: false, erro: 'Moedas insuficientes. Você tem ' + p.moedas + ' e precisa de ' + (item.preco + mao) + (mao ? ' (' + (item.base ? 'casa' : 'outdoor') + ' + mão de obra do engenheiro)' : '') + '.' };
 
   let lugar = '';
   if ((item.base || item.terreno) && !meus.some(function (i) { return /^lote_/.test(i); }))
@@ -594,11 +630,11 @@ function comprar_(ss, d) {
     if (lugar.length < 2) return { ok: false, erro: 'Dê um nome para a sua base.' };
   }
 
-  if (item.base) { // a casa vira uma obra: espera um engenheiro
+  if (obra) { // a casa (ou o outdoor) vira uma obra: espera um engenheiro
     p.moedas -= item.preco + mao;
     s.aba.getRange(s.linha, C_MOEDAS).setValue(p.moedas);
     const id = 'OB' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
-    ss.getSheetByName(ABA_OBRAS).appendRow([id, new Date(), p.numero, texto_(String(p.nome)), item.id, texto_(lugar), mao, 'aguardando', '', '', 0, 0]);
+    ss.getSheetByName(ABA_OBRAS).appendRow([id, new Date(), p.numero, texto_(String(p.nome)), item.id, texto_(item.base ? lugar : frase), mao, 'aguardando', '', '', 0, 0]);
     ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), item.nome + ' (obra)', item.preco + mao]);
     p.obra = { id: id, item: item.id, status: 'aguardando' };
     p.engenheirosOnline = online_(ss, 'engenheiro').length;
@@ -847,7 +883,7 @@ function aceitarObra_(ss, d) {
   const o = linhasObras_(ss).filter(function (x) { return x.id === String(d.id); })[0];
   const livre = o && (o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_MINUTOS * 60000));
   if (!livre) return { ok: false, erro: 'Outro engenheiro já pegou essa obra.' };
-  if (o.dono === String(s.dados[0])) return { ok: false, erro: 'Você não pode construir a sua própria casa.' };
+  if (o.dono === String(s.dados[0])) return { ok: false, erro: 'Você não pode construir a sua própria obra.' };
   o.aba.getRange(o.linha, 8).setValue('em obra'); o.aba.getRange(o.linha, 9).setValue(s.dados[0]);
   o.aba.getRange(o.linha, 10).setValue(texto_(String(s.dados[2]))); o.aba.getRange(o.linha, 11).setValue(0); o.aba.getRange(o.linha, 12).setValue(Date.now());
   s.aba.getRange(s.linha, C_PLANTAO).setValue(Date.now());
@@ -886,6 +922,7 @@ function concluirObra_(ss, o, status) {
   const lista = String(dono.dados[C_ITENS - 1] || '').split(',').filter(String);
   if (lista.indexOf(o.item) < 0) lista.push(o.item);
   dono.aba.getRange(dono.linha, C_ITENS).setValue(lista.join(','));
+  if (o.item === 'outdoor') { dono.aba.getRange(dono.linha, C_OUTDOOR).setValue(texto_(o.nome)); return; }
   const item = ITENS.filter(function (x) { return x.id === o.item; })[0];
   ss.getSheetByName(ABA_TERRENOS).appendRow(['B' + o.dono + o.item, new Date(), texto_(o.nome), texto_(o.donoNome), dono.dados[3] ? texto_(String(dono.dados[3])) : '', item ? item.nome : o.item, (item ? item.preco : 0) + ' moedas', 'pago', 'moedas', 0, o.dono, o.item]);
 }
@@ -1037,7 +1074,7 @@ function acessoAssembleia_(ss, l) {
   const entrou = ent ? linhas_(ent).some(function (e) { return String(e[0]) === hoje && String(e[1]) === String(l[0]); }) : false;
   const cont = function (id) { return lista.filter(function (x) { return x === id; }).length; };
   return { entra: dono || aluga || entrou, criaPauta: dono, comoEntra: dono ? 'dono' : aluga ? 'aluguel' : entrou ? 'ticket' : '',
-    tickets: cont('ticket_assembleia'), ticketsPauta: cont('ticket_pauta'), residente: temCasa_(itens) || aluga };
+    tickets: cont('ticket_assembleia'), ticketsPauta: cont('ticket_pauta'), residente: temCasa_(itens) || aluga, entrou: entrou };
 }
 function pautas_(ss, desdeDia) {
   const aba = ss.getSheetByName(ABA_PAUTAS); if (!aba) return [];
@@ -1050,6 +1087,7 @@ function assembleia_(ss, d) {
   const s = acharSobrevivente_(ss, d);
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
   const ac = acessoAssembleia_(ss, s.dados), hoje = diaHoje_();
+  if (ac.entra && !ac.entrou && ss.getSheetByName(ABA_ENTRADAS)) ss.getSheetByName(ABA_ENTRADAS).appendRow([hoje, s.dados[0], ac.comoEntra]); // conta a participação de hoje
   const ontem3 = Utilities.formatDate(new Date(Date.now() - 3 * 86400000), 'America/Sao_Paulo', 'yyyy-MM-dd');
   const ps = pautas_(ss, ontem3);
   const ids = {}; ps.forEach(function (p) { ids[p.id] = p; p.votos = p.opcoes.map(function () { return 0; }); p.meuVoto = -1; p.msgs = []; p.aberta = votacaoAberta_(p.dia); });
@@ -1216,6 +1254,159 @@ function anunciar_(ss, d) {
   cobrarTaxa_(ss, taxa, 'Taxa de anúncio (outdoor de ' + o.dono + ')');
   avisar_(ss, fresco.dados[0], '🪧 ' + p.nome + ' anunciou no seu outdoor: +' + (o.preco - taxa) + ' moedas.');
   p.anuncioAte = ate;
+  return p;
+}
+
+/* ---------- Invasão de terreno ---------- */
+function vistoEm_(l) { return Math.max(Number(l[C_VISTO - 1]) || 0, Number(l[C_ON_ULTIMO - 1]) || 0, new Date(l[C_DATA - 1]).getTime() || 0); }
+function donoLinhaDoLote_(ss, n) {
+  const aba = ss.getSheetByName(ABA_SOBREVIVENTES), ls = linhas_(aba), id = 'lote_' + n;
+  for (let i = 0; i < ls.length; i++) if (String(ls[i][C_ITENS - 1] || '').split(',').indexOf(id) >= 0) return { aba: aba, linha: i + 2, dados: ls[i] };
+  return null;
+}
+function segurancaDe_(ss, numero) {
+  const aba = ss.getSheetByName(ABA_SEGURANCA); if (!aba) return null;
+  const l = linhas_(aba).filter(function (x) { return String(x[1]) === String(numero) && Number(x[6]) > Date.now(); }).pop();
+  return l ? { guarda: String(l[4]), guardaNumero: String(l[3]), ate: Number(l[6]) } : null;
+}
+// Terreno abandonado: o dono perde o lote e a construção; o lote volta a ficar livre para registrar.
+function liberarLote_(ss, dono, n) {
+  const tirar = ['lote_' + n, 'base', 'base_grande', 'outdoor', 'outdoor_guardado'];
+  const lista = String(dono.dados[C_ITENS - 1] || '').split(',').filter(function (i) { return i && tirar.indexOf(i) < 0; });
+  dono.aba.getRange(dono.linha, C_ITENS).setValue(lista.join(','));
+  [C_OUTDOOR, C_OUT_PRECO, C_OUT_ANUNCIO, C_OUT_AUTOR, C_OUT_ATE].forEach(function (c) { dono.aba.getRange(dono.linha, c).setValue(''); });
+  const t = ss.getSheetByName(ABA_TERRENOS), ts = linhas_(t);
+  ts.forEach(function (l, i) { if (String(l[10]) === String(dono.dados[0]) && /^B/.test(String(l[0])) && String(l[7]) === 'pago') t.getRange(i + 2, 8).setValue('perdida (abandono)'); });
+  avisar_(ss, dono.dados[0], '🏚️ Você ficou ' + ABANDONO_DIAS + ' dias sem aparecer e perdeu o Terreno ' + n + ' (e o que estava construído nele).');
+}
+// O site manda 1 sinal por minuto enquanto o bonequinho está parado no terreno de outra pessoa.
+function invadir_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const n = loteEm_(Number(d.x), Number(d.y));
+  if (!n || n !== Number(d.lote)) return { ok: false, erro: 'Fique parado dentro do terreno para invadir.', parar: true };
+  const dono = donoLinhaDoLote_(ss, n);
+  if (!dono) return { ok: false, erro: 'Esse terreno não tem dono.', parar: true };
+  if (String(dono.dados[0]) === String(s.dados[0])) return { ok: false, erro: 'Esse terreno é seu.', parar: true };
+  const agora = Date.now(), cel = function (v) { s.aba.getRange(s.linha, C_INVASAO).setValue(v); };
+  if (agora - vistoEm_(dono.dados) > ABANDONO_DIAS * 86400000) {
+    liberarLote_(ss, dono, n); cel('');
+    avisoRadio_(ss, '🏚️ O Terreno ' + n + ' estava abandonado e agora está livre. ' + s.dados[2] + ' chegou primeiro!');
+    return { ok: true, liberado: true, lote: n };
+  }
+  const seg = segurancaDe_(ss, dono.dados[0]);
+  if (seg) return { ok: false, erro: 'Esse terreno está protegido pelo guarda ' + seg.guarda + '.', parar: true };
+  const inv = ss.getSheetByName(ABA_INVASOES), limite = agora - INVASAO_INTERVALO_HORAS * 3600000;
+  if (linhas_(inv).some(function (l) { return Number(l[1]) === n && new Date(l[0]).getTime() > limite; }))
+    return { ok: false, erro: 'Esse terreno já foi invadido nas últimas ' + INVASAO_INTERVALO_HORAS + ' horas.', parar: true };
+  const at = String(s.dados[C_INVASAO - 1] || '').split('|');
+  let inicio = Number(at[1]) || 0;
+  if (Number(at[0]) !== n || agora - (Number(at[2]) || 0) > 150000) {
+    inicio = agora;
+    avisar_(ss, dono.dados[0], '🚨 ' + s.dados[2] + ' está invadindo o seu Terreno ' + n + '! Contrate um guarda em Serviços para proteger.');
+  }
+  const passou = Math.floor((agora - inicio) / 60000);
+  if (agora - inicio < INVASAO_MINUTOS * 60000 - 30000) { cel(n + '|' + inicio + '|' + agora); return { ok: true, lote: n, minutos: passou, total: INVASAO_MINUTOS }; }
+  // completou: leva 5% das moedas ou 1 item simples
+  cel('');
+  const fresco = linhaPorNumero_(ss, dono.dados[0]), moedas = Number(fresco.dados[C_MOEDAS - 1]) || 0;
+  const valor = Math.floor(moedas * INVASAO_PORCENTO / 100);
+  let levou = '';
+  if (valor >= 1) {
+    fresco.aba.getRange(fresco.linha, C_MOEDAS).setValue(moedas - valor); creditar_(ss, s.dados[0], valor); levou = valor + ' moedas';
+  } else {
+    const lista = String(fresco.dados[C_ITENS - 1] || '').split(',').filter(String);
+    const pode = lista.filter(function (i) { return ITENS_INVADIVEIS.indexOf(i) >= 0; });
+    if (pode.length) {
+      const it = pode[Math.floor(Math.random() * pode.length)]; tirarItem_(lista, it);
+      fresco.aba.getRange(fresco.linha, C_ITENS).setValue(lista.join(','));
+      const minha = linhaPorNumero_(ss, s.dados[0]); minha.aba.getRange(minha.linha, C_ITENS).setValue(String(minha.dados[C_ITENS - 1] || '').split(',').filter(String).concat([it]).join(','));
+      levou = nomeDoItem_(it) || it;
+    }
+  }
+  inv.appendRow([new Date(), n, s.dados[0], texto_(String(s.dados[2])), dono.dados[0], texto_(String(dono.dados[2])), levou || 'nada']);
+  avisar_(ss, dono.dados[0], '🚨 ' + s.dados[2] + ' invadiu o seu Terreno ' + n + (levou ? ' e levou ' + levou + '.' : ', mas não achou nada para levar.'));
+  avisar_(ss, s.dados[0], '🏴 Você invadiu o Terreno ' + n + (levou ? ' e levou ' + levou + '.' : ', mas não tinha nada para levar.'));
+  avisoRadio_(ss, '🚨 ' + s.dados[2] + ' invadiu o terreno de ' + dono.dados[2] + '!');
+  const p = perfilDe_(linhaComoSobrevivente_(ss, s)); p.invadiu = true; p.levou = levou; p.lote = n; return p;
+}
+function linhaComoSobrevivente_(ss, s) { const l = linhaPorNumero_(ss, s.dados[0]); return { aba: l.aba, linha: l.linha, dados: l.dados }; }
+
+/* ---------- Títulos de nobreza ---------- */
+function assembleiasDe_(ss, numero) {
+  const ent = ss.getSheetByName(ABA_ENTRADAS); if (!ent) return 0;
+  const dias = {}; linhas_(ent).forEach(function (e) { if (String(e[1]) === String(numero)) dias[String(e[0])] = 1; });
+  return Object.keys(dias).length;
+}
+function pegarTitulo_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const atual = String(s.dados[C_TITULO - 1] || ''), i = TITULOS.map(function (t) { return t.id; }).indexOf(atual) + 1;
+  const t = TITULOS[i];
+  if (!t) return { ok: false, erro: 'Você já tem o título mais alto.' };
+  if (d.id && d.id !== t.id) return { ok: false, erro: 'Os títulos vêm em ordem. O próximo é ' + t.nome + '.' };
+  const horas = Math.floor((Number(s.dados[C_ON_MIN - 1]) || 0) / 60), ass = assembleiasDe_(ss, s.dados[0]);
+  if (horas < t.horas || ass < t.assembleias) return { ok: false, erro: 'Para ' + t.nome + ' você precisa de ' + t.horas + ' horas online (tem ' + horas + ') e ' + t.assembleias + ' Assembleias (tem ' + ass + ').' };
+  const p = perfilDe_(s);
+  if (p.moedas < t.preco) return { ok: false, erro: 'O título custa ' + t.preco + ' moedas e você tem ' + p.moedas + '.' };
+  p.moedas -= t.preco; salvarPerfil_(s, p); s.aba.getRange(s.linha, C_TITULO).setValue(t.id);
+  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Título: ' + t.nome, t.preco]);
+  avisoRadio_(ss, '👑 ' + p.nome + ' recebeu um título de nobreza!');
+  p.titulo = t.id; p.horasOnline = horas; p.assembleias = ass;
+  return p;
+}
+
+/* ---------- Centro de Pesquisa ---------- */
+function pesquisar_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const valor = PESQUISA[d.item];
+  if (!valor) return { ok: false, erro: 'O Centro de Pesquisa não estuda esse item.' };
+  const p = perfilDe_(s), lista = p.itens ? p.itens.split(',') : [];
+  const tem = lista.filter(function (i) { return i === d.item; }).length;
+  const qtd = Math.min(tem, Math.max(1, Math.floor(Number(d.qtd) || 1)));
+  if (!tem) return { ok: false, erro: 'Você não tem esse item.' };
+  for (let i = 0; i < qtd; i++) tirarItem_(lista, d.item);
+  const moedas = valor * qtd, pts = moedas * PESQUISA_PONTOS_POR_MOEDA;
+  p.itens = lista.join(','); p.moedas += moedas; salvarPerfil_(s, p);
+  p.pesquisa = (Number(s.dados[C_PESQUISA - 1]) || 0) + pts; s.aba.getRange(s.linha, C_PESQUISA).setValue(p.pesquisa);
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('PESQUISA_TOTAL', String((Number(props.getProperty('PESQUISA_TOTAL')) || 0) + pts));
+  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Pesquisa: ' + qtd + 'x ' + (nomeDoItem_(d.item) || d.item), -moedas]);
+  p.ganhou = moedas; p.pontosPesquisa = pts;
+  return p;
+}
+
+/* ---------- Segurança: guarda protege a casa por 24h ---------- */
+function precoSeguranca_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  if (funcaoDe_(s.dados) !== 'guarda') return { ok: false, erro: 'Só guardas oferecem segurança.' };
+  const preco = Math.floor(Number(d.preco));
+  if (!(preco >= 1 && preco <= 100000)) return { ok: false, erro: 'Escolha um preço por dia (pelo menos 1 moeda).' };
+  s.aba.getRange(s.linha, C_SEG_PRECO).setValue(preco);
+  return { ok: true, preco: preco };
+}
+function guardasSeguranca_(linhas) {
+  return linhas.filter(function (l) { return funcaoDe_(l) === 'guarda' && Number(l[C_SEG_PRECO - 1]) > 0; })
+    .map(function (l) { return { numero: l[0], nome: String(l[2]), preco: Number(l[C_SEG_PRECO - 1]), online: Date.now() - (Number(l[C_ON_ULTIMO - 1]) || 0) < PLANTAO_SEGUNDOS * 1000 }; });
+}
+function contratarSeguranca_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const p = perfilDe_(s);
+  if (!p.itens.split(',').some(function (i) { return /^lote_/.test(i); })) return { ok: false, erro: 'Você precisa ter um terreno para contratar segurança.' };
+  const g = linhaPorNumero_(ss, d.numero);
+  if (!g || funcaoDe_(g.dados) !== 'guarda' || !(Number(g.dados[C_SEG_PRECO - 1]) > 0)) return { ok: false, erro: 'Esse guarda não está oferecendo segurança.' };
+  if (String(g.dados[0]) === String(p.numero)) return { ok: false, erro: 'Você não pode contratar você mesmo.' };
+  const preco = Number(g.dados[C_SEG_PRECO - 1]);
+  if (p.moedas < preco) return { ok: false, erro: 'A segurança custa ' + preco + ' moedas por dia e você tem ' + p.moedas + '.' };
+  const atual = segurancaDe_(ss, p.numero), ate = Math.max(Date.now(), atual ? atual.ate : 0) + SEGURANCA_HORAS * 3600000;
+  p.moedas -= preco; salvarPerfil_(s, p); creditar_(ss, g.dados[0], preco);
+  ss.getSheetByName(ABA_SEGURANCA).appendRow([new Date(), p.numero, texto_(String(p.nome)), g.dados[0], texto_(String(g.dados[2])), preco, ate]);
+  ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Segurança de ' + g.dados[2] + ' (24h)', preco]);
+  avisar_(ss, g.dados[0], '🛡️ ' + p.nome + ' contratou a sua segurança por 24 horas: +' + preco + ' moedas.');
+  p.segurancaAte = ate; p.segurancaGuarda = String(g.dados[2]);
   return p;
 }
 
@@ -1528,7 +1719,7 @@ function perfilPublico_(numero) {
   return { ok: true, numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], historia: l[5], visual: String(l[6] || ''),
     itens: String(l[C_ITENS - 1] || ''), veste: vesteDe_(l), desde: new Date(l[C_DATA - 1]).getTime(), moedas: Number(l[C_MOEDAS - 1]) || 0,
     objetivo: String(l[C_OBJETIVO - 1] || ''), amigos: amigos.map(function (n) { return { numero: n, nome: nomes[n] }; }),
-    casa: casa, aluga: aluga ? true : false, gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0, conselheiro: conselheiro_(ss, l[0]) };
+    casa: casa, aluga: aluga ? true : false, titulo: String(l[C_TITULO - 1] || ''), gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0, conselheiro: conselheiro_(ss, l[0]) };
 }
 function amigo_(ss, d) {
   const s = acharSobrevivente_(ss, d);
@@ -2051,7 +2242,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 47)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 52)).getValues();
 }
 
 function gerarChave_() {

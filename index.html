@@ -169,6 +169,11 @@
   .ranking li:nth-child(1){border-left-color:#E8C25A}
   .trab{display:flex;flex-direction:column;gap:0}
   .lista-mini{list-style:none;padding:0;margin:8px 0}
+  .nave-grade{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+  .nave-grade button{font-family:"Press Start 2P",monospace;font-size:9px;line-height:1.6;padding:16px 8px;background:var(--fundo2);color:var(--creme);border:3px solid var(--fundo3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .nave-grade button span{font-size:26px}
+  .nave-grade button:hover,.nave-grade button:focus-visible{border-color:var(--verde)}
+  .voltar-nave{font-family:"Press Start 2P",monospace;font-size:9px;padding:8px 10px;margin:0 0 10px;background:var(--fundo);color:var(--verde2);border:2px solid var(--fundo3);cursor:pointer}
   .torre-box{background:var(--fundo2);border:2px solid #6b4fa0;padding:10px;margin:0 0 8px;text-align:left}
   .torre-box h3{margin:0 0 6px;color:#c9b6ff;font-size:11px}
   .torre-box p{margin:4px 0;font-size:14px}
@@ -241,11 +246,9 @@
   <button type="button" class="item" data-menu="entrar" id="menuPerfil"><span class="ic">👤</span><span id="menuPerfilTxt">ENTRAR</span></button>
   <button type="button" class="item" data-menu="trabalho" id="menuTrabalho" hidden><span class="ic">🛠️</span>TRABALHO E PROFISSÃO</button>
   <button type="button" class="item" data-menu="inventario" id="menuInv" hidden><span class="ic">🎒</span>INVENTÁRIO</button>
-  <button type="button" class="item" data-menu="mercado"><span class="ic">🏪</span>MERCADO</button>
+  <button type="button" class="item" data-menu="nave"><span class="ic">🚀</span>NAVE ORION</button>
   <button type="button" class="item" data-menu="servicos"><span class="ic">🤝</span>SERVIÇOS</button>
   <button type="button" class="item" data-menu="radio" id="menuRadio" hidden><span class="ic">📻</span>RÁDIO</button>
-  <button type="button" class="item" data-menu="assembleia"><span class="ic">🏛️</span>ASSEMBLEIA</button>
-  <button type="button" class="item" data-menu="ranking" id="menuRanking" hidden><span class="ic">🏆</span>RANKING</button>
   <button type="button" class="item" data-menu="como"><span class="ic">❓</span>COMO JOGAR</button>
 </nav>
 <button type="button" class="sino" id="sino" aria-label="Avisos" hidden>🔔<span class="qtd" id="sinoQtd" hidden>0</span></button>
@@ -290,10 +293,14 @@
     <ul>
       <li>Toque no mapa para andar com o seu sobrevivente.</li>
       <li>Todo dia, fora da área habitável, aparece o BAÚ DO DIA (grande e brilhando). O sobrevivente que abrir primeiro leva moedas e itens, com chance de ganhar uma ficha para criar um item ou uma empresa.</li>
-      <li>Mais ou menos a cada 15 minutos aparece um baú pequeno em algum lugar do mapa, com 40 a 90 moedas. Ele fica lá até alguém abrir, e podem haver no máximo 2 baús esperando no mapa.</li>
+      <li>Mais ou menos a cada 15 minutos aparece um baú pequeno em algum lugar do mapa, com 20 a 70 moedas. Ele fica lá até alguém abrir, e podem haver no máximo 2 baús esperando no mapa.</li>
       <li>Para ter um terreno, pare em um dos terrenos livres (com uma placa no meio) e reivindique. Depois volte para a nave e registre no Mercado (aba IMÓVEIS).</li>
       <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói.</li>
       <li>Com uma picareta, você pode minerar na borda pedregosa do mapa para encontrar itens.</li>
+      <li>Para construir uma casa ou um prédio, ou para instalar um outdoor, é preciso contratar um engenheiro.</li>
+      <li>Se alguém ficar 15 minutos parado no seu terreno, ele invade e leva 5% das suas moedas (ou um item simples). Para se proteger, contrate um guarda em SERVIÇOS (24 horas). Cada terreno só pode ser invadido 1 vez por dia.</li>
+      <li>Quem some do jogo por 7 dias perde o terreno e a construção. O terreno volta a ficar livre para outra pessoa registrar.</li>
+      <li>No menu NAVE ORION ficam o Mercado, a Assembleia, o Ranking, o Centro de Pesquisa (entregue recursos do planeta e ganhe moedas e pontos de pesquisa) e os Títulos de Nobreza (Cavaleiro ou Princesa, Barão, Conde e Duque).</li>
     </ul>
     <h4>As torres misteriosas</h4>
     <p>Existem torres escondidas no planeta que não foram feitas por humanos. Chegar perto delas as revela no mapa.</p>
@@ -451,7 +458,40 @@
   </section>
 
   <!-- ===================== MERCADO ===================== -->
+  <section class="painel" id="painel-nave" role="tabpanel">
+    <h2 class="pix">🚀 NAVE ORION</h2>
+    <p class="dica">O que funciona aqui dentro da nave. O rádio dá para ouvir de qualquer lugar, pelo menu.</p>
+    <div class="nave-grade">
+      <button type="button" data-ir="mercado"><span>🏪</span>MERCADO</button>
+      <button type="button" data-ir="assembleia"><span>🏛️</span>ASSEMBLEIA</button>
+      <button type="button" data-ir="ranking"><span>🏆</span>RANKING</button>
+      <button type="button" data-ir="pesquisa"><span>🔬</span>CENTRO DE PESQUISA</button>
+      <button type="button" data-ir="titulos"><span>👑</span>TÍTULOS DE NOBREZA</button>
+    </div>
+  </section>
+
+  <section class="painel" id="painel-pesquisa" role="tabpanel">
+    <button class="voltar-nave" type="button" data-ir="nave">← VOLTAR PARA A NAVE</button>
+    <h2 class="pix">🔬 CENTRO DE PESQUISA</h2>
+    <p class="dica">Os cientistas da nave estudam o que você encontra no planeta. Entregue recursos e ganhe moedas e pontos de pesquisa. Quanto mais a nave pesquisar, mais coisas novas vão ser descobertas.</p>
+    <div class="msg" id="msgPesq" role="status"></div>
+    <p id="pesqTotal"></p>
+    <ul class="lista-mini" id="pesqItens"></ul>
+    <h3 class="pix cat">MAIORES PESQUISADORES</h3>
+    <ul class="ranking" id="pesqRank"></ul>
+  </section>
+
+  <section class="painel" id="painel-titulos" role="tabpanel">
+    <button class="voltar-nave" type="button" data-ir="nave">← VOLTAR PARA A NAVE</button>
+    <h2 class="pix">👑 TÍTULOS DE NOBREZA</h2>
+    <p class="dica">Fique online e participe das Assembleias para subir de título. Os títulos vêm em ordem, cada um é pago uma vez em moedas e aparece no seu perfil para todo mundo ver.</p>
+    <div class="msg" id="msgTit" role="status"></div>
+    <p id="titMeu"></p>
+    <ul class="lista-mini" id="titLista"></ul>
+  </section>
+
   <section class="painel" id="painel-mercado" role="tabpanel">
+    <button class="voltar-nave" type="button" data-ir="nave">← VOLTAR PARA A NAVE</button>
     <h2 class="pix">MERCADO DA COLÔNIA</h2>
     <div id="mercadoFechado"><p>O mercado abre em breve. Fique de olho no Instagram!</p></div>
     <div id="mercado" hidden>
@@ -575,6 +615,7 @@
   <!-- ===================== RANKING ===================== -->
   <!-- ===================== ASSEMBLEIA ===================== -->
   <section class="painel" id="painel-assembleia" role="tabpanel">
+    <button class="voltar-nave" type="button" data-ir="nave">← VOLTAR PARA A NAVE</button>
     <h2 class="pix">🏛️ ASSEMBLEIA</h2>
     <p class="dica">Aqui se decide a história da colônia. Todo dia até 3 pautas, cada uma com discussão e enquete. A votação fecha às 22h e o resultado com consenso vai para o Instagram.</p>
     <div class="msg" id="msgAss" role="status"></div>
@@ -605,9 +646,14 @@
     <h3 class="pix cat">🏗️ ENGENHEIROS</h3>
     <p class="dica" id="servEngDica"></p>
     <ul class="lista-mini" id="servEngenheiros"></ul>
+    <h3 class="pix cat">🛡️ SEGURANÇA (GUARDAS)</h3>
+    <p class="dica" id="servSegDica"></p>
+    <div id="servSegPreco" hidden style="display:flex;gap:8px;align-items:center;margin:6px 0"><label for="segPreco" class="legenda">Seu preço por dia:</label><input id="segPreco" type="number" min="1" style="width:90px"><button class="btn" type="button" id="btnSegPreco" style="width:auto;margin:0;padding:8px 10px;font-size:9px">SALVAR</button></div>
+    <ul class="lista-mini" id="servGuardas"></ul>
   </section>
 
   <section class="painel" id="painel-ranking" role="tabpanel">
+    <button class="voltar-nave" type="button" data-ir="nave">← VOLTAR PARA A NAVE</button>
     <h2 class="pix">FUNCIONÁRIOS DA SEMANA</h2>
     <p class="dica">Quem mais consertou a nave nesta semana.</p>
     <ul class="ranking" id="rankSemana"></ul>
@@ -897,7 +943,7 @@
     estado.ofertas = d.ofertas || [];
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
-    estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
+    estado.medicos = d.medicos || []; estado.guardas = d.guardas || []; estado.pesquisa = d.pesquisa || null; estado.titulos = d.titulos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
     if (d.mercado && d.mercado.cofre != null) { document.getElementById("cofreNave").hidden = false; document.getElementById("cofreValor").textContent = Number(d.mercado.cofre).toLocaleString("pt-BR"); }
@@ -1064,6 +1110,7 @@
     if (Date.now() < avisoAte) return;
     bt.hidden = true; bt.dataset.acao = "";
     var n = loteEm(meu.x, meu.y), parado = !meu.tx, limite = meusLotes().length >= T.porPessoa, perto = naNave();
+    if (inv && n !== inv.lote) { pararInvasao(); info.textContent = "Você saiu do terreno e a invasão parou."; avisoAte = Date.now() + 4000; return; }
     if (recon && recon.pronto) {
       if (estado.donos[recon.lote]) { info.textContent = estado.donos[recon.lote] + " registrou o Terreno " + recon.lote + " antes de você. Procure outro terreno livre."; recon = null; return; }
       if (perto) { info.textContent = "Você está na nave. Registre o Terreno " + recon.lote + " no Mercado:"; bt.hidden = false; bt.textContent = "IR AO MERCADO REGISTRAR"; bt.dataset.acao = "mercado"; }
@@ -1071,7 +1118,15 @@
       return;
     }
     if (naZonaDeMineracao(meu.x, meu.y)) { info.textContent = "Zona de mineração: aqui não tem terrenos." + (tem(eu.itens, "picareta") ? "" : " Com uma picareta dá para minerar."); recon = null; return; }
-    if (n && estado.donos[n]) { info.textContent = "Terreno " + n + (estado.aVenda[n] ? ": à venda no mercado dos sobreviventes." : ": de " + estado.donos[n] + "."); recon = null; return; }
+    if (n && estado.donos[n]) {
+      recon = null;
+      if (inv) { var mi = Math.min(INVASAO_MIN, Math.floor((Date.now() - inv.inicio) / 60000)); info.textContent = "🚨 Invadindo o Terreno " + n + " de " + estado.donos[n] + "... " + mi + " de " + INVASAO_MIN + " minutos. Fique aqui dentro."; return; }
+      info.textContent = "Terreno " + n + (estado.aVenda[n] ? ": à venda no mercado dos sobreviventes." : ": de " + estado.donos[n] + ".");
+      if (logado() && !estado.aVenda[n] && estado.donos[n] !== eu.nome) {
+        if (parado) { info.textContent += " Fique 15 minutos aqui para invadir e levar 5% das moedas (ou um item)."; bt.hidden = false; bt.textContent = "INVADIR O TERRENO " + n; bt.dataset.acao = "invadir"; bt.dataset.lote = n; }
+      }
+      return;
+    }
     if (recon && recon.lote !== n) { info.textContent = "Você saiu do Terreno " + recon.lote + " e o reconhecimento parou. Volte e reivindique de novo."; recon = null; return; }
     if (!n) { info.textContent = perto ? "Você está na nave. Explore o mapa: os terrenos livres têm estacas nos cantos." : "Explore o mapa: os terrenos livres têm estacas nos cantos."; return; }
     if (limite) { info.textContent = "Terreno " + n + " está livre. Você já tem o seu terreno; outros só no mercado dos sobreviventes."; return; }
@@ -1086,8 +1141,25 @@
     info.textContent = "Reconhecendo o Terreno " + n + "... faltam " + Math.floor(seg / 60) + ":" + ("0" + seg % 60).slice(-2) + ". Fique dentro do terreno.";
   }
   setInterval(verTerreno, 1000);
+  var inv = null, invTimer = null, INVASAO_MIN = 15;
+  function pararInvasao() { inv = null; clearInterval(invTimer); }
+  function pingInvasao() {
+    var meu = meuBoneco(); if (!inv || !meu) return;
+    var lote = inv.lote;
+    enviar(credenciais({ acao: "invadir", lote: lote, x: Math.round(meu.x), y: Math.round(meu.y) })).then(function (r) {
+      if (!inv || inv.lote !== lote) return;
+      if (!r.ok) { pararInvasao(); avisoTerreno(r.erro || "A invasão parou."); return; }
+      if (r.liberado) { pararInvasao(); avisoTerreno("O Terreno " + r.lote + " estava abandonado e agora está LIVRE! Reivindique antes dos outros."); carregar(); return; }
+      if (r.invadiu) { pararInvasao(); aplicarPerfil(r); salvarEu(); avisoTerreno("🏴 Invasão completa! " + (r.levou ? "Você levou " + r.levou + "." : "Não tinha nada para levar.")); atualizarPerfil(); return; }
+      if (r.minutos === 0) inv.inicio = Date.now();
+    });
+  }
   document.getElementById("btnTerreno").addEventListener("click", function () {
     var bt = this;
+    if (bt.dataset.acao === "invadir") {
+      inv = { lote: Number(bt.dataset.lote), inicio: Date.now() }; bt.hidden = true;
+      clearInterval(invTimer); pingInvasao(); invTimer = setInterval(pingInvasao, 60000); verTerreno(); return;
+    }
     if (bt.dataset.acao === "mercado") { irPara("mercado"); irSub("imoveis"); (document.getElementById("cartaoRegistro") || document.getElementById("subabas")).scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if (bt.dataset.acao !== "reivindicar") return;
     var n = Number(bt.dataset.lote);
@@ -1675,7 +1747,7 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
     if (r.avisos !== undefined) desenharSino();
     if (r.ofertaAte !== undefined && typeof mostrarOferta === "function") mostrarOferta();
     if (typeof missao !== "undefined" && missao && Number(r.descansoAte) > Date.now() && missao.modo === "parado") { missao.modo = "descansando"; missao.descanso = Math.ceil((r.descansoAte - Date.now()) / 1000); missao.temBase = typeof temCasa === "function" ? temCasa() : missao.temBase; }
@@ -1731,7 +1803,7 @@
     document.getElementById("naveTxt").textContent = "Etapa " + etapa + ": " + naEtapa.toLocaleString("pt-BR") + " de " + n.etapa.toLocaleString("pt-BR") + " pontos · Nave " + pct.toLocaleString("pt-BR", { maximumFractionDigits: 3 }) + "% consertada (" + n.pontos.toLocaleString("pt-BR") + " de " + n.meta.toLocaleString("pt-BR") + ")";
   }
   function desenharRanking(rk) {
-    document.getElementById("abaRanking").hidden = false; document.getElementById("menuRanking").hidden = false;
+    document.getElementById("abaRanking").hidden = false;
     var pinta = function (id, lista, valor, vazio) {
       var ul = document.getElementById(id); ul.innerHTML = "";
       if (!lista.length) { var v = document.createElement("li"); v.textContent = vazio; v.style.counterIncrement = "none"; ul.appendChild(v); return; }
@@ -1953,9 +2025,39 @@
     }
     return li;
   }
+  function desenharSeguranca() {
+    var ul = document.getElementById("servGuardas"); if (!ul) return;
+    var on = logado(), souGuarda = on && eu.funcao === "guarda", temLote = on && meusLotes().length > 0;
+    var protegido = on && Number(eu.segurancaAte) > Date.now();
+    var lista = (estado.guardas || []).filter(function (g) { return !on || g.nome !== eu.nome; });
+    var assin = JSON.stringify([lista, on, souGuarda, temLote, protegido, eu && eu.segurancaAte]);
+    if (ul.dataset.assin === assin) return; ul.dataset.assin = assin;
+    var hrs = protegido ? Math.ceil((eu.segurancaAte - Date.now()) / 3600000) : 0;
+    document.getElementById("servSegDica").textContent = !on ? "Entre com o seu sobrevivente para contratar segurança." :
+      protegido ? "🛡️ Seu terreno está protegido por " + eu.segurancaGuarda + " por mais " + hrs + " hora(s). Ninguém consegue invadir." :
+      temLote ? "Quem fica 15 minutos parado no seu terreno pode invadir e levar 5% das suas moedas (ou um item simples). Um guarda protege por 24 horas." :
+      "Quando você tiver um terreno, pode contratar um guarda para ninguém invadir.";
+    var box = document.getElementById("servSegPreco"); box.hidden = !souGuarda; box.style.display = souGuarda ? "flex" : "none";
+    if (souGuarda && !document.getElementById("segPreco").value && eu.precoSeguranca) document.getElementById("segPreco").value = eu.precoSeguranca;
+    ul.innerHTML = "";
+    if (!lista.length) { var v = document.createElement("li"); v.textContent = "Nenhum guarda oferecendo segurança agora."; ul.appendChild(v); }
+    lista.forEach(function (g) {
+      ul.appendChild(itemServ({ nome: g.nome, extra: g.preco + " moedas por 24 horas" + (g.online ? " · online" : "") }, g.numero, temLote ? "CONTRATAR" : "", temLote, function (b) {
+        if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + g.preco + ")"; return; }
+        b.disabled = true;
+        enviar(credenciais({ acao: "contratar_seguranca", numero: g.numero })).then(function (r) {
+          b.disabled = false; delete b.dataset.confirmar; b.textContent = "CONTRATAR";
+          if (!r.ok) return mensagem("msgServ", r.erro || "Não deu certo.");
+          aplicarPerfil(r); salvarEu(); mensagem("msgServ", "🛡️ " + g.nome + " vai proteger o seu terreno pelas próximas 24 horas.", true);
+          ul.dataset.assin = ""; desenharSeguranca();
+        });
+      }));
+    });
+  }
   function desenharServicos() {
     var ulM = document.getElementById("servMedicos"), ulE = document.getElementById("servEngenheiros");
     if (!ulM) return;
+    desenharSeguranca();
     var on = logado(), meuNome = on ? eu.nome : "";
     var meds = (estado.medicos || []).filter(function (m) { return m.nome !== meuNome; });
     var engs = estado.engenheiros, minhas = on ? (estado.obras || []).filter(function (o) { return o.dono === eu.nome; }) : [];
@@ -1979,7 +2081,7 @@
       }));
     });
     var aguardando = minhas[0];
-    dE.textContent = !on ? "Entre com o seu sobrevivente para contratar um engenheiro." : aguardando ? "Sua obra “" + aguardando.nome + "” está esperando um engenheiro. Escolha um livre abaixo (a mão de obra já foi paga quando você adquiriu)." : "Quando você adquirir uma casa ou prédio no Mercado, volte aqui para escolher o engenheiro que vai construir. Se ninguém construir em 24 horas, a nave constrói sozinha.";
+    dE.textContent = !on ? "Entre com o seu sobrevivente para contratar um engenheiro." : aguardando ? "Sua obra “" + aguardando.nome + "” está esperando um engenheiro. Escolha um livre abaixo (a mão de obra já foi paga quando você adquiriu)." : "Quando você adquirir uma casa, prédio ou outdoor no Mercado, volte aqui para escolher o engenheiro que vai construir. Se ninguém construir em 24 horas, a nave constrói sozinha.";
     ulE.innerHTML = "";
     if (!engs) { var c = document.createElement("li"); c.textContent = (estado.engenheirosOnline || 0) + " engenheiro(s) de plantão agora."; ulE.appendChild(c); return; }
     if (!engs.length) { var z = document.createElement("li"); z.textContent = "Nenhum engenheiro de plantão agora."; ulE.appendChild(z); }
@@ -2375,7 +2477,7 @@
       if (!r.ok) { desenharItens(); return mensagem("msgMercado", r.erro || "Não deu certo. Tente de novo."); }
       aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
       if (it.gas) { eu.gas = true; salvarEu(); }
-      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua casa aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
+      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua obra aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
       if (r.obra) atualizarPerfil();
       carregar();
     });
@@ -2659,6 +2761,7 @@
         ["Mora", p.casa ? "Na própria casa" : p.aluga ? "De aluguel" : "Na nave"], ["Objetivo", p.objetivo || "—"], ["História", p.historia || "—"],
         ["Amigos", p.amigos.length ? p.amigos.map(function (a) { return a.nome; }).join(", ") : "—"]];
       if (p.conselheiro) linhas.unshift(["Título", "🏛️ Conselheiro(a) da Assembleia"]);
+      if (p.titulo) linhas.unshift(["Nobreza", "👑 " + nomeTitulo(p.titulo, p.visual, p.nome)]);
       linhas.forEach(function (l) {
         var dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = l[0];
         if (l[0] === "Instagram" && p.instagram) { var a = document.createElement("a"); a.href = "https://instagram.com/" + String(p.instagram).replace(/^@/, ""); a.target = "_blank"; a.rel = "noopener"; a.textContent = p.instagram; a.style.color = "var(--verde2)"; dd.appendChild(a); }
@@ -2820,11 +2923,87 @@
   /* ---------------- abas ---------------- */
   function irPara(nome) {
     fecharInventario();
-    document.querySelectorAll("#menuGaveta [data-menu]").forEach(function (b) { b.setAttribute("aria-current", String(b.dataset.menu === nome)); });
+    var grupo = ["mercado", "assembleia", "ranking", "pesquisa", "titulos"].indexOf(nome) >= 0 ? "nave" : nome;
+    document.querySelectorAll("#menuGaveta [data-menu]").forEach(function (b) { b.setAttribute("aria-current", String(b.dataset.menu === grupo)); });
     document.querySelectorAll("nav.abas button").forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.aba === nome)); });
     document.querySelectorAll("section.painel").forEach(function (s) { s.classList.toggle("ativo", s.id === "painel-" + nome); });
     radioLigado(nome === "radio");
     if (nome === "mercado" && typeof checarOferta === "function") checarOferta();
+    if (nome === "pesquisa") desenharPesquisa();
+    if (nome === "titulos") desenharTitulos();
+    if (nome === "assembleia" && typeof abrirAssembleia === "function") abrirAssembleia();
+  }
+  document.getElementById("btnSegPreco").onclick = function () {
+    var v = Number(document.getElementById("segPreco").value);
+    enviar(credenciais({ acao: "seguranca_preco", preco: v })).then(function (r) {
+      if (!r.ok) return mensagem("msgServ", r.erro || "Não deu certo.");
+      eu.precoSeguranca = r.preco; salvarEu(); mensagem("msgServ", "Pronto! Agora você aparece na lista de segurança por " + r.preco + " moedas por dia.", true); carregar();
+    });
+  };
+  /* ---------------- Centro de Pesquisa ---------------- */
+  function desenharPesquisa() {
+    var pq = estado.pesquisa, ul = document.getElementById("pesqItens"), on = logado();
+    if (!ul) return;
+    document.getElementById("pesqTotal").textContent = pq ? "🔬 A nave já somou " + Number(pq.total).toLocaleString("pt-BR") + " pontos de pesquisa." + (on ? " Os seus: " + Number(eu.pesquisa || 0).toLocaleString("pt-BR") + "." : "") : "";
+    ul.innerHTML = "";
+    if (!pq) return;
+    var meus = on && eu.itens ? String(eu.itens).split(",") : [];
+    Object.keys(pq.precos).forEach(function (id) {
+      var qtd = meus.filter(function (x) { return x === id; }).length, preco = pq.precos[id];
+      var li = document.createElement("li"), t = document.createElement("span");
+      t.textContent = (ICONES[id] || "") + " " + nomeItem(id) + " · " + preco + " moedas + " + preco * (pq.pontosPorMoeda || 1) + " pts" + (on ? " · você tem " + qtd : "");
+      li.appendChild(t);
+      if (on && qtd) {
+        var b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = qtd > 1 ? "ENTREGAR " + qtd : "ENTREGAR";
+        b.onclick = function () {
+          b.disabled = true;
+          enviar(credenciais({ acao: "pesquisar", item: id, qtd: qtd })).then(function (r) {
+            b.disabled = false;
+            if (!r.ok) return mensagem("msgPesq", r.erro || "Não deu certo.");
+            aplicarPerfil(r); salvarEu(); pq.total = Number(pq.total) + r.pontosPesquisa;
+            mensagem("msgPesq", "Os cientistas agradecem! +" + r.ganhou + " moedas e +" + r.pontosPesquisa + " pontos de pesquisa.", true);
+            desenharPesquisa(); desenharInventario();
+          });
+        };
+        li.appendChild(b);
+      }
+      ul.appendChild(li);
+    });
+    var rk = document.getElementById("pesqRank"); rk.innerHTML = "";
+    (pq.ranking || []).forEach(function (x) { var li = document.createElement("li"); li.textContent = x.nome + " · " + Number(x.pontos).toLocaleString("pt-BR") + " pts"; rk.appendChild(li); });
+    if (!(pq.ranking || []).length) { var v = document.createElement("li"); v.textContent = "Ninguém pesquisou ainda. Seja o primeiro!"; rk.appendChild(v); }
+  }
+  /* ---------------- Títulos de nobreza ---------------- */
+  function nomeTitulo(id, visual, nome) {
+    var t = (estado.titulos || []).filter(function (x) { return x.id === id; })[0]; if (!t) return "";
+    return lerVisual(visual, nome).corpo === 1 ? t.fem : t.nome;
+  }
+  function desenharTitulos() {
+    var ul = document.getElementById("titLista"), on = logado(); if (!ul) return;
+    var lista = estado.titulos || [], atual = on ? eu.titulo || "" : "";
+    var idx = lista.map(function (t) { return t.id; }).indexOf(atual), fem = on && lerVisual(eu.visual, eu.nome).corpo === 1;
+    document.getElementById("titMeu").textContent = !on ? "Entre com o seu sobrevivente para ver o seu progresso." :
+      "Você: " + (atual ? "👑 " + nomeTitulo(atual, eu.visual, eu.nome) : "sem título ainda") + " · " + (eu.horasOnline || 0) + " horas online · " + (eu.assembleias || 0) + " Assembleias.";
+    ul.innerHTML = "";
+    lista.forEach(function (t, i) {
+      var li = document.createElement("li"), sp = document.createElement("span");
+      sp.textContent = (i <= idx ? "✅ " : "👑 ") + (fem ? t.fem : t.nome + " / " + t.fem) + " · " + t.horas + "h online, " + t.assembleias + " Assembleias, " + t.preco.toLocaleString("pt-BR") + " moedas";
+      li.appendChild(sp);
+      if (on && i === idx + 1) {
+        var pronto = (eu.horasOnline || 0) >= t.horas && (eu.assembleias || 0) >= t.assembleias;
+        var b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = pronto ? "RECEBER" : "AINDA NÃO"; b.disabled = !pronto;
+        b.onclick = function () {
+          if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + t.preco + ")"; return; }
+          b.disabled = true;
+          enviar(credenciais({ acao: "titulo", id: t.id })).then(function (r) {
+            if (!r.ok) { b.disabled = false; delete b.dataset.confirmar; b.textContent = "RECEBER"; return mensagem("msgTit", r.erro || "Não deu certo."); }
+            aplicarPerfil(r); salvarEu(); mensagem("msgTit", "Parabéns! Agora você é " + nomeTitulo(r.titulo, eu.visual, eu.nome) + "!", true); desenharTitulos();
+          });
+        };
+        li.appendChild(b);
+      }
+      ul.appendChild(li);
+    });
   }
   document.querySelectorAll("[data-aba]").forEach(function (b) { b.onclick = function () { irPara(b.dataset.aba); }; });
   document.querySelectorAll("[data-ir]").forEach(function (b) { b.onclick = function (ev) { ev.preventDefault(); irPara(b.dataset.ir); }; });
@@ -3021,7 +3200,6 @@
         m = "entrar";
       }
       irPara(m); rolar(document.getElementById("painel-" + m));
-      if (m === "assembleia") abrirAssembleia();
     };
   });
   if (/inventario/.test(location.hash)) setTimeout(abrirInventario, 300);
