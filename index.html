@@ -186,6 +186,19 @@
   .loja-item b.pix{font-size:13px;line-height:1.6}
   .missao .rot{font-size:14px;color:var(--apagado)}
   .chave{font-family:"Press Start 2P",monospace;color:var(--laranja);background:var(--fundo);padding:6px 10px;display:inline-block;letter-spacing:2px}
+  .menu-btn{position:fixed;left:8px;top:8px;z-index:60;width:46px;height:44px;background:var(--fundo2);border:3px solid var(--verde);color:var(--creme);font-size:22px;line-height:1;cursor:pointer;padding:0}
+  .menu-fundo{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:70}
+  .menu-gaveta{position:fixed;left:0;top:0;bottom:0;width:min(280px,82vw);background:var(--fundo2);border-right:4px solid var(--verde);z-index:71;padding:14px 12px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+  .menu-gaveta h2{font-size:12px;margin:4px 0 10px;color:var(--verde2)}
+  .menu-gaveta button.item{line-height:1.6;display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:"Press Start 2P",monospace;font-size:10px;padding:13px 10px;background:var(--fundo);color:var(--creme);border:2px solid var(--fundo3);cursor:pointer}
+  .menu-gaveta button.item .ic{font-size:18px;width:24px;text-align:center}
+  .menu-gaveta button.item[aria-current=true]{border-color:var(--verde);background:var(--fundo3)}
+  .menu-gaveta .fechar-menu{align-self:flex-end;width:34px;height:34px;border:2px solid var(--fundo3);background:var(--fundo);color:var(--creme);font-family:"Press Start 2P",monospace;cursor:pointer}
+  .bola-inv{position:fixed;right:10px;bottom:10px;z-index:55;width:60px;height:60px;border-radius:50%;background:var(--fundo2);border:3px solid var(--laranja);font-size:28px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.5);padding:0}
+  .bola-inv .qtd[hidden]{display:none}
+  .bola-inv .qtd{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:var(--laranja);color:#fff;font-family:"Press Start 2P",monospace;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  #invModal .caixa{max-width:520px}
+  nav.abas{display:none!important}
   .aviso-teste{background:var(--ferrugem);color:var(--creme);text-align:center;font-size:14px;padding:6px 10px}
   footer{text-align:center;color:var(--apagado);font-size:14px;margin-top:28px}
   footer a{color:var(--verde2)}
@@ -200,6 +213,21 @@
 </head>
 <body>
 <div class="aviso-teste" id="avisoTeste" hidden>MODO DE TESTE: os cadastros ficam só neste aparelho.</div>
+<button type="button" class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false">☰</button>
+<div class="menu-fundo" id="menuFundo" hidden></div>
+<nav class="menu-gaveta" id="menuGaveta" aria-label="Menu do jogo" hidden>
+  <button type="button" class="fechar-menu" id="menuFechar" aria-label="Fechar menu">X</button>
+  <h2 class="pix">NAVE ORION</h2>
+  <button type="button" class="item" data-menu="mapa"><span class="ic">🗺️</span>MAPA</button>
+  <button type="button" class="item" data-menu="entrar" id="menuPerfil"><span class="ic">👤</span><span id="menuPerfilTxt">ENTRAR</span></button>
+  <button type="button" class="item" data-menu="trabalho" id="menuTrabalho" hidden><span class="ic">🛠️</span>TRABALHO E PROFISSÃO</button>
+  <button type="button" class="item" data-menu="inventario" id="menuInv" hidden><span class="ic">🎒</span>INVENTÁRIO</button>
+  <button type="button" class="item" data-menu="mercado"><span class="ic">🏪</span>MERCADO</button>
+  <button type="button" class="item" data-menu="radio" id="menuRadio" hidden><span class="ic">📻</span>RÁDIO</button>
+  <button type="button" class="item" data-menu="ranking" id="menuRanking" hidden><span class="ic">🏆</span>RANKING</button>
+  <button type="button" class="item" data-menu="como"><span class="ic">❓</span>COMO JOGAR</button>
+</nav>
+<button type="button" class="bola-inv" id="bolaInv" aria-label="Abrir inventário" hidden>🎒<span class="qtd" id="bolaInvQtd">0</span></button>
 <main>
   <header>
     <img src="perfil.png" alt="">
@@ -293,7 +321,6 @@
 
   <nav class="abas" role="tablist">
     <button role="tab" aria-selected="true" data-aba="entrar">ENTRAR</button>
-    <button role="tab" aria-selected="false" data-aba="ideias">IDEIAS</button>
     <button role="tab" aria-selected="false" data-aba="mercado">MERCADO</button>
     <button role="tab" aria-selected="false" data-aba="radio" id="abaRadio" hidden>RÁDIO</button>
     <button role="tab" aria-selected="false" data-aba="ranking" id="abaRanking" hidden>RANKING</button>
@@ -371,7 +398,6 @@
         <p class="dica" id="amigosLista" style="margin:0">Você ainda não adicionou amigos. Toque no nome de alguém no Rádio para ver o perfil.</p>
       </div>
       <button class="btn" type="button" data-ir="mercado">IR AO MERCADO</button>
-      <button class="btn sec" type="button" data-ir="ideias">MANDAR UMA IDEIA PARA A HISTÓRIA</button>
     </div>
   </section>
 
@@ -422,7 +448,6 @@
       <div class="msg" id="msgMercado" role="status"></div>
       <button type="button" class="leilao-faixa" id="leilaoFaixa" hidden></button>
       <nav class="subabas" id="subabas">
-        <button type="button" data-sub="inventario" aria-pressed="false" id="subInventario" hidden>INVENTÁRIO</button>
         <button type="button" data-sub="imoveis" aria-pressed="true">IMÓVEIS</button>
         <button type="button" data-sub="loja" aria-pressed="false">LOJA DA NAVE</button>
         <button type="button" data-sub="roupas" aria-pressed="false">ROUPAS</button>
@@ -430,14 +455,6 @@
         <button type="button" data-sub="moedas" aria-pressed="false">MOEDAS</button>
         <button type="button" data-sub="leilao" aria-pressed="false">LEILÃO</button>
       </nav>
-      <div class="sub" data-sub="inventario">
-        <h3 class="pix cat">SEU INVENTÁRIO</h3>
-        <p class="dica">Tudo o que é seu fica aqui: o que veio do baú, da mineração, das compras e os itens criados. Toque num item para usar, vestir ou vender.</p>
-        <div class="msg" id="msgInv" role="status"></div>
-        <div class="inv-vida" id="invVida"></div>
-        <div class="inv-grade" id="invGrade"></div>
-        <div class="inv-det" id="invDet" hidden></div>
-      </div>
       <div class="sub ativo" data-sub="imoveis">
         <h3 class="pix cat">TERRENO, CASA E OUTDOOR</h3>
         <div class="loja fila"><div id="registroTerreno" style="display:contents"></div><div id="loja-terreno" style="display:contents"></div></div>
@@ -488,6 +505,17 @@
     </div>
   </section>
 
+  <div class="modal" id="invModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-label="Inventário">
+    <button type="button" class="fechar" id="invFechar" aria-label="Fechar">X</button>
+      <div id="invBox">
+        <h3 class="pix cat">SEU INVENTÁRIO</h3>
+        <p class="dica">Tudo o que é seu fica aqui: o que veio do baú, da mineração, das compras e os itens criados. Toque num item para usar, vestir ou vender.</p>
+        <div class="msg" id="msgInv" role="status"></div>
+        <div class="inv-vida" id="invVida"></div>
+        <div class="inv-grade" id="invGrade"></div>
+        <div class="inv-det" id="invDet" hidden></div>
+      </div>
+  </div></div>
   <div class="modal" id="premioModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="premioTitulo" style="text-align:center">
     <button type="button" class="fechar" id="premioFechar" aria-label="Fechar">X</button>
     <h2 class="pix" id="premioTitulo" style="margin:6px 0 10px;color:var(--laranja)">VOCÊ GANHOU!</h2>
@@ -786,7 +814,7 @@
     estado.terrenos = d.terrenos || [];
     estado.total = d.total || estado.sobreviventes.length;
     if (d.mercado) { estado.mercado = d.mercado; montarMercado(); }
-    if (d.chat) document.getElementById("abaRadio").hidden = false;
+    if (d.chat) { document.getElementById("abaRadio").hidden = false; document.getElementById("menuRadio").hidden = false; }
     estado.ofertas = d.ofertas || [];
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
@@ -1586,8 +1614,12 @@
       var nItens = String(eu.itens || "").split(",").filter(nomeItem).length;
       document.getElementById("contaItens").textContent = "🎒 INVENTÁRIO (" + nItens + ")";
     }
-    document.getElementById("subInventario").hidden = !on;
-    if (!on && document.querySelector('.sub.ativo[data-sub="inventario"]')) irSub("imoveis");
+    document.getElementById("bolaInv").hidden = !on;
+    document.getElementById("menuInv").hidden = !on;
+    document.getElementById("menuTrabalho").hidden = !on;
+    document.getElementById("menuPerfilTxt").textContent = on ? "MEU PERFIL" : "ENTRAR";
+    if (on) { var nq = String(eu.itens || "").split(",").filter(nomeItem).length, bq = document.getElementById("bolaInvQtd"); bq.textContent = String(nq); bq.hidden = !nq; }
+    if (!on) fecharInventario();
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
     marcarFaltaMoedas();
@@ -1614,7 +1646,7 @@
     document.getElementById("naveTxt").textContent = "Etapa " + etapa + ": " + naEtapa.toLocaleString("pt-BR") + " de " + n.etapa.toLocaleString("pt-BR") + " pontos · Nave " + pct.toLocaleString("pt-BR", { maximumFractionDigits: 3 }) + "% consertada (" + n.pontos.toLocaleString("pt-BR") + " de " + n.meta.toLocaleString("pt-BR") + ")";
   }
   function desenharRanking(rk) {
-    document.getElementById("abaRanking").hidden = false;
+    document.getElementById("abaRanking").hidden = false; document.getElementById("menuRanking").hidden = false;
     var pinta = function (id, lista, valor, vazio) {
       var ul = document.getElementById(id); ul.innerHTML = "";
       if (!lista.length) { var v = document.createElement("li"); v.textContent = vazio; v.style.counterIncrement = "none"; ul.appendChild(v); return; }
@@ -1917,7 +1949,7 @@
   }
   document.getElementById("premioFechar").onclick = function () { document.getElementById("premioModal").hidden = true; };
   document.getElementById("premioModal").addEventListener("click", function (ev) { if (ev.target.id === "premioModal") ev.target.hidden = true; });
-  document.getElementById("premioVer").onclick = function () { document.getElementById("premioModal").hidden = true; irPara("mercado"); irSub("inventario"); };
+  document.getElementById("premioVer").onclick = function () { document.getElementById("premioModal").hidden = true; abrirInventario(); };
 
   function desenharFaixaLeilao() {
     var f = document.getElementById("leilaoFaixa"), L = estado.leilao; if (!f) return;
@@ -2045,8 +2077,8 @@
       });
     }));
   }
-  document.getElementById("contaItens").onclick = function () { irSub("inventario"); document.getElementById("invGrade").scrollIntoView({ behavior: "smooth", block: "center" }); };
-  document.getElementById("btnIrInventario").onclick = function () { irSub("inventario"); };
+  document.getElementById("contaItens").onclick = function () { abrirInventario(); };
+  document.getElementById("btnIrInventario").onclick = function () { abrirInventario(); };
 
   /* ---------------- mercado ---------------- */
   var mercadoPronto = false;
@@ -2620,13 +2652,53 @@
 
   /* ---------------- abas ---------------- */
   function irPara(nome) {
+    fecharInventario();
+    document.querySelectorAll("#menuGaveta [data-menu]").forEach(function (b) { b.setAttribute("aria-current", String(b.dataset.menu === nome)); });
     document.querySelectorAll("nav.abas button").forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.aba === nome)); });
     document.querySelectorAll("section.painel").forEach(function (s) { s.classList.toggle("ativo", s.id === "painel-" + nome); });
     radioLigado(nome === "radio");
   }
   document.querySelectorAll("[data-aba]").forEach(function (b) { b.onclick = function () { irPara(b.dataset.aba); }; });
   document.querySelectorAll("[data-ir]").forEach(function (b) { b.onclick = function (ev) { ev.preventDefault(); irPara(b.dataset.ir); }; });
-  if (/ideia/.test(location.hash)) irPara("ideias");
+  /* ---------------- menu ☰ e inventário ---------------- */
+  function abrirInventario() {
+    if (!logado()) { irPara("entrar"); return; }
+    fecharMenu();
+    desenharInventario();
+    document.getElementById("invModal").hidden = false;
+  }
+  function fecharInventario() { var m = document.getElementById("invModal"); if (m) m.hidden = true; }
+  document.getElementById("invFechar").onclick = fecharInventario;
+  document.getElementById("invModal").addEventListener("click", function (ev) { if (ev.target === this) fecharInventario(); });
+  document.getElementById("bolaInv").onclick = abrirInventario;
+  function abrirMenu() {
+    document.getElementById("menuGaveta").hidden = false; document.getElementById("menuFundo").hidden = false;
+    document.getElementById("menuBtn").setAttribute("aria-expanded", "true");
+  }
+  function fecharMenu() {
+    document.getElementById("menuGaveta").hidden = true; document.getElementById("menuFundo").hidden = true;
+    document.getElementById("menuBtn").setAttribute("aria-expanded", "false");
+  }
+  document.getElementById("menuBtn").onclick = abrirMenu;
+  document.getElementById("menuFechar").onclick = fecharMenu;
+  document.getElementById("menuFundo").onclick = fecharMenu;
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") { fecharMenu(); fecharInventario(); } });
+  function rolar(el, bloco) { if (el) el.scrollIntoView({ behavior: "smooth", block: bloco || "start" }); }
+  document.querySelectorAll("#menuGaveta [data-menu]").forEach(function (b) {
+    b.onclick = function () {
+      var m = b.dataset.menu; fecharMenu();
+      if (m === "inventario") return abrirInventario();
+      if (m === "mapa") return rolar(document.getElementById("cena"), "center");
+      if (m === "como") { var c = document.getElementById("comoJogar"); c.open = true; return rolar(c); }
+      if (m === "trabalho") {
+        var ms = document.getElementById("missao");
+        if (ms && !ms.hidden) { var dt = ms.querySelector("details"); if (dt) dt.open = true; return rolar(ms); }
+        m = "entrar";
+      }
+      irPara(m); rolar(document.getElementById("painel-" + m));
+    };
+  });
+  if (/inventario/.test(location.hash)) setTimeout(abrirInventario, 300);
   if (/mercado|terreno|base|loja/.test(location.hash)) irPara("mercado");
   if (/radio|chat/.test(location.hash)) irPara("radio");
 
