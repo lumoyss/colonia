@@ -547,7 +547,7 @@
       var c = linhas[y][x]; if (c === ".") continue;
       ctx.fillStyle = cores[c]; ctx.fillRect(ox + x, oy + y, 1, 1);
     }
-    if (v.capacete || SEM_OXIGENIO) {
+    if (v.capacete || SEM_OXIGENIO || tem(itens, "capacete_dourado")) {
       var ouro = tem(itens, "capacete_dourado");
       ctx.fillStyle = ouro ? "rgba(232,194,90,0.25)" : "rgba(127,214,200,0.28)"; ctx.fillRect(ox + 1, oy - 1, 8, 7);
       ctx.fillStyle = ouro ? OURO : "#7FD6C8";
@@ -922,9 +922,9 @@
       var id = String(s.nome);
       var roupa = s.veste != null ? s.veste : (s.itens || "");
       if (eu && logado() && s.nome === eu.nome && eu.veste != null) roupa = eu.veste;
-      if (bonecos[id]) { bonecos[id].itens = roupa; return; }
+      if (bonecos[id]) { bonecos[id].itens = roupa; bonecos[id].numero = s.numero; return; }
       var r = rnd(hash(id));
-      bonecos[id] = { nome: s.nome, itens: roupa, v: lerVisual(s.visual, s.nome), x: OFX + 190 + r() * 100, y: OFY + 150 + r() * 30, tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r };
+      bonecos[id] = { nome: s.nome, numero: s.numero, itens: roupa, v: lerVisual(s.visual, s.nome), x: OFX + 190 + r() * 100, y: OFY + 150 + r() * 30, tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r };
       ordem.push(id);
     });
   }
@@ -1040,6 +1040,15 @@
     });
     if (vivos.length <= 120) vivos.forEach(function (b) {
       if (dentro(b.x, b.y)) rotulo(b.nome, (b.x - cx) * esc, (b.y + 4 - cy) * esc, b === meu ? "#0B161C" : "#F3E9D6", b === meu ? "#E07A3A" : "rgba(11,22,28,.75)");
+    });
+    var agoraF = Date.now();
+    vivos.forEach(function (b) {
+      if (!b.fala || b.fala.ate < agoraF || !dentro(b.x, b.y)) return;
+      cctx.save(); cctx.font = Math.round(Math.min(esc * 2.6, 7.5 / tela)) + "px 'Press Start 2P', monospace";
+      var bx2 = (b.x - cx) * esc, by2 = (b.y - 26 - cy) * esc - (b === meu && missao.modo === "consertando" ? 6 * esc : 0);
+      rotulo(b.fala.texto, bx2, by2, "#0B161C", "#F3E9D6");
+      cctx.fillStyle = "#F3E9D6"; cctx.beginPath(); var hb = parseInt(cctx.font, 10); cctx.moveTo(bx2 - 4, by2 + hb + 4); cctx.lineTo(bx2 + 4, by2 + hb + 4); cctx.lineTo(bx2, by2 + hb + 10); cctx.fill();
+      cctx.restore();
     });
     if (!vivos.length) {
       cctx.font = Math.round(Math.min(esc * 4, 9 / tela)) + "px 'Press Start 2P', monospace";
@@ -1224,6 +1233,9 @@
   document.getElementById("zoomMenos").onclick = function () { mudarZoom(ZOOM / 1.5); };
   document.getElementById("zoomCentro").onclick = function () { cam.livre = false; };
   function tocarMapa(ev) {
+    var rr = cena.getBoundingClientRect(), wx = cam.x + (ev.clientX - rr.left) / rr.width * VW, wy = cam.y + (ev.clientY - rr.top) / rr.height * VH, alvoP = null;
+    ordem.forEach(function (id) { var b = bonecos[id]; if (b && b !== meuBoneco() && b.numero && wx > b.x - 7 && wx < b.x + 7 && wy > b.y - 17 && wy < b.y + 9) alvoP = b; });
+    if (alvoP) { abrirPerfil(alvoP.numero); return; }
     var meu = meuBoneco();
     if (!meu) { mensagemMapa("Acorde seu sobrevivente (ou entre com o seu código no Mercado) para explorar o mapa."); return; }
     if (missao.modo === "descansando") { mensagemMapa("Seu sobrevivente está cansado. Espere o descanso terminar."); return; }
@@ -1418,6 +1430,7 @@
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
     ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    if (r.veste !== undefined && typeof bonecos !== "undefined" && eu && bonecos[eu.nome]) bonecos[eu.nome].itens = eu.veste;
   }
   function atualizarPerfil() {
     if (!logado() || TESTE) return Promise.resolve();
@@ -2161,6 +2174,7 @@
     if (TESTE) return;
     fetch(API + "?chat=1").then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.ok || !d.mensagens) return;
+      registrarFalas(d.mensagens);
       var assinatura = d.mensagens.map(function (m) { return m.t + m.texto; }).join("|");
       if (assinatura === ultimoChat) return; ultimoChat = assinatura;
       var ul = document.getElementById("radioLista"), noFim = ul.scrollTop + ul.clientHeight >= ul.scrollHeight - 40;
@@ -2198,6 +2212,20 @@
       b.onclick = function () { b.disabled = true; enviar(credenciais({ acao: "reclamar", texto: ta.value.trim() })).then(function (r) { b.disabled = false; if (!r.ok) return mensagem("msgRadio", r.erro); eu.silencio.reclamou = true; salvarEu(); box.dataset.assin = ""; desenharMudo(); }); };
     }
   }
+  var falasVistas = 0;
+  function registrarFalas(msgs) {
+    var agora = Date.now();
+    (msgs || []).forEach(function (m) {
+      if (m.t <= falasVistas) return;
+      if (falasVistas && bonecos[m.nome] && agora - m.t < 30000) bonecos[m.nome].fala = { texto: m.texto.length > 42 ? m.texto.slice(0, 40) + "…" : m.texto, ate: agora + 7000 };
+    });
+    if (msgs && msgs.length) falasVistas = Math.max(falasVistas, msgs[msgs.length - 1].t); else if (!falasVistas) falasVistas = 1;
+  }
+  function ouvirFalas() {
+    if (TESTE || document.hidden || radioTimer) return;
+    fetch(API + "?chat=1").then(function (r) { return r.json(); }).then(function (d) { if (d && d.ok) registrarFalas(d.mensagens); }).catch(function () {});
+  }
+  setInterval(ouvirFalas, 10000); setTimeout(ouvirFalas, 1500);
   function radioLigado(on) {
     if (on) atualizarPerfil().then(desenharMudo);
     clearInterval(radioTimer); radioTimer = null;
@@ -2212,6 +2240,7 @@
       btn.disabled = false;
       if (!r.ok) { if (r.mudo) atualizarPerfil().then(desenharMudo); return mensagem("msgRadio", r.erro || "Não deu para enviar."); }
       document.getElementById("msgRadio").className = "msg";
+      if (bonecos[eu.nome]) bonecos[eu.nome].fala = { texto: texto.length > 42 ? texto.slice(0, 40) + "…" : texto, ate: Date.now() + 7000 };
       campo.value = ""; ultimoChat = ""; setTimeout(lerRadio, 300);
     });
   });
