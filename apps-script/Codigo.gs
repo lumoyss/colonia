@@ -80,7 +80,7 @@ const MAO_DE_OBRA = { base: 100, base_grande: 500 };
 const OBRA_MINUTOS = 10;        // tempo que o engenheiro fica construindo
 const OBRA_PRAZO_HORAS = 24;    // sem engenheiro até lá, a nave constrói sozinha
 // Picareta: minerar fora da zona dos terrenos
-const MINERAR_SEGUNDOS = 120;   // tempo entre uma minerada e outra
+const MINERAR_SEGUNDOS = 30;       // tempo entre uma minerada e outra
 const MINERAR_CHANCE = 0.4;     // chance de achar um recurso
 const ESPECIAIS = [];           // itens especiais que podem sair na mineração (o Lucas ainda vai criar)
 const ESPECIAL_CHANCE = 0.02;

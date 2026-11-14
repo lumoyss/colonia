@@ -469,6 +469,13 @@
     </div>
   </section>
 
+  <div class="modal" id="premioModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="premioTitulo" style="text-align:center">
+    <button type="button" class="fechar" id="premioFechar" aria-label="Fechar">X</button>
+    <h2 class="pix" id="premioTitulo" style="margin:6px 0 10px;color:var(--laranja)">VOCÊ GANHOU!</h2>
+    <div id="premioItens" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:10px 0"></div>
+    <p class="dica" id="premioDica">Já está no seu inventário.</p>
+    <button type="button" class="btn sec" id="premioVer">VER MEU INVENTÁRIO</button>
+  </div></div>
   <div class="modal" id="perfilModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="perfilNome">
     <button type="button" class="fechar" id="perfilFechar" aria-label="Fechar">X</button>
     <canvas id="perfilSprite" width="24" height="34"></canvas>
@@ -1309,7 +1316,7 @@
       if (!r.ok) { mensagemMapa(r.erro || "Não deu para abrir."); carregar(); return; }
       aplicarPerfil(r); salvarEu(); mostrarCartao(eu); estado.bauzinhos = (estado.bauzinhos || []).filter(function (x) { return x.id !== b.id; });
       missao.flash = { txt: "+" + r.moedasBau + " moedas", t: tempo };
-      mensagemMapa("Você abriu o baú pequeno e ganhou " + r.moedasBau + " moedas! ");
+      premio("BAÚ PEQUENO!", [], r.moedasBau);
     });
   });
   document.getElementById("btnBau").addEventListener("click", function () {
@@ -1319,7 +1326,7 @@
       if (!r.ok) { mensagemMapa(r.erro || "Não deu para abrir."); carregar(); return; }
       aplicarPerfil(r); salvarEu();
       estado.bau.abertoPor = eu.nome;
-      mensagemMapa("Você abriu o baú e encontrou: " + (r.moedasBau ? r.moedasBau + " moedas, " : "") + r.ganhou.map(nomeItem).join(", ") + "!" + (r.ganhou.some(function (g) { return /^ficha_/.test(g); }) ? " Veja a ficha no seu cartão." : ""));
+      premio("BAÚ DO DIA!", r.ganhou || [], r.moedasBau);
       carregar();
     });
   });
@@ -1332,9 +1339,9 @@
     enviar(credenciais({ acao: "minerar", x: Math.round(meu.x), y: Math.round(meu.y) })).then(function (r) {
       bt.disabled = false; bt.textContent = "MINERAR AQUI";
       if (!r.ok) { if (r.espera) mineraAte = Date.now() + r.espera * 1000; mensagemMapa(r.erro || "Não deu para minerar."); return; }
-      mineraAte = Date.now() + (r.espera || 120) * 1000;
+      mineraAte = Date.now() + (r.espera || 30) * 1000;
       aplicarPerfil(r); salvarEu();
-      mensagemMapa(r.achou ? "Você minerou e achou: " + (nomeItem(r.achou) || r.achou) + "!" : "Só pedra dessa vez... tente de novo daqui a pouco.");
+      if (r.achou) premio("VOCÊ MINEROU!", [r.achou]); else mensagemMapa("Só pedra dessa vez... tente de novo daqui a pouco.");
     });
   });
 
@@ -1808,6 +1815,22 @@
     sel.value = atual || ""; if (sel.value !== (atual || "")) sel.value = "";
     return sel;
   }
+
+
+  /* ---------------- aviso de prêmio ("você ganhou!") ---------------- */
+  function premio(titulo, itens, moedas) {
+    var box = document.getElementById("premioItens"); box.innerHTML = "";
+    function cartao(ic, nome) { var d = document.createElement("div"); d.style.cssText = "background:var(--fundo);border:3px solid var(--fundo3);padding:10px;min-width:96px"; var i = document.createElement("div"); i.style.fontSize = "38px"; i.textContent = ic; var n = document.createElement("div"); n.style.fontWeight = "700"; n.textContent = nome; d.appendChild(i); d.appendChild(n); box.appendChild(d); }
+    if (moedas) cartao("🪙", "+" + moedas + " moedas");
+    (itens || []).forEach(function (id) { cartao(icone(id), nomeItem(id) || id); });
+    document.getElementById("premioTitulo").textContent = titulo || "VOCÊ GANHOU!";
+    document.getElementById("premioDica").textContent = (itens || []).length ? "Já está no seu inventário (Mercado → INVENTÁRIO)." : "As moedas já estão na sua conta.";
+    document.getElementById("premioVer").hidden = !(itens || []).length;
+    document.getElementById("premioModal").hidden = false;
+  }
+  document.getElementById("premioFechar").onclick = function () { document.getElementById("premioModal").hidden = true; };
+  document.getElementById("premioModal").addEventListener("click", function (ev) { if (ev.target.id === "premioModal") ev.target.hidden = true; });
+  document.getElementById("premioVer").onclick = function () { document.getElementById("premioModal").hidden = true; irPara("mercado"); irSub("inventario"); };
 
   /* ---------------- inventário (grade com espaços) ---------------- */
   var ICONES = { base: "🏠", base_grande: "🏢", outdoor: "🪧", outdoor_guardado: "🪧", gas: "🧪", racao: "🥫", comida: "🥕", refeicao: "🍲", bone: "🧢", calca: "👖", chapeu: "🤠", colete: "🦺", vestido: "👗",
