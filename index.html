@@ -33,6 +33,11 @@
   .contador{display:inline-block;margin-top:10px;background:var(--fundo2);border:3px solid var(--verde);padding:10px 14px;font-size:12px;color:var(--creme)}
   .contador b{color:var(--laranja);font-size:16px}
   .cena{margin:18px 0 6px;border:4px solid var(--fundo3);background:#000;position:relative}
+  .mapa-acao{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:92%;pointer-events:none}
+  .mapa-acao .btn{pointer-events:auto;margin:0;padding:10px 14px;font-size:12px;box-shadow:0 0 0 3px #0B161C,0 0 14px rgba(224,122,58,.8);animation:pulsa 1.2s ease-in-out infinite}
+  .mapa-acao p{margin:0;background:rgba(11,22,28,.85);color:var(--creme);padding:4px 8px;font-size:13px;text-align:center}
+  .mapa-acao[hidden],.mapa-acao [hidden]{display:none}
+  @keyframes pulsa{50%{transform:scale(1.06)}}
   .cena canvas{display:block;width:100%;height:auto;image-rendering:pixelated;touch-action:none;cursor:pointer}
   .zoom{position:absolute;top:6px;right:6px;display:flex;flex-direction:column;gap:4px}
   .zoom button{width:34px;height:34px;padding:0;border:2px solid var(--fundo3);background:rgba(11,22,28,.85);color:var(--creme);font:16px 'Press Start 2P',monospace;cursor:pointer;line-height:1}
@@ -324,6 +329,7 @@
   </details>
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
+    <div class="mapa-acao" id="mapaAcao" hidden><button class="btn" type="button" id="btnMapaAcao"></button><p id="mapaAcaoInfo" hidden></p></div>
     <div class="zoom"><button type="button" id="zoomMais" aria-label="Aproximar">+</button><button type="button" id="zoomMenos" aria-label="Afastar">−</button><button type="button" id="zoomCentro" aria-label="Voltar para o meu bonequinho" style="font-size:12px">◎</button></div></div>
       <div class="missao" id="missao" hidden style="margin:0 0 12px">
         <h2 class="pix" id="missaoTitulo">TRABALHO</h2>
@@ -1150,7 +1156,21 @@
     var seg = Math.ceil(falta / 1000);
     info.textContent = "Reconhecendo o Terreno " + n + "... faltam " + Math.floor(seg / 60) + ":" + ("0" + seg % 60).slice(-2) + ". Fique dentro do terreno.";
   }
-  setInterval(verTerreno, 1000);
+  var destaqueLote = null; // só o próprio jogador vê: o terreno em que ele está pisca no mapa
+  function sincronizarMapaAcao() {
+    var bt = document.getElementById("btnTerreno"), box = document.getElementById("mapaAcao"), b2 = document.getElementById("btnMapaAcao"), inf = document.getElementById("mapaAcaoInfo");
+    var acao = bt.hidden ? "" : bt.dataset.acao, txt = document.getElementById("terrenoInfo").textContent, meu = meuBoneco();
+    var n = meu ? loteEm(meu.x, meu.y) : 0, reconhecendo = recon && !recon.pronto && recon.lote === n, invadindo = inv && inv.lote === n;
+    destaqueLote = n && (acao === "reivindicar" || acao === "invadir" || reconhecendo || invadindo) ? { n: n, tipo: acao === "invadir" || invadindo ? "invadir" : "livre" } : null;
+    var mostra = !!acao || reconhecendo || invadindo;
+    if (box.hidden === mostra) box.hidden = !mostra;
+    if (!mostra) return;
+    b2.hidden = !acao; if (acao && b2.textContent !== bt.textContent) b2.textContent = bt.textContent;
+    var info = reconhecendo || invadindo ? txt : "";
+    inf.hidden = !info; if (inf.textContent !== info) inf.textContent = info;
+  }
+  document.getElementById("btnMapaAcao").addEventListener("click", function () { document.getElementById("btnTerreno").click(); setTimeout(sincronizarMapaAcao, 50); });
+  setInterval(function () { verTerreno(); sincronizarMapaAcao(); }, 1000);
   var inv = null, invTimer = null, INVASAO_MIN = 15;
   function pararInvasao() { inv = null; clearInterval(invTimer); }
   function pingInvasao() {
@@ -1338,6 +1358,15 @@
       var A = areaOutdoor(+n); if (!dentro(A.x + A.w / 2, A.y + A.h / 2)) return;
       escreverNaPlaca(estado.outdoors[n], (A.x + 3 - cx) * esc, (A.y + 2 - cy) * esc, (A.w - 6) * esc, (A.h - 4) * esc);
     });
+    if (LT && destaqueLote && meu) { // destaque do terreno (só para quem está nele)
+      var dc = (destaqueLote.n - 1) % LT.colunas, dl = Math.floor((destaqueLote.n - 1) / LT.colunas), pul = 0.45 + 0.35 * Math.sin(tempo / 8);
+      var rx = ((LT.x0 || 0) + dc * LT.l - cx) * esc, ry = ((LT.y0 || 0) + dl * LT.a - cy) * esc;
+      cctx.save(); cctx.globalAlpha = pul; cctx.strokeStyle = destaqueLote.tipo === "invadir" ? "#E05A3A" : "#7FD6C8"; cctx.lineWidth = Math.max(2, esc * 1.2);
+      cctx.setLineDash([esc * 3, esc * 2]); cctx.strokeRect(rx + esc, ry + esc, LT.l * esc - 2 * esc, LT.a * esc - 2 * esc);
+      cctx.globalAlpha = pul * 0.25; cctx.fillStyle = cctx.strokeStyle; cctx.fillRect(rx + esc, ry + esc, LT.l * esc - 2 * esc, LT.a * esc - 2 * esc); cctx.restore();
+      cctx.save(); cctx.font = Math.round(Math.max(esc * 4, 12 / tela)) + "px 'Press Start 2P', monospace";
+      rotulo(destaqueLote.tipo === "invadir" ? "!" : "★", (meu.x - cx) * esc, (meu.y - 40 - Math.abs(Math.sin(tempo / 10)) * 4 - cy) * esc, "#0B161C", destaqueLote.tipo === "invadir" ? "#E05A3A" : "#E8C25A"); cctx.restore();
+    }
     // bonequinhos detalhados (mesmo desenho do cartão), para as roupas aparecerem bem
     var sR = esc * 22 / RH; if (sR >= 1) sR = Math.round(sR);
     cctx.imageSmoothingEnabled = false;
