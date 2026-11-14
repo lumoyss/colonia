@@ -285,6 +285,23 @@ const COMIDAS = { comida: { nome: 'Comida', sacia: FOME_LIMITE }, refeicao: { no
 const SLOTS_ANTIGOS = { traje_dourado: 'tronco,pernas' };
 
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
+// ZERAR O JOGO (usar só antes do lançamento): apaga todos os sobreviventes, terrenos, casas, mercado, rádio, Assembleia etc.
+// Mantém só os cabeçalhos das abas e a aba Pedidos (registro dos pagamentos reais).
+// FAÇA ANTES UMA CÓPIA DA PLANILHA (Arquivo > Fazer uma cópia). No editor: escolha resetarJogo e clique em Executar.
+function resetarJogo() {
+  const ss = planilha_();
+  ss.getSheets().forEach(function (aba) {
+    if (aba.getName() === ABA_PEDIDOS) return;
+    const n = aba.getLastRow();
+    if (n > 1) aba.deleteRows(2, n - 1);
+  });
+  const props = PropertiesService.getScriptProperties(), todas = props.getProperties();
+  Object.keys(todas).forEach(function (k) { if (k !== 'PLANILHA_ID') props.deleteProperty(k); });
+  try { CacheService.getScriptCache().removeAll(['lista']); } catch (e) { /* segue */ }
+  setup();
+  Logger.log('Jogo zerado. Pode publicar e começar do zero.');
+}
+
 function setup() {
   const ss = planilha_();
   colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate']);
