@@ -30,6 +30,13 @@ const ABA_SILENCIO = 'Silenciados';
 const ABA_CRIACOES = 'Criacoes';
 const ABA_LEILOES = 'Leiloes';
 const ABA_AVISOS = 'Avisos';
+const ABA_PAUTAS = 'Pautas', ABA_ASSEMBLEIA = 'Assembleia', ABA_VOTOS = 'Votos', ABA_ENTRADAS = 'EntradasAssembleia';
+/* ---------- ASSEMBLEIA ---------- */
+const TICKETS_CADASTRO = { ticket_assembleia: 4, ticket_pauta: 1 }; // quem acorda ganha 5 tickets
+const PAUTAS_POR_DIA = 3, VOTACAO_FECHA_HORA = 22;
+/* ---------- OFERTA DE BOAS-VINDAS ---------- */
+const OFERTA_REAIS = 2, OFERTA_MOEDAS = 1000, OFERTA_CAIXA_DIAS = 5, OFERTA_ROUPA = 'jaqueta_orion', OFERTA_MINUTOS = 60;
+const OFERTA_DEPOIS_MIN = 15; // aparece ao abrir o Mercado depois de 15 min de jogo
 const AVISOS_LER = 400;   // o sininho lê só os últimos avisos da planilha (mais rápido)
 const AVISOS_POR_PESSOA = 20;
 const TIPOS_IDEIA = ['historia', 'profissao', 'lugar', 'outro'];
@@ -41,7 +48,7 @@ const C_VESTE = 20, C_GAS = 21, C_OBJETIVO = 22, C_AMIGOS = 23, C_MINERAR = 24, 
 const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
   C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43,
-  C_GUARDA_DIA = 44, C_BOOST_ATE = 45;
+  C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47;
 
 /* ---------- MISSÃO: consertar a nave (ganha moedas com o site aberto) ---------- */
 // Conserto: paga a cada 15 segundos (o site manda 1 sinal por minuto = 4 pagamentos de 15 s)
@@ -220,6 +227,11 @@ const ITENS = [
     desc: 'Leve o seu bonequinho para fora da zona dos terrenos (a borda pedregosa do mapa) e minere. Dá para achar recursos e, às vezes, itens especiais.' },
   { id: 'ferramentas', cat: 'Ferramentas', nome: 'Caixa de ferramentas', preco: 100,
     desc: 'Com ela você ganha o dobro consertando a nave (2 moedas a cada 15 s) e o mecânico vale 3 pontos. Quem acorda ganha uma caixa emprestada por 1 dia; adquirindo, é sua para sempre.' },
+  { id: 'ticket_assembleia', cat: 'Assembleia', nome: 'Ticket da Assembleia', preco: 0, oculto: true,
+    desc: 'Use para entrar na Assembleia do dia (comentar e votar nas pautas) ou para mandar uma ideia direto para a história. Dá para vender para outros sobreviventes.' },
+  { id: 'ticket_pauta', cat: 'Assembleia', nome: 'Ticket de Pauta', preco: 0, oculto: true,
+    desc: 'Raro! Use para criar uma pauta na Assembleia (com enquete) ou para mandar uma ideia direto para a história. Dá para vender para outros sobreviventes.' },
+  { id: 'jaqueta_orion', cat: 'Roupas', nome: 'Jaqueta Orion', preco: 0, oculto: true, slot: 'tronco', desc: 'Roupa exclusiva da oferta de boas-vindas. Ninguém consegue no Mercado da nave.' },
   // fichas que só aparecem no baú (não estão à venda no Mercado da nave, mas dá para vender entre jogadores)
   { id: 'ficha_item', cat: 'Fichas', nome: 'Ficha: criar item', preco: CRIAR_ITEM_PRECO, oculto: true,
     desc: 'Achada no baú. Pague ' + CRIAR_ITEM_PRECO + ' moedas e mande a ideia de um item novo: depois de aprovado, ele fica no seu inventário e pode ser vendido.' },
@@ -234,13 +246,18 @@ const SLOTS_ANTIGOS = { traje_dourado: 'tronco,pernas' };
 /* ---------- 1. Rode esta função depois de colar o código ---------- */
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
   colunas_(garantirAba_(ss, ABA_TERRENOS), ['codigo', 'data', 'nome_do_lugar', 'dono', 'instagram', 'plano', 'valor', 'status', 'ref', 'aluguel_semana', 'dono_numero', 'item']);
   colunas_(garantirAba_(ss, ABA_PEDIDOS), ['codigo', 'data', 'numero', 'nome', 'pacote', 'reais', 'moedas', 'status', 'ref']);
   colunas_(garantirAba_(ss, ABA_COMPRAS), ['data', 'numero', 'nome', 'item', 'preco_moedas']);
   colunas_(garantirAba_(ss, ABA_CHAT), ['data', 'numero', 'nome', 'texto', 'status']);
   colunas_(garantirAba_(ss, ABA_AVISOS), ['data', 'numero', 'texto']);
+  colunas_(garantirAba_(ss, ABA_PAUTAS), ['id', 'data', 'dia', 'autor_numero', 'autor', 'titulo', 'texto', 'opcoes', 'virou_video']);
+  colunas_(garantirAba_(ss, ABA_ASSEMBLEIA), ['data', 'pauta', 'numero', 'nome', 'texto']);
+  colunas_(garantirAba_(ss, ABA_VOTOS), ['data', 'pauta', 'numero', 'opcao']);
+  colunas_(garantirAba_(ss, ABA_ENTRADAS), ['dia', 'numero', 'como']);
+  ticketsIniciais_(ss);
   colunas_(garantirAba_(ss, ABA_OBRAS), ['id', 'data', 'dono_numero', 'dono', 'item', 'nome_da_casa', 'mao_de_obra', 'status', 'engenheiro_numero', 'engenheiro', 'progresso', 'ultimo_sinal']);
   colunas_(garantirAba_(ss, ABA_ALUGUEIS), ['data', 'imovel', 'dono_numero', 'dono', 'inquilino_numero', 'inquilino', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_TORRES), ['id', 'nome', 'status', 'pontos', 'meta', 'preco', 'contribuicoes', 'recusaram', 'oferta_numero', 'oferta_ate', 'dono_numero', 'dono', 'nome_do_cla', 'preco_entrada', 'descoberta_por', 'descoberta_em']);
@@ -336,7 +353,7 @@ function doPost(e) {
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_, outdoor_oferta: outdoorOferta_,
-      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
+      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
@@ -374,7 +391,7 @@ function cadastrar_(ss, d) {
 
   const numero = existentes.length ? Math.max.apply(null, existentes.map(function (l) { return Number(l[0]) || 0; })) + 1 : 1;
   const chave = gerarChave_();
-  const linha = [numero, new Date(), texto_(nome), instagram ? texto_('@' + instagram) : '', texto_(profissao), texto_(historia), texto_(visual), 0, chave, '', ''];
+  const linha = [numero, new Date(), texto_(nome), instagram ? texto_('@' + instagram) : '', texto_(profissao), texto_(historia), texto_(visual), 0, chave, ticketsTexto_(), ''];
   while (linha.length < C_EXTRA) linha.push('');
   if (GAS_GRATIS_NO_CADASTRO) { linha[C_AR - 1] = AR_MAX; linha[C_AR_TS - 1] = Date.now(); }
   linha[C_FUNCAO - 1] = MAPA_PROFISSAO[d.profissao] || (d.funcao && FUNCOES[d.funcao] ? d.funcao : 'livre');
@@ -384,7 +401,7 @@ function cadastrar_(ss, d) {
   linha[C_FUNCAO_DATA - 1] = Date.now();
   linha[C_OBJETIVO - 1] = texto_(objetivo);
   aba.appendRow(linha);
-  return { ok: true, numero: numero, chave: chave, moedas: 0, itens: '', gas: GAS_GRATIS_NO_CADASTRO, objetivo: objetivo };
+  return { ok: true, numero: numero, chave: chave, moedas: 0, itens: ticketsTexto_(), gas: GAS_GRATIS_NO_CADASTRO, objetivo: objetivo };
 }
 
 // Acha o sobrevivente pelo nome + código de acesso
@@ -408,7 +425,7 @@ function perfilDe_(s) {
     moedas: Number(l[C_MOEDAS - 1]) || 0, itens: String(l[C_ITENS - 1] || ''), chave: String(l[C_CHAVE - 1]), outdoor: String(l[C_OUTDOOR - 1] || ''), veste: vesteDe_(l), gas: temGas_(l), ar: arDe_(l), fome: Number(l[C_FOME - 1]) || 0, doenteAte: Number(l[C_DOENTE_ATE - 1]) || 0,
     kitAte: kitAte_(l), funcao: funcaoDe_(l), funcaoDesde: Number(l[C_FUNCAO_DATA - 1]) || 0, pontos: Number(l[C_PONTOS - 1]) || 0, precoConsulta: Number(l[C_MEDICO_PRECO - 1]) || MEDICO_MIN,
     objetivo: String(l[C_OBJETIVO - 1] || ''), cla: String(l[C_CLA - 1] || ''), mudoAte: Number(l[C_MUDO_ATE - 1]) || 0,
-    amigos: String(l[C_AMIGOS - 1] || ''), descansoAte: Number(l[C_DESCANSO - 1]) || 0, boostAte: Number(l[C_BOOST_ATE - 1]) || 0 };
+    amigos: String(l[C_AMIGOS - 1] || ''), descansoAte: Number(l[C_DESCANSO - 1]) || 0, boostAte: Number(l[C_BOOST_ATE - 1]) || 0, ofertaAte: Number(l[C_OFERTA_ATE - 1]) || 0 };
 }
 
 function perfil_(ss, d) {
@@ -429,20 +446,34 @@ function perfil_(ss, d) {
 function ideia_(ss, d) {
   const s = acharSobrevivente_(ss, d);
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente para mandar ideias.' };
-  if (IDEIA_PRECISA_BASE && !temCasa_(String(s.dados[C_ITENS - 1] || '')) && !moradiaAlugada_(ss, s.dados[0])) return { ok: false, erro: 'Só quem tem casa (própria ou alugada) pode mandar ideias. Registre um terreno e construa sua casa no Mercado. Você ainda pode dar "gostei" nas ideias dos outros.' };
   const texto = limpar_(d.texto, 500);
+  if (texto.length < 3) return { ok: false, erro: 'Escreva sua ideia antes de enviar.' };
+  const residente = temCasa_(String(s.dados[C_ITENS - 1] || '')) || !!moradiaAlugada_(ss, s.dados[0]);
+  let gastou = '';
+  if (IDEIA_PRECISA_BASE && !residente) {
+    const lista = String(s.dados[C_ITENS - 1] || '').split(',').filter(String);
+    gastou = lista.indexOf('ticket_assembleia') >= 0 ? 'ticket_assembleia' : lista.indexOf('ticket_pauta') >= 0 ? 'ticket_pauta' : '';
+    if (!gastou) return { ok: false, erro: 'Para mandar uma ideia você precisa de 1 ticket da Assembleia (ou ter casa própria ou alugada). Tickets saem nos baús e no mercado entre jogadores.' };
+    tirarItem_(lista, gastou); s.aba.getRange(s.linha, C_ITENS).setValue(lista.join(','));
+  }
   const autor = String(s.dados[C_NOME - 1]);
   const tipo = TIPOS_IDEIA.indexOf(d.tipo) >= 0 ? d.tipo : 'outro';
   if (texto.length < 3) return { ok: false, erro: 'Escreva sua ideia antes de enviar.' };
   ss.getSheetByName(ABA_IDEIAS).appendRow([new Date(), texto_(autor), tipo, texto_(texto), 'I' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase(), s.dados[0], '']);
-  return { ok: true };
+  const p = perfilDe_(acharSobrevivente_(ss, d)); p.gastou = gastou; return p;
 }
 
 /* ---------- Mercado: comprar moedas com Pix (InfinitePay) ---------- */
 function pedirMoedas_(ss, d) {
   const s = acharSobrevivente_(ss, d);
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente antes de adquirir moedas.' };
-  const pac = PACOTES[d.pacote];
+  let pac = PACOTES[d.pacote];
+  if (d.pacote === 'boasvindas') {
+    const ate = Number(s.dados[C_OFERTA_ATE - 1]) || 0;
+    if (ate === -1) return { ok: false, erro: 'Você já aproveitou a oferta de boas-vindas.' };
+    if (ate < Date.now()) return { ok: false, erro: 'A oferta de boas-vindas já acabou.' };
+    pac = { nome: 'Oferta de boas-vindas', reais: OFERTA_REAIS, moedas: OFERTA_MOEDAS };
+  }
   if (!pac) return { ok: false, erro: 'Pacote inválido.' };
   if (!INFINITE_TAG) return { ok: false, erro: 'Pagamentos ainda não estão ligados.' };
 
@@ -492,6 +523,13 @@ function confirmar_(ss, d) {
     for (let j = 0; j < lsS.length; j++) {
       if (String(lsS[j][0]) === String(ls[i][2])) {
         sobr.getRange(j + 2, C_MOEDAS).setValue((Number(lsS[j][C_MOEDAS - 1]) || 0) + moedas);
+        if (String(ls[i][4]) === 'boasvindas') {
+          sobr.getRange(j + 2, C_OFERTA_ATE).setValue(-1);
+          sobr.getRange(j + 2, C_CAIXA_ATE).setValue(Math.max(Date.now(), Number(lsS[j][C_CAIXA_ATE - 1]) || 0) + OFERTA_CAIXA_DIAS * 86400000);
+          const it = String(lsS[j][C_ITENS - 1] || '').split(',').filter(String); it.push(OFERTA_ROUPA);
+          sobr.getRange(j + 2, C_ITENS).setValue(it.join(','));
+          avisar_(ss, lsS[j][0], '🎁 Oferta de boas-vindas recebida: +' + OFERTA_MOEDAS + ' moedas, caixa de ferramentas por ' + OFERTA_CAIXA_DIAS + ' dias e a Jaqueta Orion!');
+        }
         break;
       }
     }
@@ -584,10 +622,11 @@ function comprar_(ss, d) {
 // O site chama isto 1 vez por minuto enquanto a pessoa está consertando.
 function temKit_(l) {
   if (tem_(String(l[C_ITENS - 1] || ''), 'ferramentas')) return true;
+  if ((Number(l[C_CAIXA_ATE - 1]) || 0) > Date.now()) return true;
   const desde = new Date(l[C_DATA - 1]).getTime();
   return !isNaN(desde) && Date.now() - desde < KIT_TEMPORARIO_HORAS * 3600000;
 }
-function kitAte_(l) { return tem_(String(l[C_ITENS - 1] || ''), 'ferramentas') ? -1 : new Date(l[C_DATA - 1]).getTime() + KIT_TEMPORARIO_HORAS * 3600000; }
+function kitAte_(l) { return tem_(String(l[C_ITENS - 1] || ''), 'ferramentas') ? -1 : Math.max(new Date(l[C_DATA - 1]).getTime() + KIT_TEMPORARIO_HORAS * 3600000, Number(l[C_CAIXA_ATE - 1]) || 0); }
 function estaDoente_(l) { return funcaoDe_(l) !== 'desempregado' && Number(l[C_DOENTE_ATE - 1]) > Date.now(); }
 // Um minuto de trabalho. modo: consertar, vigiar, cultivar, cozinhar, construir.
 function trabalhar_(ss, d) {
@@ -962,6 +1001,133 @@ function trocarOutdoor_(ss, d) {
 }
 
 /* ---------- Outdoor: anúncios pagos e taxas ---------- */
+/* ---------- Tickets iniciais e oferta de boas-vindas ---------- */
+function ticketsTexto_() { const l = []; Object.keys(TICKETS_CADASTRO).forEach(function (k) { for (let i = 0; i < TICKETS_CADASTRO[k]; i++) l.push(k); }); return l.join(','); }
+// Roda 1 vez no setup: quem já tinha acordado também ganha os 5 tickets
+function ticketsIniciais_(ss) {
+  const pr = PropertiesService.getScriptProperties(); if (pr.getProperty('TICKETS_INICIAIS')) return;
+  const aba = ss.getSheetByName(ABA_SOBREVIVENTES);
+  linhas_(aba).forEach(function (l, i) { const it = String(l[C_ITENS - 1] || ''); aba.getRange(i + 2, C_ITENS).setValue(it ? it + ',' + ticketsTexto_() : ticketsTexto_()); });
+  pr.setProperty('TICKETS_INICIAIS', String(Date.now()));
+}
+// O site chama quando a pessoa abre o Mercado: depois de 15 min de jogo, a oferta aparece 1 vez e dura 1 hora
+function ativarOferta_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const ate = Number(s.dados[C_OFERTA_ATE - 1]) || 0, desde = new Date(s.dados[C_DATA - 1]).getTime();
+  if (ate === -1) return { ok: true, ofertaAte: -1 };
+  if (ate) return { ok: true, ofertaAte: ate };
+  if (Date.now() - desde < OFERTA_DEPOIS_MIN * 60000) return { ok: true, ofertaAte: 0 };
+  const novo = Date.now() + OFERTA_MINUTOS * 60000;
+  s.aba.getRange(s.linha, C_OFERTA_ATE).setValue(novo);
+  return { ok: true, ofertaAte: novo, oferta: { reais: OFERTA_REAIS, moedas: OFERTA_MOEDAS, caixaDias: OFERTA_CAIXA_DIAS, roupa: 'Jaqueta Orion' } };
+}
+
+/* ---------- Assembleia: pautas, discussão e enquete ---------- */
+function diaHoje_() { return Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd'); }
+function votacaoAberta_(dia) {
+  if (dia !== diaHoje_()) return false;
+  return Number(Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'H')) < VOTACAO_FECHA_HORA;
+}
+function acessoAssembleia_(ss, l) {
+  const itens = String(l[C_ITENS - 1] || ''), lista = itens.split(',');
+  const dono = temCasa_(itens) || lista.some(function (i) { return /^lote_/.test(i); });
+  const aluga = !!moradiaAlugada_(ss, l[0]), hoje = diaHoje_();
+  const ent = ss.getSheetByName(ABA_ENTRADAS);
+  const entrou = ent ? linhas_(ent).some(function (e) { return String(e[0]) === hoje && String(e[1]) === String(l[0]); }) : false;
+  const cont = function (id) { return lista.filter(function (x) { return x === id; }).length; };
+  return { entra: dono || aluga || entrou, criaPauta: dono, comoEntra: dono ? 'dono' : aluga ? 'aluguel' : entrou ? 'ticket' : '',
+    tickets: cont('ticket_assembleia'), ticketsPauta: cont('ticket_pauta'), residente: temCasa_(itens) || aluga };
+}
+function pautas_(ss, desdeDia) {
+  const aba = ss.getSheetByName(ABA_PAUTAS); if (!aba) return [];
+  return linhas_(aba).filter(function (l) { return String(l[2]) >= desdeDia; }).map(function (l) {
+    let ops = []; try { ops = JSON.parse(String(l[7] || '[]')); } catch (e) { ops = []; }
+    return { id: String(l[0]), data: new Date(l[1]).getTime(), dia: String(l[2]), autorNumero: String(l[3]), autor: String(l[4]), titulo: String(l[5]), texto: String(l[6]), opcoes: ops, video: String(l[8] || '').toLowerCase() === 'sim' };
+  });
+}
+function assembleia_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const ac = acessoAssembleia_(ss, s.dados), hoje = diaHoje_();
+  const ontem3 = Utilities.formatDate(new Date(Date.now() - 3 * 86400000), 'America/Sao_Paulo', 'yyyy-MM-dd');
+  const ps = pautas_(ss, ontem3);
+  const ids = {}; ps.forEach(function (p) { ids[p.id] = p; p.votos = p.opcoes.map(function () { return 0; }); p.meuVoto = -1; p.msgs = []; p.aberta = votacaoAberta_(p.dia); });
+  const vt = ss.getSheetByName(ABA_VOTOS);
+  if (vt) linhas_(vt).forEach(function (v) { const p = ids[String(v[1])]; if (!p) return; const o = Number(v[3]); if (p.votos[o] != null) p.votos[o]++; if (String(v[2]) === String(s.dados[0])) p.meuVoto = o; });
+  const ms = ss.getSheetByName(ABA_ASSEMBLEIA);
+  if (ms && ac.entra) linhas_(ms).forEach(function (m) { const p = ids[String(m[1])]; if (p && p.dia === hoje) p.msgs.push({ t: new Date(m[0]).getTime(), nome: String(m[3]), numero: String(m[2]), texto: String(m[4]) }); });
+  ps.forEach(function (p) { p.msgs = p.msgs.slice(-60); if (p.dia !== hoje) delete p.msgs; });
+  const deHoje = ps.filter(function (p) { return p.dia === hoje; });
+  return { ok: true, acesso: ac, hoje: hoje, pautas: ps.reverse(), vagasPauta: Math.max(0, PAUTAS_POR_DIA - deHoje.length), fecha: VOTACAO_FECHA_HORA };
+}
+function entrarAssembleia_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const ac = acessoAssembleia_(ss, s.dados);
+  if (ac.entra) return assembleia_(ss, d);
+  const lista = String(s.dados[C_ITENS - 1] || '').split(',').filter(String);
+  if (!tirarItem_(lista, 'ticket_assembleia')) return { ok: false, erro: 'Você não tem Ticket da Assembleia. Eles saem nos baús e no mercado entre jogadores.' };
+  s.aba.getRange(s.linha, C_ITENS).setValue(lista.join(','));
+  ss.getSheetByName(ABA_ENTRADAS).appendRow([diaHoje_(), s.dados[0], 'ticket']);
+  return assembleia_(ss, d);
+}
+function criarPauta_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const titulo = limpar_(d.titulo, 80), texto = limpar_(d.texto, 500);
+  const opcoes = (Array.isArray(d.opcoes) ? d.opcoes : []).map(function (o) { return limpar_(o, 60); }).filter(String).slice(0, 4);
+  if (titulo.length < 3) return { ok: false, erro: 'Dê um título para a pauta.' };
+  if (opcoes.length < 2) return { ok: false, erro: 'A enquete precisa de pelo menos 2 opções.' };
+  if (temOfensa_(normalizarTexto_(titulo + ' ' + texto + ' ' + opcoes.join(' ')))) return { ok: false, erro: 'A pauta tem palavras proibidas na colônia.' };
+  const hoje = diaHoje_();
+  if (!votacaoAberta_(hoje)) return { ok: false, erro: 'A Assembleia de hoje já fechou (' + VOTACAO_FECHA_HORA + 'h). Crie sua pauta amanhã.' };
+  if (pautas_(ss, hoje).filter(function (p) { return p.dia === hoje; }).length >= PAUTAS_POR_DIA) return { ok: false, erro: 'Já tem ' + PAUTAS_POR_DIA + ' pautas hoje. Guarde seu ticket e tente amanhã (ele não foi gasto).' };
+  const ac = acessoAssembleia_(ss, s.dados);
+  if (!ac.criaPauta) {
+    const lista = String(s.dados[C_ITENS - 1] || '').split(',').filter(String);
+    if (!tirarItem_(lista, 'ticket_pauta')) return { ok: false, erro: 'Para criar pauta você precisa de um Ticket de Pauta (ou ser dono de terreno ou casa).' };
+    s.aba.getRange(s.linha, C_ITENS).setValue(lista.join(','));
+    if (!ac.entra) ss.getSheetByName(ABA_ENTRADAS).appendRow([hoje, s.dados[0], 'pauta']);
+  }
+  const id = 'P' + Date.now().toString(36).toUpperCase();
+  ss.getSheetByName(ABA_PAUTAS).appendRow([id, new Date(), hoje, s.dados[0], texto_(String(s.dados[2])), texto_(titulo), texto_(texto), JSON.stringify(opcoes), '']);
+  avisoRadio_(ss, '🏛️ Nova pauta na Assembleia: “' + titulo + '” (de ' + s.dados[2] + '). Votação até as ' + VOTACAO_FECHA_HORA + 'h!');
+  return assembleia_(ss, d);
+}
+function falarAssembleia_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const ac = acessoAssembleia_(ss, s.dados);
+  if (!ac.entra) return { ok: false, erro: 'Use um ticket para entrar na Assembleia de hoje.' };
+  const p = pautas_(ss, diaHoje_()).filter(function (x) { return x.id === String(d.pauta) && x.dia === diaHoje_(); })[0];
+  if (!p) return { ok: false, erro: 'Essa pauta não está aberta hoje.' };
+  const texto = limpar_(d.texto, 300);
+  if (texto.length < 1) return { ok: false, erro: 'Escreva alguma coisa.' };
+  const regra = regraOutdoor_(s.dados, texto); if (regra) { regra.erro = regra.erro.replace('o outdoor', 'a Assembleia').replace('outdoor', 'Assembleia'); return regra; }
+  ss.getSheetByName(ABA_ASSEMBLEIA).appendRow([new Date(), p.id, s.dados[0], texto_(String(s.dados[2])), texto_(texto)]);
+  return assembleia_(ss, d);
+}
+function votar_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const ac = acessoAssembleia_(ss, s.dados);
+  if (!ac.entra) return { ok: false, erro: 'Use um ticket para entrar na Assembleia de hoje.' };
+  const p = pautas_(ss, diaHoje_()).filter(function (x) { return x.id === String(d.pauta); })[0];
+  if (!p || !votacaoAberta_(p.dia)) return { ok: false, erro: 'A votação dessa pauta já fechou.' };
+  const o = Number(d.opcao); if (!(o >= 0 && o < p.opcoes.length)) return { ok: false, erro: 'Opção inválida.' };
+  const vt = ss.getSheetByName(ABA_VOTOS);
+  if (linhas_(vt).some(function (v) { return String(v[1]) === p.id && String(v[2]) === String(s.dados[0]); })) return { ok: false, erro: 'Você já votou nessa pauta.' };
+  vt.appendRow([new Date(), p.id, s.dados[0], o]);
+  return assembleia_(ss, d);
+}
+// Selo de Conselheiro: participou da discussão de uma pauta que virou vídeo (o Lucas escreve "sim" na coluna virou_video da aba Pautas)
+function conselheiro_(ss, numero) {
+  const pa = ss.getSheetByName(ABA_PAUTAS), ms = ss.getSheetByName(ABA_ASSEMBLEIA); if (!pa || !ms) return false;
+  const video = {}; linhas_(pa).forEach(function (l) { if (String(l[8] || '').toLowerCase() === 'sim') video[String(l[0])] = true; });
+  return linhas_(ms).some(function (m) { return video[String(m[1])] && String(m[2]) === String(numero); }) || linhas_(pa).some(function (l) { return video[String(l[0])] && String(l[3]) === String(numero); });
+}
+
 /* ---------- Sininho: avisos para cada jogador ---------- */
 function avisar_(ss, numero, texto) {
   try {
@@ -1361,7 +1527,7 @@ function perfilPublico_(numero) {
   return { ok: true, numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], historia: l[5], visual: String(l[6] || ''),
     itens: String(l[C_ITENS - 1] || ''), veste: vesteDe_(l), desde: new Date(l[C_DATA - 1]).getTime(), moedas: Number(l[C_MOEDAS - 1]) || 0,
     objetivo: String(l[C_OBJETIVO - 1] || ''), amigos: amigos.map(function (n) { return { numero: n, nome: nomes[n] }; }),
-    casa: casa, aluga: aluga ? true : false, gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0 };
+    casa: casa, aluga: aluga ? true : false, gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0, conselheiro: conselheiro_(ss, l[0]) };
 }
 function amigo_(ss, d) {
   const s = acharSobrevivente_(ss, d);
@@ -1884,7 +2050,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 45)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 47)).getValues();
 }
 
 function gerarChave_() {
