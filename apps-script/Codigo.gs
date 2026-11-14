@@ -267,7 +267,10 @@ function doGet(e) {
   const agoraGet = Date.now();
   const medicos = todas.filter(function (l) { return funcaoDe_(l) === 'medico' && agoraGet - (Number(l[C_PLANTAO - 1]) || 0) < PLANTAO_SEGUNDOS * 1000; })
     .map(function (l) { return { numero: l[0], nome: String(l[2]), preco: Math.max(MEDICO_MIN, Number(l[C_MEDICO_PRECO - 1]) || MEDICO_MIN) }; });
-  const engenheiros = todas.filter(function (l) { return funcaoDe_(l) === 'engenheiro' && agoraGet - (Number(l[C_PLANTAO - 1]) || 0) < PLANTAO_SEGUNDOS * 1000; }).length;
+  const engOnline = todas.filter(function (l) { return funcaoDe_(l) === 'engenheiro' && agoraGet - (Number(l[C_PLANTAO - 1]) || 0) < PLANTAO_SEGUNDOS * 1000; });
+  const engenheiros = engOnline.length;
+  const obrasTodas = ss.getSheetByName(ABA_OBRAS) ? linhasObras_(ss) : [];
+  const engenheirosLista = engOnline.map(function (l) { return { numero: l[0], nome: String(l[2]), ocupado: obrasTodas.some(function (o) { return o.eng === String(l[0]) && o.status === 'em obra'; }) }; });
   const contagem = {}; todas.forEach(function (l) { const f = funcaoDe_(l); contagem[f] = (contagem[f] || 0) + 1; });
   const funcoes = Object.keys(FUNCOES).map(function (k) { return { id: k, nome: FUNCOES[k].nome, desc: FUNCOES[k].desc, pessoas: contagem[k] || 0, vagas: VAGAS[k] ? Math.max(1, Math.floor(todas.length / VAGAS[k])) : 0 }; });
   const outdoors = linhas_(ss.getSheetByName(ABA_SOBREVIVENTES)).filter(function (l) { return tem_(String(l[C_ITENS - 1] || ''), 'outdoor'); }).map(outdoorDe_);
@@ -288,7 +291,7 @@ function doGet(e) {
   const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
   const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
   const resposta = { ok: true, bauzinhos: bauzinhos_().lista, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
-    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros,
+    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista,
     obras: ss.getSheetByName(ABA_OBRAS) ? obrasAbertas_(ss) : [], funcoes: funcoes,
     torres: ss.getSheetByName(ABA_TORRES) ? torresPublicas_(ss, todas) : [], leilao: ss.getSheetByName(ABA_LEILOES) ? leilaoPublico_(ss) : null, criados: ss.getSheetByName(ABA_CRIACOES) ? criadosPublicos_(ss) : {},
     ofertas: ofertas, bau: bau, mapa: { l: MAPA_L, a: MAPA_A } };
@@ -311,7 +314,7 @@ function doPost(e) {
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_, outdoor_oferta: outdoorOferta_,
-      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
+      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
@@ -750,6 +753,22 @@ function aceitarObra_(ss, d) {
   o.aba.getRange(o.linha, 10).setValue(texto_(String(s.dados[2]))); o.aba.getRange(o.linha, 11).setValue(0); o.aba.getRange(o.linha, 12).setValue(Date.now());
   s.aba.getRange(s.linha, C_PLANTAO).setValue(Date.now());
   return { ok: true, obra: { id: o.id, dono: o.donoNome, item: o.item, nome: o.nome, mao: o.mao, progresso: 0, total: OBRA_MINUTOS } };
+}
+// Área de Serviços: o dono da casa escolhe um engenheiro de plantão para a sua obra.
+function chamarEngenheiro_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const o = linhasObras_(ss).filter(function (x) { return x.id === String(d.obra) && x.dono === String(s.dados[0]); })[0];
+  if (!o) return { ok: false, erro: 'Essa obra não é sua.' };
+  const livre = o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_MINUTOS * 60000);
+  if (!livre) return { ok: false, erro: 'Um engenheiro já está construindo essa obra.' };
+  const eng = online_(ss, 'engenheiro').filter(function (l) { return String(l[0]) === String(d.numero); })[0];
+  if (!eng) return { ok: false, erro: 'Esse engenheiro não está mais de plantão.' };
+  if (String(eng[0]) === String(s.dados[0])) return { ok: false, erro: 'Você não pode construir a sua própria casa.' };
+  if (obrasDoEngenheiro_(ss, eng[0]).length) return { ok: false, erro: 'Esse engenheiro já está numa obra. Escolha outro.' };
+  o.aba.getRange(o.linha, 8).setValue('em obra'); o.aba.getRange(o.linha, 9).setValue(eng[0]);
+  o.aba.getRange(o.linha, 10).setValue(texto_(String(eng[2]))); o.aba.getRange(o.linha, 11).setValue(0); o.aba.getRange(o.linha, 12).setValue(Date.now());
+  return { ok: true, engenheiro: String(eng[2]) };
 }
 function avancarObra_(ss, o, l) {
   const prog = o.progresso + 1;

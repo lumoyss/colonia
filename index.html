@@ -223,6 +223,7 @@
   <button type="button" class="item" data-menu="trabalho" id="menuTrabalho" hidden><span class="ic">🛠️</span>TRABALHO E PROFISSÃO</button>
   <button type="button" class="item" data-menu="inventario" id="menuInv" hidden><span class="ic">🎒</span>INVENTÁRIO</button>
   <button type="button" class="item" data-menu="mercado"><span class="ic">🏪</span>MERCADO</button>
+  <button type="button" class="item" data-menu="servicos"><span class="ic">🤝</span>SERVIÇOS</button>
   <button type="button" class="item" data-menu="radio" id="menuRadio" hidden><span class="ic">📻</span>RÁDIO</button>
   <button type="button" class="item" data-menu="ranking" id="menuRanking" hidden><span class="ic">🏆</span>RANKING</button>
   <button type="button" class="item" data-menu="como"><span class="ic">❓</span>COMO JOGAR</button>
@@ -533,6 +534,19 @@
   </div></div>
 
   <!-- ===================== RANKING ===================== -->
+  <!-- ===================== SERVIÇOS ===================== -->
+  <section class="painel" id="painel-servicos" role="tabpanel">
+    <h2 class="pix">SERVIÇOS</h2>
+    <p class="dica">Contrate outros sobreviventes. Aparece aqui quem está de plantão agora, com o site aberto.</p>
+    <div class="msg" id="msgServ" role="status"></div>
+    <h3 class="pix cat">🩺 MÉDICOS</h3>
+    <p class="dica" id="servMedDica"></p>
+    <ul class="lista-mini" id="servMedicos"></ul>
+    <h3 class="pix cat">🏗️ ENGENHEIROS</h3>
+    <p class="dica" id="servEngDica"></p>
+    <ul class="lista-mini" id="servEngenheiros"></ul>
+  </section>
+
   <section class="painel" id="painel-ranking" role="tabpanel">
     <h2 class="pix">FUNCIONÁRIOS DA SEMANA</h2>
     <p class="dica">Quem mais consertou a nave nesta semana.</p>
@@ -818,9 +832,10 @@
     estado.ofertas = d.ofertas || [];
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
-    estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
+    estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
+    desenharServicos();
     estado.leilao = d.leilao || null; desenharLeilao(); desenharFaixaLeilao(); estado.bauzinhos = d.bauzinhos || [];
     calcularDonos(); desenharAlugueis(); desenharAnuncios(); desenharFiscal(); if (logado()) desenharExtras();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
@@ -1623,7 +1638,7 @@
     document.getElementById("radioForm").hidden = !on;
     document.getElementById("radioAviso").hidden = on;
     marcarFaltaMoedas();
-    desenharItens(); mostrarMissao(); desenharOfertas(); desenharInventario(); desenharFiscal(); desenharAlugueis(); desenharFormIdeia(); desenharExtras();
+    desenharServicos(); desenharItens(); mostrarMissao(); desenharOfertas(); desenharInventario(); desenharFiscal(); desenharAlugueis(); desenharFormIdeia(); desenharExtras();
   }
   document.getElementById("formLogin").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -1839,6 +1854,60 @@
         });
       };
       li.appendChild(t); li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  /* ---------------- área de serviços (médicos e engenheiros) ---------------- */
+  function itemServ(texto, numero, botaoTxt, ativo, acao) {
+    var li = document.createElement("li"), t = document.createElement("span"), n = document.createElement("a");
+    n.href = "#"; n.textContent = texto.nome; n.style.color = "var(--verde2)"; n.onclick = function (ev) { ev.preventDefault(); abrirPerfil(numero); };
+    t.appendChild(n); t.appendChild(document.createTextNode(" · " + texto.extra)); li.appendChild(t);
+    if (botaoTxt) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn" + (ativo ? "" : " sec"); b.textContent = botaoTxt; b.disabled = !ativo;
+      b.onclick = function () { acao(b); }; li.appendChild(b);
+    }
+    return li;
+  }
+  function desenharServicos() {
+    var ulM = document.getElementById("servMedicos"), ulE = document.getElementById("servEngenheiros");
+    if (!ulM) return;
+    var on = logado(), meuNome = on ? eu.nome : "";
+    var meds = (estado.medicos || []).filter(function (m) { return m.nome !== meuNome; });
+    var engs = estado.engenheiros, minhas = on ? (estado.obras || []).filter(function (o) { return o.dono === eu.nome; }) : [];
+    var assin = JSON.stringify([meds, engs, minhas, on, on && doente()]);
+    if (ulM.dataset.assin === assin) return; ulM.dataset.assin = assin;
+    var dM = document.getElementById("servMedDica"), dE = document.getElementById("servEngDica");
+    var estouDoente = on && doente();
+    dM.textContent = !on ? "Entre com o seu sobrevivente para chamar um médico." : estouDoente ? "Você está doente. Chame um médico para ser curado na hora." : "Você está com saúde. O médico só pode ser chamado quando você ficar doente (sem ar ou sem comida).";
+    ulM.innerHTML = "";
+    if (!meds.length) { var v = document.createElement("li"); v.textContent = "Nenhum médico de plantão agora."; ulM.appendChild(v); }
+    meds.forEach(function (m) {
+      ulM.appendChild(itemServ({ nome: m.nome, extra: m.preco + " moedas a consulta" }, m.numero, "CHAMAR", estouDoente, function (b) {
+        if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR (" + m.preco + ")"; return; }
+        b.disabled = true;
+        enviar(credenciais({ acao: "chamar_medico", numero: m.numero })).then(function (r) {
+          b.disabled = false; delete b.dataset.confirmar; b.textContent = "CHAMAR";
+          if (!r.ok) return mensagem("msgServ", r.erro || "Não deu certo.");
+          aplicarPerfil(r); eu.doenteAte = 0; salvarEu(); mensagem("msgServ", "Curado por " + r.curadoPor + "! Pode voltar ao trabalho.", true);
+          missao.aviso = ""; ulM.dataset.assin = ""; desenharConta();
+        });
+      }));
+    });
+    var aguardando = minhas[0];
+    dE.textContent = !on ? "Entre com o seu sobrevivente para contratar um engenheiro." : aguardando ? "Sua obra “" + aguardando.nome + "” está esperando um engenheiro. Escolha um livre abaixo (a mão de obra já foi paga quando você adquiriu)." : "Quando você adquirir uma casa ou prédio no Mercado, volte aqui para escolher o engenheiro que vai construir. Se ninguém construir em 24 horas, a nave constrói sozinha.";
+    ulE.innerHTML = "";
+    if (!engs) { var c = document.createElement("li"); c.textContent = (estado.engenheirosOnline || 0) + " engenheiro(s) de plantão agora."; ulE.appendChild(c); return; }
+    if (!engs.length) { var z = document.createElement("li"); z.textContent = "Nenhum engenheiro de plantão agora."; ulE.appendChild(z); }
+    engs.filter(function (e) { return e.nome !== meuNome; }).forEach(function (e) {
+      ulE.appendChild(itemServ({ nome: e.nome, extra: e.ocupado ? "construindo agora" : "livre" }, e.numero, aguardando ? "CONTRATAR" : "", !!aguardando && !e.ocupado, function (b) {
+        if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = "CONFIRMAR"; return; }
+        b.disabled = true;
+        enviar(credenciais({ acao: "chamar_engenheiro", obra: aguardando.id, numero: e.numero })).then(function (r) {
+          b.disabled = false; delete b.dataset.confirmar; b.textContent = "CONTRATAR";
+          if (!r.ok) return mensagem("msgServ", r.erro || "Não deu certo.");
+          mensagem("msgServ", r.engenheiro + " foi contratado(a) e já começou a construir “" + aguardando.nome + "”!", true);
+          estado.obras = (estado.obras || []).filter(function (o) { return o.id !== aguardando.id; }); e.ocupado = true; ulM.dataset.assin = ""; desenharServicos();
+        });
+      }));
     });
   }
   function desenharComidas() {
