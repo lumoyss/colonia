@@ -121,7 +121,7 @@ Pronto. Os preços cobrados ficam no topo do `Codigo.gs` (PRECOS) e precisam bat
 - **Mudar números:** no topo do `Codigo.gs` (FUNCOES, VAGAS, MEDICO_MIN, KIT_TEMPORARIO_HORAS, META_NAVE, ETAPA_NAVE, MAO_DE_OBRA etc.).
 
 ## Torres de clã, guardas, baú e criar (atualização de 13/11, 20h)
-- **Mapa maior** com **6 torres escondidas** na borda. Quem chega perto descobre (o rádio avisa todo mundo). O explorador vê um sinal piscando onde há torre escondida.
+- **Mapa maior** com **7 torres escondidas** (cada uma com sua cor; a 7ª é a Torre Ametista) na borda. Quem chega perto descobre (o rádio avisa todo mundo). O explorador vê um sinal piscando onde há torre escondida.
 - **Desbloquear a torre:** ficar perto dela trabalhando. 1 ponto por minuto (explorador 2). Não dá moedas nem conserta a nave. Meta: 10.000 pontos.
 - **Dono do clã:** quem mais somou pontos tem 12 horas para pagar 1.000 moedas. Se recusar (ou o prazo acabar), a torre pede mais 500 pontos e o próximo da lista paga 10 a menos, até o mínimo de 800. O dinheiro vai para você (CONTA_DONO ou cofre).
 - **Entrar no clã:** o dono escolhe o preço (padrão 100); ele recebe e a colônia fica com 10%. Cada pessoa só pode estar em um clã. Tudo na aba **Torres**.

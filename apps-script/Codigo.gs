@@ -57,16 +57,16 @@ const RACAO_PRECO = 30;         // ração da nave, para ninguém ficar sem comi
 const META_NAVE = 1000000, ETAPA_NAVE = 50000;
 // PROFISSÕES
 const FUNCOES = {
-  mecanico:     { nome: 'Mecânico(a)', desc: 'Conserta a nave mais rápido: 2 pontos por minuto e +1 moeda extra a cada 2 minutos.' },
-  engenheiro:   { nome: 'Engenheiro(a)', desc: 'Conserta a nave e constrói as casas: quem compra casa paga a mão de obra para o engenheiro que aceitar a obra.' },
-  agricultor:   { nome: 'Agricultor(a)', desc: 'Cultiva comida: 1 comida a cada 10 minutos cultivando. Venda no mercado dos sobreviventes.' },
-  cozinheiro:   { nome: 'Cozinheiro(a)', desc: 'Transforma comida em refeição (sacia por 8 horas de trabalho): 1 a cada 5 minutos cozinhando.' },
-  minerador:    { nome: 'Minerador(a)', desc: 'Conserta a nave e minera na borda do mapa com menos espera entre as mineradas.' },
-  explorador:   { nome: 'Explorador(a)', desc: 'Conserta a nave e explora o mapa: é quem encontra as novidades do planeta.' },
-  medico:       { nome: 'Médico(a)', desc: 'Cura na hora quem ficou doente e cobra o preço que escolher. Precisa estar de plantão (online). Não conserta a nave.' },
-  guarda:       { nome: 'Guarda', desc: 'Vigia a colônia: 1 moeda a cada 2 minutos com o site aberto e +30 moedas ao completar o turno de 4 horas.' },
-  desempregado: { nome: 'Desempregado(a)', desc: 'Não ganha moedas consertando, mas pode fazer bicos para os outros. Não fica doente.' },
-  livre:        { nome: 'Profissão livre', desc: 'Conserta a nave como todo mundo e pode ganhar dinheiro vendendo serviços para os outros jogadores.' }
+  mecanico:     { nome: 'Mecânico(a)', desc: 'O melhor para consertar a nave. Ganha: 1 moeda por minuto consertando + 1 moeda extra a cada 2 minutos, e vale 2 pontos por minuto para a barra da nave. Precisa do kit de ferramentas.' },
+  engenheiro:   { nome: 'Engenheiro(a)', desc: 'Constrói as casas e prédios. Ganha: a mão de obra que o dono paga quando você aceita a obra (+100 por casa, +500 por prédio), e conserta a nave como todo mundo (1 moeda por minuto) enquanto não tem obra.' },
+  agricultor:   { nome: 'Agricultor(a)', desc: 'Produz comida para a colônia. Ganha: 1 comida a cada 10 minutos cultivando, que você vende no mercado dos sobreviventes (todo mundo precisa comer).' },
+  cozinheiro:   { nome: 'Cozinheiro(a)', desc: 'Transforma comida em refeição (que sacia por 8 horas de trabalho, o dobro da comida). Ganha: 1 refeição a cada 5 minutos cozinhando (gasta 1 comida), para vender no mercado.' },
+  minerador:    { nome: 'Minerador(a)', desc: 'Especialista em mineração. Ganha: minera na borda pedregosa do mapa com metade da espera (precisa de picareta) e vende o que achar. Também conserta a nave (1 moeda por minuto).' },
+  explorador:   { nome: 'Explorador(a)', desc: 'Descobre o planeta. Ganha: vê o sinal das torres escondidas, desbloqueia torres 2x mais rápido (chance de virar dono de clã) e conserta a nave (1 moeda por minuto).' },
+  medico:       { nome: 'Médico(a)', desc: 'Cura na hora quem ficou doente (sem ar ou sem comida). Ganha: o preço da consulta que você escolher (mínimo 50). Precisa ficar de plantão com o site aberto. Não conserta a nave.' },
+  guarda:       { nome: 'Guarda', desc: 'Cuida do rádio e dos outdoors. Ganha: 1 moeda a cada 2 minutos com o site aberto, +30 ao completar o turno de 4 horas e +20 por cada flagra (silenciar quem falou palavrão).' },
+  desempregado: { nome: 'Desempregado(a)', desc: 'Sem emprego fixo. Não ganha consertando, mas não gasta ar nem sente fome (não fica doente). Ganha vendendo coisas e fazendo bicos para os outros.' },
+  livre:        { nome: 'Profissão livre', desc: 'Faz de tudo um pouco. Ganha: 1 moeda por minuto consertando a nave e pode vender o que achar no mapa e nos baús.' }
 };
 const MAPA_PROFISSAO = { 'Mecânica(o)': 'mecanico', 'Engenheira(o)': 'engenheiro', 'Agricultor(a)': 'agricultor', 'Cozinheira(o)': 'cozinheiro',
   'Minerador(a)': 'minerador', 'Explorador(a)': 'explorador', 'Médica(o)': 'medico', 'Guarda': 'guarda', 'Desempregado(a)': 'desempregado' };
@@ -135,7 +135,8 @@ const TORRES = [
   { id: 'T3', nome: 'Torre do Cristal', x: 796, y: 88 },
   { id: 'T4', nome: 'Torre da Ferrugem', x: 92, y: 480 },
   { id: 'T5', nome: 'Torre do Eco', x: 790, y: 486 },
-  { id: 'T6', nome: 'Torre do Sul', x: 440, y: 512 }
+  { id: 'T6', nome: 'Torre do Sul', x: 440, y: 512 },
+  { id: 'T7', nome: 'Torre Ametista', x: 64, y: 286 }
 ];
 const TORRE_META = 10000, TORRE_PONTOS_EXTRA = 500, TORRE_RAIO = 40;
 const TORRE_PRECO = 1000, TORRE_PRECO_MIN = 800, TORRE_DESCONTO = 10, TORRE_PRAZO_HORAS = 12;

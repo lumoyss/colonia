@@ -116,6 +116,8 @@
   .musica button{width:34px;height:32px;margin:0;padding:0;font-size:18px;background:var(--fundo);color:var(--creme);border:2px solid var(--verde);cursor:pointer}
   .musica input{width:80px;accent-color:var(--verde)}
   .musica input[hidden]{display:none}
+  .leilao-faixa{display:block;width:100%;margin:0 0 12px;padding:12px;background:linear-gradient(90deg,#3a1e52,#7a2e22);border:3px solid #E8C25A;color:#F3E9D6;font-family:inherit;font-size:15px;text-align:left;cursor:pointer;line-height:1.35}
+  .leilao-faixa b{font-family:"Press Start 2P",monospace;font-size:10px;color:#E8C25A;display:block;margin-bottom:4px}
   .inv-grade{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:var(--fundo2);padding:8px;border:3px solid var(--fundo3)}
   .slot{aspect-ratio:1;background:var(--fundo);border:2px solid var(--fundo3);position:relative;font-size:26px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;color:var(--creme);font-family:inherit;min-width:0}
   .slot.vazio{cursor:default;background:#0e1c22}
@@ -214,32 +216,42 @@
   <details class="como" id="comoJogar">
     <summary>COMO JOGAR (LEIA PRIMEIRO)</summary>
     <h4>A história</h4>
-    <p>A Terra caiu. A Nave Orion pousou num planeta com pouquíssimo oxigênio e o ar da nave está acabando. Você é um sobrevivente que acabou de acordar da hibernação.</p>
+    <p>A Terra caiu. A Nave Orion pousou num planeta com pouquíssimo oxigênio, e o ar da nave está acabando. Você é um sobrevivente que acabou de acordar da hibernação.</p>
     <h4>O objetivo de todos</h4>
-    <p>Consertar a nave antes que o ar acabe. Cada minuto consertando dá pontos para a barra da nave lá em cima (meta de 1 milhão, em etapas de 50 mil). Os que mais consertam aparecem no RANKING.</p>
+    <p>Consertar a nave antes que o ar acabe. Cada minuto de conserto dá pontos para a barra da nave. A meta é 1 milhão de pontos, em etapas de 50 mil. Quem mais consertar ganha a chance de aparecer no RANKING.</p>
     <h4>Como ganhar moedas</h4>
     <ul>
-      <li>Trabalhe com o site aberto: a barrinha de 4 partes em cima do seu bonequinho enche a cada 15 segundos; cheia, você ganha moeda e ponto.</li>
-      <li>Cada profissão ganha de um jeito (veja no painel TRABALHO do seu cartão). Dá para trocar 1 vez por semana.</li>
-      <li>Venda o que você produz ou acha no mercado dos sobreviventes. Também dá para adquirir pacotes de moedas no MERCADO.</li>
+      <li>Trabalhe com o site aberto. A barrinha em cima do seu sobrevivente enche uma parte a cada 15 segundos. A cada barrinha completa você ganha 1 moeda e 1 ponto de conserto da nave.</li>
+      <li>Cada profissão ganha moedas de um jeito. Veja os detalhes no painel TRABALHO, logo abaixo do mapa. Lá também dá para trocar de profissão (o prazo entre trocas aparece no painel).</li>
+      <li>Venda o que você produzir ou achar pelo mapa no mercado dos sobreviventes (Mercado → ENTRE JOGADORES).</li>
+      <li>Você também pode adquirir pacotes de moedas no MERCADO.</li>
     </ul>
     <h4>Sobreviver</h4>
     <ul>
-      <li>Para consertar, precisa do kit de ferramentas (quem acorda ganha 1 dia grátis).</li>
-      <li>Coma a cada 4 horas de trabalho e mantenha ar no tanque. Sem comida ou ar você fica doente por 1 hora (ou chama um médico).</li>
-      <li>Depois de 4 horas trabalhando você cansa: com casa descansa 10 minutos, sem casa espera 1 hora na nave.</li>
+      <li>Para consertar a nave, você precisa do kit de ferramentas. Assim que um sobrevivente acorda, ele(a) tem direito a 1 dia de ferramentas grátis.</li>
+      <li>Coma a cada 4 horas de trabalho e mantenha ar no tanque (veja as barras de ar e fome no seu INVENTÁRIO).</li>
+      <li>Sem comida ou sem ar, você fica doente por 1 hora (ou pode pagar um médico para te curar).</li>
+      <li>Após 4 horas trabalhando, você fica cansado. Se tiver uma casa, o descanso é de 10 minutos. Sem casa, aguarde 1 hora na nave.</li>
     </ul>
     <h4>Explorar e construir</h4>
     <ul>
-      <li>Toque no mapa para andar. Todo dia aparece o BAÚ DO DIA (grande e brilhando): quem chegar primeiro leva moedas e itens (às vezes uma ficha para criar um item ou uma empresa).</li>
-      <li>A cada 15 minutos, mais ou menos, aparece um baú pequeno em algum lugar do mapa, com 40 a 90 moedas. Ele fica lá até alguém pegar (no máximo 2 esperando no mapa).</li>
-      <li>Pare num terreno livre (estacas nos cantos), reivindique, volte para a nave e registre no Mercado. No terreno você constrói sua casa (um engenheiro faz a obra).</li>
-      <li>Com picareta, minere na borda pedregosa do mapa.</li>
+      <li>Toque no mapa para andar com o seu sobrevivente.</li>
+      <li>Todo dia, fora da área habitável, aparece o BAÚ DO DIA (grande e brilhando). O sobrevivente que abrir primeiro leva moedas e itens, com chance de ganhar uma ficha para criar um item ou uma empresa.</li>
+      <li>Mais ou menos a cada 15 minutos aparece um baú pequeno em algum lugar do mapa, com 40 a 90 moedas. Ele fica lá até alguém abrir, e podem haver no máximo 2 baús esperando no mapa.</li>
+      <li>Para ter um terreno, pare em um dos terrenos livres (com uma placa no meio) e reivindique. Depois volte para a nave e registre no Mercado (aba IMÓVEIS).</li>
+      <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói.</li>
+      <li>Com uma picareta, você pode minerar na borda pedregosa do mapa para encontrar itens.</li>
     </ul>
     <h4>As torres misteriosas</h4>
-    <p>Existem torres escondidas no planeta que não foram feitas por humanos. Quem chega perto descobre. Os sobreviventes podem trabalhar perto dela para desbloquear (explorador desbloqueia mais rápido). Quem mais ajudou ganha a chance de virar dono do clã. Mas cuidado: tempo na torre é tempo longe do conserto da nave...</p>
+    <p>Existem torres escondidas no planeta que não foram feitas por humanos. Chegar perto delas as revela no mapa.</p>
+    <p>Os sobreviventes podem trabalhar nas torres para desbloqueá-las (o explorador desbloqueia mais rápido). Quem fizer mais pontos de trabalho ganha a chance de virar dono do clã.</p>
+    <p>Mas cuidado: tempo na torre é tempo longe do conserto da nave...</p>
     <h4>Rádio e regras</h4>
-    <p>Converse no RÁDIO com respeito. Guardas podem silenciar quem desrespeita (5 minutos). Se foi injusto, dá para reclamar e a colônia analisa. Quem tem casa (própria ou alugada) pode mandar ideias para a história.</p>
+    <ul>
+      <li>Converse no RÁDIO com respeito.</li>
+      <li>Guardas podem silenciar quem agir com desrespeito por 5 minutos. Se você foi silenciado injustamente, há a opção de reclamar, e a colônia analisará.</li>
+      <li>Quem tem casa própria ou alugada pode mandar ideias para a história do projeto.</li>
+    </ul>
   </details>
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
@@ -402,6 +414,7 @@
         <button class="btn sec" type="submit" id="btnLogin">ENTRAR</button>
       </form>
       <div class="msg" id="msgMercado" role="status"></div>
+      <button type="button" class="leilao-faixa" id="leilaoFaixa" hidden></button>
       <nav class="subabas" id="subabas">
         <button type="button" data-sub="inventario" aria-pressed="false" id="subInventario" hidden>INVENTÁRIO</button>
         <button type="button" data-sub="imoveis" aria-pressed="true">IMÓVEIS</button>
@@ -747,7 +760,7 @@
     estado.medicos = d.medicos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
-    estado.leilao = d.leilao || null; desenharLeilao(); estado.bauzinhos = d.bauzinhos || [];
+    estado.leilao = d.leilao || null; desenharLeilao(); desenharFaixaLeilao(); estado.bauzinhos = d.bauzinhos || [];
     calcularDonos(); desenharAlugueis(); desenharAnuncios(); desenharFiscal(); if (logado()) desenharExtras();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
     desenharOfertas();
@@ -1144,18 +1157,22 @@
   /* ---------- torres de clã ---------- */
   var descobrindo = {};
   function souExplorador() { return logado() && eu.funcao === "explorador"; }
+  // cada torre com a sua cor: [parede, lado claro, topo, brilho]
+  var CORES_TORRE = { T1: ["#1f2f4a", "#2f4870", "#14203a", "#7FB8FF"], T2: ["#3a3a3a", "#585858", "#262626", "#E0E0E0"], T3: ["#1d4048", "#2d6470", "#122b30", "#7FF0E8"],
+    T4: ["#4a2618", "#6e3a22", "#311a10", "#FF9A5A"], T5: ["#2a3f26", "#3f5e38", "#1b2a18", "#A8F08A"], T6: ["#4a3a14", "#6e5820", "#30260c", "#FFD866"], T7: ["#3a1e52", "#5c3384", "#26123a", "#D69CFF"] };
   function desenharTorresMapa(t) {
     (estado.torres || []).forEach(function (to) {
+      var C = CORES_TORRE[to.id] || ["#2b2140", "#3d2f5c", "#1a1428", "#b79cff"];
       var x = to.x, y = to.y;
       if (!to.descoberta) {
         if (souExplorador() && (t >> 5) % 2) { mctx.fillStyle = "rgba(183,156,255,.8)"; mctx.fillRect(x - 1, y - 8, 3, 5); mctx.fillRect(x - 1, y - 1, 3, 2); }
         return;
       }
       mctx.fillStyle = "rgba(0,0,0,.35)"; mctx.fillRect(x - 9, y + 2, 20, 3);
-      mctx.fillStyle = "#2b2140"; mctx.fillRect(x - 7, y - 30, 14, 32);
-      mctx.fillStyle = "#3d2f5c"; mctx.fillRect(x - 6, y - 30, 5, 32); mctx.fillRect(x - 9, y - 4, 18, 6);
-      mctx.fillStyle = "#1a1428"; mctx.fillRect(x - 5, y - 38, 10, 8); mctx.fillRect(x - 2, y - 44, 4, 6);
-      var brilho = to.status === "dono" ? "#E07A3A" : (t >> 4) % 2 ? "#b79cff" : "#7FD6C8";
+      mctx.fillStyle = C[0]; mctx.fillRect(x - 7, y - 30, 14, 32);
+      mctx.fillStyle = C[1]; mctx.fillRect(x - 6, y - 30, 5, 32); mctx.fillRect(x - 9, y - 4, 18, 6);
+      mctx.fillStyle = C[2]; mctx.fillRect(x - 5, y - 38, 10, 8); mctx.fillRect(x - 2, y - 44, 4, 6);
+      var brilho = to.status === "dono" ? "#E07A3A" : (t >> 4) % 2 ? C[3] : "#F3E9D6";
       mctx.fillStyle = brilho; mctx.fillRect(x - 1, y - 42, 2, 2); mctx.fillRect(x - 2, y - 22, 4, 2); mctx.fillRect(x - 2, y - 12, 4, 2);
       if (to.status === "dono") { mctx.fillStyle = "#F3E9D6"; mctx.fillRect(x + 4, y - 50, 1, 12); mctx.fillStyle = "#E07A3A"; mctx.fillRect(x + 5, y - 50, 6, 4); }
       if (to.status === "bloqueada") { mctx.fillStyle = "#6b5a3a"; mctx.fillRect(x - 7, y - 26, 14, 1); mctx.fillRect(x - 7, y - 16, 14, 1); mctx.fillRect(x - 7, y - 6, 14, 1); }
@@ -1854,6 +1871,15 @@
   document.getElementById("premioFechar").onclick = function () { document.getElementById("premioModal").hidden = true; };
   document.getElementById("premioModal").addEventListener("click", function (ev) { if (ev.target.id === "premioModal") ev.target.hidden = true; });
   document.getElementById("premioVer").onclick = function () { document.getElementById("premioModal").hidden = true; irPara("mercado"); irSub("inventario"); };
+
+  function desenharFaixaLeilao() {
+    var f = document.getElementById("leilaoFaixa"), L = estado.leilao; if (!f) return;
+    f.hidden = !L; if (!L) return;
+    var hora = L.fecha ? new Date(L.fecha).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "20:00";
+    f.innerHTML = ""; var b = document.createElement("b"); b.textContent = "🏆 LEILÃO DO VÍDEO"; f.appendChild(b);
+    f.appendChild(document.createTextNode(L.topo ? "Maior lance: " + L.topo.valor.toLocaleString("pt-BR") + " moedas, de " + L.topo.nome + ". Fecha às " + hora + ". Toque para dar um lance e aparecer no próximo vídeo!" : "Ninguém deu lance ainda! Com " + L.minimo + " moedas o seu @ pode aparecer no próximo vídeo. Fecha às " + hora + "."));
+  }
+  document.getElementById("leilaoFaixa").onclick = function () { irSub("leilao"); document.getElementById("leilaoBox").scrollIntoView({ behavior: "smooth", block: "center" }); };
 
   /* ---------------- inventário (grade com espaços) ---------------- */
   var ICONES = { base: "🏠", base_grande: "🏢", outdoor: "🪧", outdoor_guardado: "🪧", gas: "🧪", racao: "🥫", comida: "🥕", refeicao: "🍲", bone: "🧢", calca: "👖", chapeu: "🤠", colete: "🦺", vestido: "👗",
