@@ -94,6 +94,16 @@
   .ordem button[aria-pressed=true]{color:var(--creme);border-color:var(--verde)}
   .nomeclick{cursor:pointer;text-decoration:underline dotted}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .ck-grade{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .ck-dia{background:var(--fundo);border:3px solid #2c4650;padding:8px 2px 6px;font-size:10px;color:var(--creme);position:relative}
+  .ck-dia .ic{font-size:22px;display:block;margin:4px 0}
+  .ck-dia b{color:#E8C25A;font-size:11px}
+  .ck-dia.feito{opacity:.55}
+  .ck-dia.feito::after{content:"✓";position:absolute;bottom:2px;right:5px;color:#5BD16A;font-size:18px}
+  .ck-dia.hoje{border-color:#E8C25A;box-shadow:0 0 0 2px rgba(232,194,90,.35);animation:ckPulsa 1.2s infinite}
+  .ck-dia.bau{grid-column:span 2;border-color:var(--laranja)}
+  .ck-dia.bau .ic{font-size:30px}
+  @keyframes ckPulsa{50%{box-shadow:0 0 0 6px rgba(232,194,90,.15)}}
   .modal .caixa{background:var(--fundo2);border:4px solid var(--verde);max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:16px;position:relative}
   .modal canvas{width:96px;height:136px;image-rendering:pixelated;display:block;margin:0 auto 8px}
   .modal .fechar{position:absolute;top:6px;right:6px;width:34px;height:34px;border:2px solid var(--fundo3);background:var(--fundo);color:var(--creme);font-family:"Press Start 2P",monospace;cursor:pointer}
@@ -259,6 +269,7 @@
   <button type="button" class="item" data-menu="nave"><span class="ic">🚀</span>NAVE ORION</button>
   <button type="button" class="item" data-menu="servicos"><span class="ic">🤝</span>SERVIÇOS</button>
   <button type="button" class="item" data-menu="radio" id="menuRadio" hidden><span class="ic">📻</span>RÁDIO</button>
+  <button type="button" class="item" data-menu="checkin" id="menuCheckin" hidden><span class="ic">📅</span>CHECK-IN DIÁRIO</button>
   <button type="button" class="item" data-menu="como"><span class="ic">❓</span>COMO JOGAR</button>
 </nav>
 <button type="button" class="moedas-fixas" id="moedasFixas" aria-label="Suas moedas" hidden>🪙 <span id="moedasFixasN">0</span></button>
@@ -640,6 +651,14 @@
     <p id="dicaTexto" style="text-align:left"></p>
     <button type="button" class="btn" id="dicaOk">ENTENDI</button>
   </div></div>
+  <div class="modal" id="checkinModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="checkinTitulo" style="text-align:center">
+    <button type="button" class="fechar" id="checkinFechar" aria-label="Fechar">X</button>
+    <h2 class="pix" id="checkinTitulo" style="margin:4px 0 6px;color:var(--laranja)">CHECK-IN DIÁRIO</h2>
+    <p id="checkinSub" style="margin:0 0 12px"></p>
+    <div class="ck-grade" id="checkinGrade"></div>
+    <p id="checkinMsg" style="min-height:1.2em;margin:12px 0 4px"></p>
+    <button type="button" class="btn" id="checkinBtn">PEGAR</button>
+  </div></div>
   <div class="modal" id="perfilModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="perfilNome">
     <button type="button" class="fechar" id="perfilFechar" aria-label="Fechar">X</button>
     <canvas id="perfilSprite" width="24" height="34"></canvas>
@@ -981,7 +1000,7 @@
     estado.ofertas = d.ofertas || []; estado.ofertas.forEach(function (o) { if (o.nomeItem) { var mm = {}; mm[o.item] = o.nomeItem; registrarReliquias(mm); } });
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
-    estado.obrasMapa = d.obrasMapa || []; estado.medicos = d.medicos || []; estado.guardas = d.guardas || []; estado.pesquisa = d.pesquisa || null; estado.titulos = d.titulos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
+    estado.obrasMapa = d.obrasMapa || []; estado.medicos = d.medicos || []; estado.guardas = d.guardas || []; estado.pesquisa = d.pesquisa || null; estado.titulos = d.titulos || []; estado.checkinMoedas = d.checkinMoedas || estado.checkinMoedas || [20, 30, 40, 50, 60, 80, 150]; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
     if (d.lider) { document.getElementById("liderNave").hidden = false; document.getElementById("liderNome").textContent = d.lider; }
@@ -1967,7 +1986,7 @@
     if (r.avisos !== undefined) desenharSino();
     if (r.reliquias) registrarReliquias(r.reliquias);
     if (r.pedidosAcompanhamento) verPedidosAcomp(r.pedidosAcompanhamento);
-    if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(fazerCheckin, 1500); }
+    if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(abrirCheckin, 900); }
     if (r.ofertaAte !== undefined && typeof mostrarOferta === "function") mostrarOferta();
     if (typeof missao !== "undefined" && missao && Number(r.descansoAte) > Date.now() && missao.modo === "parado") { missao.modo = "descansando"; missao.descanso = Math.ceil((r.descansoAte - Date.now()) / 1000); missao.temBase = typeof temCasa === "function" ? temCasa() : missao.temBase; }
     if (r.veste !== undefined && typeof bonecos !== "undefined" && eu && bonecos[eu.nome]) bonecos[eu.nome].itens = eu.veste;
@@ -1992,7 +2011,7 @@
     document.getElementById("bolaInv").hidden = !on;
     document.getElementById("moedasFixas").hidden = !on; if (on) { var mf = Number(eu.moedas || 0).toLocaleString("pt-BR"); if (document.getElementById("moedasFixasN").textContent !== mf) document.getElementById("moedasFixasN").textContent = mf; }
     document.getElementById("sino").hidden = !on; desenharSino();
-    document.getElementById("menuInv").hidden = !on;
+    document.getElementById("menuInv").hidden = !on; document.getElementById("menuCheckin").hidden = !on;
     document.getElementById("menuTrabalho").hidden = !on;
     document.getElementById("menuPerfilTxt").textContent = on ? "MEU PERFIL" : "ENTRAR";
     if (on) { var nq = String(eu.itens || "").split(",").filter(nomeItem).length, bq = document.getElementById("bolaInvQtd"); bq.textContent = String(nq); bq.hidden = !nq; }
@@ -2650,15 +2669,44 @@
     var ic = { cavaleiro: "🗡️", barao: "🔫", conde: "🎖️", duque: "🚀" };
     Object.keys(m || {}).forEach(function (id) { if (!m[id]) return; NOMES_RELIQ[id] = m[id]; var t = /^reliquia_([a-z]+)_/.exec(id); ICONES[id] = (t && ic[t[1]]) || "🏅"; });
   }
-  function fazerCheckin() {
-    if (!logado()) return;
-    enviar(credenciais({ acao: "checkin" })).then(function (r) {
-      if (!r.ok || r.jaFeito) { if (r.checkin) eu.checkin = r.checkin; return; }
-      aplicarPerfil(r); salvarEu();
-      mostrarToast(r.itemExclusivo ? "🎁 Baú especial do check-in! +" + r.ganhou + " moedas e " + r.nomeExclusivo + "!" : "✅ Check-in dia " + r.checkin.dia + " de 7: +" + r.ganhou + " moedas. Volte amanhã!");
-      if (typeof desenharInventario === "function") desenharInventario();
-    });
+  // Lucas 15/11: check-in é um pop-up na primeira tela, com os 7 dias, o prêmio de cada um e o baú no último
+  function desenharCheckin(ganhouAgora) {
+    var c = eu.checkin || { dia: 0, feitoHoje: false }, M = estado.checkinMoedas || [20, 30, 40, 50, 60, 80, 150];
+    var hoje = c.feitoHoje ? c.dia : c.dia % 7 + 1, feitos = c.feitoHoje ? c.dia : c.dia % 7;
+    if (!c.feitoHoje && c.dia >= 7) feitos = 0;
+    var g = document.getElementById("checkinGrade"); g.innerHTML = "";
+    for (var d = 1; d <= 7; d++) {
+      var el = document.createElement("div"), bau = d === 7;
+      el.className = "ck-dia pix" + (bau ? " bau" : "") + (d <= feitos ? " feito" : "") + (d === hoje && !c.feitoHoje ? " hoje" : "") + (d === hoje && ganhouAgora ? " hoje" : "");
+      el.innerHTML = "DIA " + d + '<span class="ic">' + (bau ? "🎁" : "🪙") + "</span><b>+" + M[d - 1] + "</b>" + (bau ? "<br>BAÚ ESPECIAL + ITEM EXCLUSIVO" : "");
+      g.appendChild(el);
+    }
+    var bt = document.getElementById("checkinBtn"), msg = document.getElementById("checkinMsg"), sub = document.getElementById("checkinSub");
+    sub.textContent = c.feitoHoje ? "Você está no dia " + c.dia + " de 7." : "Hoje é o seu dia " + hoje + " de 7. Entre todo dia para chegar no baú especial!";
+    if (c.feitoHoje) {
+      bt.textContent = "OK"; bt.dataset.acao = "fechar";
+      if (!ganhouAgora) msg.textContent = c.dia >= 7 ? "Semana completa! Amanhã começa uma nova semana." : "Check-in de hoje feito. Volte amanhã para o dia " + (c.dia + 1) + " (+" + M[c.dia] + ").";
+    } else { bt.textContent = "PEGAR +" + M[hoje - 1] + " MOEDAS"; bt.dataset.acao = "pegar"; msg.textContent = "Se pular um dia, volta para o dia 1."; }
   }
+  function abrirCheckin() {
+    if (!logado()) return;
+    if (!eu.checkin) eu.checkin = { dia: 0, feitoHoje: false };
+    desenharCheckin(false); document.getElementById("checkinModal").hidden = false;
+  }
+  function fecharCheckin() { document.getElementById("checkinModal").hidden = true; }
+  document.getElementById("checkinFechar").onclick = fecharCheckin;
+  document.getElementById("checkinBtn").onclick = function () {
+    var bt = this; if (bt.dataset.acao !== "pegar") return fecharCheckin();
+    bt.disabled = true; bt.textContent = "...";
+    enviar(credenciais({ acao: "checkin" })).then(function (r) {
+      bt.disabled = false;
+      if (!r.ok) { document.getElementById("checkinMsg").textContent = r.erro || "Não deu certo. Tente de novo."; bt.textContent = "TENTAR DE NOVO"; return; }
+      if (r.jaFeito) { if (r.checkin) eu.checkin = r.checkin; desenharCheckin(false); return; }
+      aplicarPerfil(r); salvarEu(); desenharCheckin(true);
+      document.getElementById("checkinMsg").innerHTML = r.itemExclusivo ? "🎁 <b>Baú especial!</b> +" + r.ganhou + " moedas e " + (r.nomeExclusivo || "um item exclusivo") + "!" : "✅ <b>+" + r.ganhou + " moedas!</b> Volte amanhã para o dia " + (r.checkin.dia % 7 + 1) + ".";
+      if (typeof desenharInventario === "function") desenharInventario();
+    }).catch(function () { bt.disabled = false; bt.textContent = "TENTAR DE NOVO"; });
+  };
   function nomeItem(id) {
     var lt = /^lote_(\d+)$/.exec(id); if (lt) return "Terreno " + lt[1];
     if (/^reliquia_/.test(id)) return NOMES_RELIQ[id] || "Item exclusivo";
@@ -3531,6 +3579,7 @@
     b.onclick = function () {
       var m = b.dataset.menu; fecharMenu();
       if (m === "inventario") return abrirInventario();
+      if (m === "checkin") return abrirCheckin();
       if (m === "mapa") return rolar(document.getElementById("cena"), "center");
       if (m === "como") { var c = document.getElementById("comoJogar"); c.open = true; return rolar(c); }
       if (m === "trabalho") {
