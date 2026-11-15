@@ -1629,6 +1629,75 @@
   // cada torre com a sua cor: [parede, lado claro, topo, brilho]
   var CORES_TORRE = { T1: ["#1f2f4a", "#2f4870", "#14203a", "#7FB8FF"], T2: ["#3a3a3a", "#585858", "#262626", "#E0E0E0"], T3: ["#1d4048", "#2d6470", "#122b30", "#7FF0E8"],
     T4: ["#4a2618", "#6e3a22", "#311a10", "#FF9A5A"], T5: ["#2a3f26", "#3f5e38", "#1b2a18", "#A8F08A"], T6: ["#4a3a14", "#6e5820", "#30260c", "#FFD866"], T7: ["#3a1e52", "#5c3384", "#26123a", "#D69CFF"] };
+  // Lucas 15/11: cada torre com forma própria (opção A). Futuro: dono do clã poderá mudar a forma.
+  var ALTURA_TORRE = { T1: 54, T2: 34, T3: 46, T4: 52, T5: 50, T6: 54, T7: 52 };
+  function sombraTorre(R, w) { R("rgba(0,0,0,.35)", -w / 2, 2, w, 3); }
+  function formaTorrePadrao(R, C, t) { sombraTorre(R, 20); R(C[0], -7, -30, 14, 32); R(C[1], -6, -30, 5, 32); R(C[1], -9, -4, 18, 6); R(C[2], -5, -38, 10, 8); R(C[2], -2, -44, 4, 6); R(C[3], -1, -42, 2, 2); }
+  var FORMAS_TORRE = {
+    T1: function (R, C, t) { // Norte: torre de radar
+      sombraTorre(R, 24);
+      for (var i = 0; i < 34; i++) { var w = Math.round(14 - i * 0.25); R(C[2], -w / 2 - 1, -i, 2, 1); R(C[2], w / 2 - 1, -i, 2, 1); }
+      for (var k = 0; k < 5; k++) { var yy = -4 - k * 7, ww = Math.round(14 - (4 + k * 7) * 0.25); R(C[1], -ww / 2, yy, ww, 1); }
+      R(C[0], -5, -38, 10, 4); R(C[2], -1, -46, 2, 8);
+      var g = Math.abs(Math.sin(t / 30)), d = Math.round(4 + g * 5); // prato girando
+      R("#9fb3bd", -d, -48, d * 2, 2); R("#c9d6dc", -Math.round(d * 0.7), -50, Math.round(d * 1.4), 2);
+      if ((t >> 4) % 2) { R("#E05A3A", -1, -54, 2, 2); R("rgba(224,90,58,.3)", -3, -56, 6, 6); } else R("#7a2e22", -1, -54, 2, 2);
+      R(C[3], -2, -36, 4, 1);
+    },
+    T2: function (R, C, t) { // Cinzas: ruína soltando fumaça
+      sombraTorre(R, 24);
+      R(C[0], -9, -26, 18, 28); R(C[1], -8, -26, 6, 28); R(C[0], -9, -30, 4, 4); R(C[0], -3, -33, 5, 7); R(C[0], 4, -29, 5, 3);
+      for (var yy = -24; yy < 0; yy += 5) { R(C[2], -9, yy, 18, 1); for (var xx = -9; xx < 9; xx += 6) R(C[2], xx + ((yy / 5) % 2 ? 3 : 0), yy, 1, 5); }
+      R((t >> 3) % 2 ? "#E07A3A" : "#FFB24A", 3, -14, 3, 4); R("#E07A3A", -6, -6, 2, 2);
+      for (var f = 0; f < 3; f++) { var fase = ((t / 3 + f * 20) % 60) / 60; R("rgba(200,200,200," + (0.55 * (1 - fase)).toFixed(2) + ")", -1 + Math.round(fase * 8), -36 - Math.round(fase * 22), 4 + Math.round(fase * 4), 4 + Math.round(fase * 3)); }
+      if ((t >> 2) % 7 === 0) R("#FFB24A", 2 + (t % 5), -38 - (t % 9), 1, 1);
+    },
+    T3: function (R, C, t) { // Cristal: cristais brilhando
+      sombraTorre(R, 26);
+      R("rgba(127,240,232," + (0.1 + 0.08 * Math.abs(Math.sin(t / 25))).toFixed(2) + ")", -13, -48, 26, 50);
+      var esp = function (xx, h, w, c1, c2) { for (var i = 0; i < h; i++) { var ww = Math.max(1, Math.round(w * (i < h * 0.75 ? 1 : (h - i) / (h * 0.25)))); R(c1, xx - ww / 2, -i, ww, 1); R(c2, xx - ww / 2, -i, Math.max(1, ww / 3), 1); } };
+      esp(-6, 26, 6, C[1], "#bff7f2"); esp(6, 30, 6, C[1], "#bff7f2"); esp(0, 46, 9, C[0], C[3]);
+      R(C[2], -11, -2, 22, 4); R(C[3], -2, -30, 4, 4); R("#fff", -1, -29, 2, 2);
+      var b = (t >> 3) % 5; if (b === 0) R("#fff", -1, -40, 1, 3); else if (b === 2) R("#fff", 5, -22, 1, 2); else if (b === 4) R("#fff", -7, -16, 1, 2);
+    },
+    T4: function (R, C, t) { // Ferrugem: caixa d'água enferrujada
+      sombraTorre(R, 26);
+      R(C[2], -9, -26, 2, 28); R(C[2], 7, -26, 2, 28); R(C[2], -1, -26, 2, 28); for (var i = 0; i < 4; i++) R(C[1], -8, -6 - i * 6, 16, 1);
+      R(C[0], -11, -44, 22, 18); R(C[1], -10, -44, 6, 18); R(C[2], -11, -46, 22, 2); R(C[0], -8, -49, 16, 3); R(C[2], -1, -52, 2, 3);
+      R("#a0532a", 2, -40, 4, 3); R("#b8472a", -6, -34, 3, 4); R("#7a2e22", 4, -31, 5, 2); R(C[3], -11, -36, 22, 1);
+      R("#5e6e74", 9, -20, 3, 2); R("#5e6e74", 11, -20, 2, 18);
+      var g = (t % 40); if (g < 30) R("#7FD6C8", 11, -1 + Math.round(g / 10), 1, 1); // pinga
+    },
+    T5: function (R, C, t) { // Eco: antena soltando ondas
+      sombraTorre(R, 22);
+      R(C[2], -6, -6, 12, 8); R(C[1], -5, -6, 4, 8); R(C[0], -2, -46, 4, 40); R(C[1], -2, -46, 1, 40);
+      for (var k = 0; k < 5; k++) R(C[2], -4, -12 - k * 8, 8, 1);
+      R(C[3], -1, -50, 2, 4); R("#fff", -1, -50, 1, 1);
+      for (var o = 0; o < 3; o++) {
+        var fase = ((t / 2 + o * 13) % 40) / 40, r = 4 + fase * 16, a = (0.9 * (1 - fase)).toFixed(2);
+        for (var an = -0.9; an <= 0.9; an += 0.15) R("rgba(168,240,138," + a + ")", Math.round(Math.sin(an) * r), -48 - Math.round(Math.cos(an) * r * 0.6), 1, 1);
+      }
+    },
+    T6: function (R, C, t, x, y) { // Sul: farol
+      var giro = Math.sin(t / 40), lado = giro >= 0 ? 1 : -1, comp = 10 + Math.round(Math.abs(giro) * 26);
+      mctx.fillStyle = "rgba(255,216,102,.22)"; mctx.beginPath(); mctx.moveTo(x + 4 * lado, y - 45); mctx.lineTo(x + (4 + comp) * lado, y - 54); mctx.lineTo(x + (4 + comp) * lado, y - 36); mctx.closePath(); mctx.fill();
+      sombraTorre(R, 22);
+      for (var i = 0; i < 38; i++) { var w = Math.round(14 - i * 0.12); R(Math.floor(i / 6) % 2 ? "#F3E9D6" : "#B8472A", -w / 2, -i, w, 1); }
+      R(C[2], -7, -41, 14, 3); R("#2a3238", -5, -47, 1, 6); R("#2a3238", 4, -47, 1, 6);
+      R(C[3], -4, -47, 8, 6); R("#fff", -1, -45, 2, 2); R(C[2], -6, -50, 12, 2); R(C[2], -3, -52, 6, 2); R(C[2], -1, -54, 2, 2);
+      R("#2a3238", -2, -8, 4, 8);
+    },
+    T7: function (R, C, t) { // Ametista: obelisco com cristal flutuando
+      sombraTorre(R, 20);
+      for (var i = 0; i < 32; i++) { var w = Math.round(10 - i * 0.18); R(C[0], -w / 2, -i, w, 1); R(C[1], -w / 2, -i, Math.max(1, Math.round(w / 3)), 1); }
+      R(C[2], -8, -2, 16, 4);
+      var on = (t >> 4) % 3; R(on === 0 ? "#fff" : C[3], -1, -24, 2, 2); R(on === 1 ? "#fff" : C[3], -1, -16, 2, 2); R(on === 2 ? "#fff" : C[3], -1, -8, 2, 2);
+      var fl = Math.round(Math.sin(t / 18) * 2);
+      R("rgba(214,156,255,.22)", -8, -52 + fl, 16, 15);
+      for (var j = 0; j < 10; j++) { var ww = j < 5 ? j * 2 + 1 : (10 - j) * 2 - 1; R(j < 5 ? C[3] : C[1], -ww / 2, -50 + j + fl, ww, 1); }
+      R("#fff", -1, -47 + fl, 1, 2); if ((t >> 3) % 2) { R(C[3], -7, -38, 1, 1); R(C[3], 6, -44, 1, 1); } else { R(C[3], -5, -46, 1, 1); R(C[3], 7, -36, 1, 1); }
+    }
+  };
   function desenharTorresMapa(t) {
     (estado.torres || []).forEach(function (to) {
       var C = CORES_TORRE[to.id] || ["#2b2140", "#3d2f5c", "#1a1428", "#b79cff"];
@@ -1637,14 +1706,11 @@
         if (souExplorador() && (t >> 5) % 2) { mctx.fillStyle = "rgba(183,156,255,.8)"; mctx.fillRect(x - 1, y - 8, 3, 5); mctx.fillRect(x - 1, y - 1, 3, 2); }
         return;
       }
-      mctx.fillStyle = "rgba(0,0,0,.35)"; mctx.fillRect(x - 9, y + 2, 20, 3);
-      mctx.fillStyle = C[0]; mctx.fillRect(x - 7, y - 30, 14, 32);
-      mctx.fillStyle = C[1]; mctx.fillRect(x - 6, y - 30, 5, 32); mctx.fillRect(x - 9, y - 4, 18, 6);
-      mctx.fillStyle = C[2]; mctx.fillRect(x - 5, y - 38, 10, 8); mctx.fillRect(x - 2, y - 44, 4, 6);
-      var brilho = to.status === "dono" ? "#E07A3A" : (t >> 4) % 2 ? C[3] : "#F3E9D6";
-      mctx.fillStyle = brilho; mctx.fillRect(x - 1, y - 42, 2, 2); mctx.fillRect(x - 2, y - 22, 4, 2); mctx.fillRect(x - 2, y - 12, 4, 2);
-      if (to.status === "dono") { mctx.fillStyle = "#F3E9D6"; mctx.fillRect(x + 4, y - 50, 1, 12); mctx.fillStyle = "#E07A3A"; mctx.fillRect(x + 5, y - 50, 6, 4); }
-      if (to.status === "bloqueada") { mctx.fillStyle = "#6b5a3a"; mctx.fillRect(x - 7, y - 26, 14, 1); mctx.fillRect(x - 7, y - 16, 14, 1); mctx.fillRect(x - 7, y - 6, 14, 1); }
+      var R = function (c, a, b, w, h) { mctx.fillStyle = c; mctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+      (FORMAS_TORRE[to.id] || formaTorrePadrao)(R, C, t, x, y);
+      var topo = ALTURA_TORRE[to.id] || 44;
+      if (to.status === "dono") { R("#F3E9D6", 9, -topo - 6, 1, 14); R("#E07A3A", 10, -topo - 6, 7, 4); R("#B8472A", 10, -topo - 2, 7, 1); }
+      if (to.status === "bloqueada") { for (var k = 0; k < 3; k++) { R("#6b5a3a", -9, -24 + k * 9, 18, 2); R("#4a3a22", -9, -23 + k * 9, 18, 1); } R("#E8C25A", -1, -16, 3, 3); }
     });
   }
   function torrePerto(meu) {
