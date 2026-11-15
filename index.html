@@ -220,6 +220,8 @@
   .pauta-msgs li{font-size:15px;background:var(--fundo);padding:6px 8px} .pauta-msgs b{color:var(--verde2)}
   .ass-acesso{background:var(--fundo2);border-left:4px solid var(--verde);padding:10px 12px;margin:10px 0}
   .oferta-toast{position:fixed;left:8px;bottom:60px;z-index:58;background:linear-gradient(135deg,#E07A3A,#B8472A);color:#fff;border:3px solid #F3E9D6;padding:10px 12px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.5);font-family:"Press Start 2P",monospace;font-size:9px;line-height:1.6;max-width:220px}
+  .moedas-fixas{position:fixed;right:8px;top:8px;z-index:45;background:var(--fundo2);border:3px solid #E8C25A;color:#F3E9D6;font-family:"Press Start 2P",monospace;font-size:11px;padding:8px 10px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.5)}
+  .moedas-fixas[hidden]{display:none}
   .sino{position:fixed;right:8px;top:38vh;z-index:45;width:46px;height:44px;background:var(--fundo2);border:3px solid var(--verde);font-size:22px;line-height:1;cursor:pointer;padding:0}
   .sino .qtd{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:#D93B3B;color:#fff;font-family:"Press Start 2P",monospace;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
   .sino .qtd[hidden]{display:none}
@@ -256,6 +258,7 @@
   <button type="button" class="item" data-menu="radio" id="menuRadio" hidden><span class="ic">📻</span>RÁDIO</button>
   <button type="button" class="item" data-menu="como"><span class="ic">❓</span>COMO JOGAR</button>
 </nav>
+<button type="button" class="moedas-fixas" id="moedasFixas" aria-label="Suas moedas" hidden>🪙 <span id="moedasFixasN">0</span></button>
 <button type="button" class="sino" id="sino" aria-label="Avisos" hidden>🔔<span class="qtd" id="sinoQtd" hidden>0</span></button>
 <div class="toast-aviso" id="toastAviso" role="status" hidden></div>
 <button type="button" class="oferta-toast" id="ofertaToast" hidden>🎁 OFERTA DE BOAS-VINDAS<br>ACABA EM <span id="ofertaTempo">59:59</span></button>
@@ -1867,6 +1870,7 @@
       document.getElementById("contaItens").textContent = "🎒 INVENTÁRIO (" + nItens + ")";
     }
     document.getElementById("bolaInv").hidden = !on;
+    document.getElementById("moedasFixas").hidden = !on; if (on) { var mf = Number(eu.moedas || 0).toLocaleString("pt-BR"); if (document.getElementById("moedasFixasN").textContent !== mf) document.getElementById("moedasFixasN").textContent = mf; }
     document.getElementById("sino").hidden = !on; desenharSino();
     document.getElementById("menuInv").hidden = !on;
     document.getElementById("menuTrabalho").hidden = !on;
@@ -2523,6 +2527,8 @@
       f.textContent = "FALTAM " + falta.toLocaleString("pt-BR") + " MOEDAS · ADQUIRIR MOEDAS";
     });
   }
+  setInterval(function () { if (!logado()) return; var mf = Number(eu.moedas || 0).toLocaleString("pt-BR"), el = document.getElementById("moedasFixasN"); if (el.textContent !== mf) el.textContent = mf; }, 1000);
+  document.getElementById("moedasFixas").onclick = function () { irPara("mercado"); irSub("moedas"); document.getElementById("subabas").scrollIntoView({ behavior: "smooth", block: "start" }); };
   document.getElementById("btnMaisMoedas").onclick = function () { irSub("moedas"); document.getElementById("subabas").scrollIntoView({ behavior: "smooth", block: "start" }); };
   setInterval(marcarFaltaMoedas, 2000);
   function irSub(nome) {
