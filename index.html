@@ -238,6 +238,7 @@
   .sino{position:fixed;right:8px;top:38vh;z-index:45;width:46px;height:44px;background:var(--fundo2);border:3px solid var(--verde);font-size:22px;line-height:1;cursor:pointer;padding:0}
   .sino .qtd{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:#D93B3B;color:#fff;font-family:"Press Start 2P",monospace;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
   .sino .qtd[hidden]{display:none}
+  .radio-btn{top:calc(38vh + 54px)}
   .toast-aviso{position:fixed;right:8px;top:60px;z-index:61;max-width:min(320px,calc(100vw - 16px));background:var(--fundo2);border:3px solid var(--laranja);color:var(--creme);padding:10px 12px;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:pointer}
   .avisos-lista{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
   .avisos-lista li{background:var(--fundo);border-left:4px solid var(--fundo3);padding:8px 10px;font-size:15px}
@@ -268,11 +269,11 @@
   <button type="button" class="item" data-menu="inventario" id="menuInv" hidden><span class="ic">🎒</span>INVENTÁRIO</button>
   <button type="button" class="item" data-menu="nave"><span class="ic">🚀</span>NAVE ORION</button>
   <button type="button" class="item" data-menu="servicos"><span class="ic">🤝</span>SERVIÇOS</button>
-  <button type="button" class="item" data-menu="radio" id="menuRadio" hidden><span class="ic">📻</span>RÁDIO</button>
   <button type="button" class="item" data-menu="checkin" id="menuCheckin" hidden><span class="ic">📅</span>CHECK-IN DIÁRIO</button>
   <button type="button" class="item" data-menu="como"><span class="ic">❓</span>COMO JOGAR</button>
 </nav>
 <button type="button" class="moedas-fixas" id="moedasFixas" aria-label="Suas moedas" hidden>🪙 <span id="moedasFixasN">0</span></button>
+<button type="button" class="sino radio-btn" id="radioBtn" aria-label="Abrir o rádio" hidden>📻</button>
 <button type="button" class="sino" id="sino" aria-label="Avisos" hidden>🔔<span class="qtd" id="sinoQtd" hidden>0</span></button>
 <div class="toast-aviso" id="toastAviso" role="status" hidden></div>
 <button type="button" class="oferta-toast" id="ofertaToast" hidden>🎁 OFERTA DE BOAS-VINDAS<br>ACABA EM <span id="ofertaTempo">59:59</span></button>
@@ -996,7 +997,7 @@
     estado.terrenos = d.terrenos || [];
     estado.total = d.total || estado.sobreviventes.length;
     if (d.mercado) { estado.mercado = d.mercado; montarMercado(); }
-    if (d.chat) { document.getElementById("abaRadio").hidden = false; document.getElementById("menuRadio").hidden = false; }
+    if (d.chat) { document.getElementById("abaRadio").hidden = false; document.getElementById("radioBtn").hidden = false; }
     estado.ofertas = d.ofertas || []; estado.ofertas.forEach(function (o) { if (o.nomeItem) { var mm = {}; mm[o.item] = o.nomeItem; registrarReliquias(mm); } });
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
@@ -3434,6 +3435,8 @@
     document.getElementById("sinoQtd").hidden = true;
   }
   document.getElementById("sino").onclick = abrirAvisos;
+  // Lucas 15/11: rádio no bolso, botão fixo embaixo do sininho (saiu do menu)
+  document.getElementById("radioBtn").onclick = function () { fecharMenu(); irPara("radio"); rolar(document.getElementById("painel-radio")); };
   document.getElementById("toastAviso").onclick = abrirAvisos;
   document.getElementById("avisosFechar").onclick = function () { document.getElementById("avisosModal").hidden = true; };
   document.getElementById("avisosModal").addEventListener("click", function (ev) { if (ev.target === this) this.hidden = true; });
