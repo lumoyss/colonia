@@ -1122,7 +1122,10 @@
   // Lucas 14/11: obra em andamento aparece no terreno, com andaime e barrinha do tempo que falta
   function obrasNoMapa() {
     var T = lotesCfg(); if (!T || !estado.lotePorNome) return [];
-    return (estado.obrasMapa || []).map(function (o) {
+    var lista = (estado.obrasMapa || []).slice(), ja = {}; lista.forEach(function (o) { ja[o.dono + "|" + o.item] = 1; });
+    (estado.obras || []).forEach(function (o) { if (!ja[o.dono + "|" + o.item]) { ja[o.dono + "|" + o.item] = 1; lista.push({ dono: o.dono, item: o.item, status: "aguardando", progresso: 0, total: (vida() && vida().obraMinutos) || 1 }); } });
+    if (missao.obra && missao.obra.dono) { var mi = lista.filter(function (o) { return o.dono === missao.obra.dono; })[0]; if (mi) { mi.status = "em obra"; mi.total = missao.obra.total; } else lista.push({ dono: missao.obra.dono, item: missao.obra.item || "base", status: "em obra", progresso: missao.obra.progresso || 0, total: missao.obra.total }); }
+    return lista.map(function (o) {
       var n = estado.lotePorNome[o.dono]; if (!n) return null;
       var c = centroLote(n), prog = o.progresso;
       if (missao.obra && missao.obra.dono === o.dono && missao.obra.nome) prog = Math.max(prog, missao.obra.progresso || 0); // a minha obra anda na hora
@@ -1131,7 +1134,7 @@
   }
   function desenharObraMapa(x, y, o, t) {
     var R = function (c, a, b, w, h) { mctx.fillStyle = c; mctx.fillRect(x + a, y + b, w, h); };
-    var g = o.item === "base_grande", L = g ? 20 : 15, H = g ? 24 : 14, alt = Math.round(H * (0.15 + 0.85 * o.frac));
+    var g = o.item === "base_grande", od = o.item === "outdoor", L = g ? 20 : od ? 9 : 15, H = g ? 24 : od ? 10 : 14, alt = Math.round(H * (0.15 + 0.85 * o.frac));
     R("rgba(0,0,0,.25)", -L - 1, 6, L * 2 + 3, 3);
     R("#5b6b72", -L, 3, L * 2, 4);                                   // fundação
     R(g ? "#F3E9D6" : "#7FD6C8", -L + 3, 3 - alt, L * 2 - 6, alt);   // parede/cúpula subindo
@@ -2316,9 +2319,14 @@
       if (r.obras) missao.obras = r.obras;
       if (r.trabalhando) missao.trabalhando = r.trabalhando; if (r.pacientes) missao.pacientes = r.pacientes;
       atualizarServicos(r);
-      if (r.minha && !missao.obra) missao.obra = { id: r.minha.id, dono: r.minha.donoNome, nome: r.minha.nome, mao: r.minha.mao, progresso: r.minha.progresso, total: (vida() && vida().obraMinutos) || 10 };
+      if (r.minha) { continuarObra(r.minha); return; }
       desenharPlantao();
     });
+  }
+  // Lucas 15/11: obra aceita (ou a própria, de engenheiro) volta a andar: o bonequinho vai até o terreno e constrói
+  function continuarObra(m) {
+    missao.obra = { id: m.id, dono: m.donoNome || m.dono, item: m.item, nome: m.nome, mao: m.mao, progresso: Math.min(m.progresso || 0, ((vida() && vida().obraMinutos) || 1) - 1), total: (vida() && vida().obraMinutos) || 1 };
+    comecar("construir"); mensagemMapa("🏗️ Construindo “" + m.nome + "”. Falta " + Math.max(1, missao.obra.total - missao.obra.progresso) + " min: fique com o jogo aberto.", 6000);
   }
   function pedirAcomp(numero, b) {
     if (b) b.disabled = true;
@@ -2938,7 +2946,8 @@
       if (!r.ok) { desenharItens(); return mensagem("msgMercado", r.erro || "Não deu certo. Tente de novo."); }
       aplicarPerfil(r); salvarEu(); mostrarCartao(eu);
       if (it.gas) { eu.gas = true; salvarEu(); }
-      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra && r.obra.propria ? "Obra aberta! Como você é engenheiro, você mesmo constrói: entre no plantão (painel TRABALHO) para a obra andar." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua obra aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : r.ate ? it.nome + " ativa até " + new Date(r.ate).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "!" : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
+      mensagem("msgMercado", r.montado ? "Outdoor montado de novo! Já aparece no seu terreno." : it.gas ? "Tanque de ar cheio! Dura 24 horas parado ou 12 horas trabalhando." : r.obra && r.obra.propria ? "Obra aberta! Como você é engenheiro, você mesmo constrói: seu bonequinho já foi para o terreno." : r.obra ? "Obra aberta! " + (r.engenheirosOnline ? r.engenheirosOnline + " engenheiro(s) online agora." : "Não há engenheiro online agora.") + " Assim que um engenheiro aceitar e construir, sua obra aparece no terreno. Se ninguém aceitar em 24 horas, a nave constrói." : r.ate ? it.nome + " ativa até " + new Date(r.ate).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "!" : it.consumivel ? "Ração guardada. Coma no seu cartão (aba Entrar) quando estiver com fome." : "Agora é seu: " + it.nome + "!" + (it.slot ? " Você já está vestindo (dá para tirar no seu cartão, na aba Entrar)." : ""), true);
+      if (r.obra && r.obra.propria) continuarObra({ id: r.obra.id, donoNome: eu.nome, item: r.obra.item, nome: it.nome, mao: 0, progresso: 0 });
       if (r.obra) atualizarPerfil();
       carregar();
     });
@@ -3534,7 +3543,7 @@
   function servicosAtivo() { var f = minhaFuncao(); return logado() && (f === "engenheiro" || f === "medico"); }
   function contarServicos(d) {
     if (!d) return 0;
-    if (d.funcao === "engenheiro") return (d.minha || missao.obra) ? 0 : (d.obras || []).length;
+    if (d.funcao === "engenheiro") { var construindo = missao.modo === "consertando" && missao.trabalho === "construir"; return d.minha ? (construindo ? 0 : 1) : missao.obra ? 0 : (d.obras || []).filter(function (o) { return o.dono !== eu.nome; }).length; }
     if (d.funcao === "medico") { var vagas = 4 - (d.pacientes || []).length; return Math.max(0, Math.min(vagas, (d.trabalhando || []).filter(function (x) { return !x.acompanhado; }).length)); }
     return 0;
   }
@@ -3563,14 +3572,15 @@
     var dica = document.createElement("p"), ul = document.createElement("ul"); ul.className = "serv-lista";
     if (f === "engenheiro") {
       if (missao.obra || d.minha) {
-        var o = missao.obra || { nome: d.minha.nome, dono: d.minha.donoNome };
-        dica.textContent = "Você já está numa obra. Termine esta para pegar outra.";
-        linhaServico(ul, "🏗️ Construindo “" + o.nome + "” de " + o.dono, "VER NO MAPA", function () { fecharServicos(); rolar(document.getElementById("cena"), "center"); });
+        var o = missao.obra || { nome: d.minha.nome, dono: d.minha.donoNome }, andando = missao.modo === "consertando" && missao.trabalho === "construir";
+        dica.textContent = andando ? "Você está construindo. Fique com o jogo aberto até terminar." : "Sua obra está parada. Toque em CONTINUAR para o bonequinho voltar a construir.";
+        if (andando) linhaServico(ul, "🏗️ Construindo “" + o.nome + "” de " + o.dono, "VER NO MAPA", function () { fecharServicos(); rolar(document.getElementById("cena"), "center"); });
+        else linhaServico(ul, "🏗️ “" + o.nome + "” de " + o.dono + " · parada", "CONTINUAR", function () { continuarObra(d.minha || o); fecharServicos(); servQtdAntes = 0; atualizarServicos(d); rolar(document.getElementById("cena"), "center"); });
       } else {
         var om = (vida() && vida().obraMinutos) || 1; dica.textContent = "Escolha uma obra. Seu bonequinho vai até o terreno e constrói (" + om + " min). Você recebe a mão de obra no fim.";
         if (!(d.obras || []).length) linhaServico(ul, "Nenhuma obra agora. Quando alguém adquirir uma casa, ela aparece aqui e a bolinha avisa.");
-        (d.obras || []).forEach(function (ob) {
-          linhaServico(ul, "🏗️ " + (ob.item === "base_grande" ? "Prédio" : "Casa") + " de " + ob.dono + " · +" + ob.mao + " moedas", "FAZER", function (b) {
+        (d.obras || []).filter(function (ob) { return ob.dono !== eu.nome; }).forEach(function (ob) {
+          linhaServico(ul, "🏗️ " + (ob.item === "base_grande" ? "Prédio" : ob.item === "outdoor" ? "Outdoor" : "Casa") + " de " + ob.dono + " · +" + ob.mao + " moedas", "FAZER", function (b) {
             b.disabled = true;
             enviar(credenciais({ acao: "aceitar_obra", id: ob.id })).then(function (r) {
               b.disabled = false;
