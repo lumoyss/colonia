@@ -977,7 +977,7 @@
     estado.ofertas = d.ofertas || []; estado.ofertas.forEach(function (o) { if (o.nomeItem) { var mm = {}; mm[o.item] = o.nomeItem; registrarReliquias(mm); } });
     estado.alugueis = d.alugueis || [];
     estado.outdoorsLista = d.outdoors || [];
-    estado.medicos = d.medicos || []; estado.guardas = d.guardas || []; estado.pesquisa = d.pesquisa || null; estado.titulos = d.titulos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
+    estado.obrasMapa = d.obrasMapa || []; estado.medicos = d.medicos || []; estado.guardas = d.guardas || []; estado.pesquisa = d.pesquisa || null; estado.titulos = d.titulos || []; estado.obras = d.obras || []; estado.engenheirosOnline = d.engenheirosOnline || 0; estado.engenheiros = d.engenheiros || null; estado.funcoes = d.funcoes || []; estado.torres = d.torres || []; estado.criados = d.criados || {};
     if (d.nave) desenharNave(d.nave);
     if (d.ranking) desenharRanking(d.ranking);
     if (d.lider) { document.getElementById("liderNave").hidden = false; document.getElementById("liderNome").textContent = d.lider; }
@@ -1084,6 +1084,37 @@
     });
     estado.donos = d; estado.aVenda = v; estado.lotePorNome = porNome; estado.outdoors = od; estado.outdoorOferta = oo;
   }
+  // Lucas 14/11: obra em andamento aparece no terreno, com andaime e barrinha do tempo que falta
+  function obrasNoMapa() {
+    var T = lotesCfg(); if (!T || !estado.lotePorNome) return [];
+    return (estado.obrasMapa || []).map(function (o) {
+      var n = estado.lotePorNome[o.dono]; if (!n) return null;
+      var c = centroLote(n), prog = o.progresso;
+      if (missao.obra && missao.obra.dono === o.dono && missao.obra.nome) prog = Math.max(prog, missao.obra.progresso || 0); // a minha obra anda na hora
+      return { x: c[0], y: c[1] + 4, item: o.item, status: o.status, frac: Math.min(1, prog / (o.total || 10)), falta: Math.max(0, (o.total || 10) - prog), eng: o.eng, dono: o.dono };
+    }).filter(Boolean);
+  }
+  function desenharObraMapa(x, y, o, t) {
+    var R = function (c, a, b, w, h) { mctx.fillStyle = c; mctx.fillRect(x + a, y + b, w, h); };
+    var g = o.item === "base_grande", L = g ? 20 : 15, H = g ? 24 : 14, alt = Math.round(H * (0.15 + 0.85 * o.frac));
+    R("rgba(0,0,0,.25)", -L - 1, 6, L * 2 + 3, 3);
+    R("#5b6b72", -L, 3, L * 2, 4);                                   // fundação
+    R(g ? "#F3E9D6" : "#7FD6C8", -L + 3, 3 - alt, L * 2 - 6, alt);   // parede/cúpula subindo
+    for (var k = -L; k <= L; k += 6) R("#B8472A", k, -H - 2, 1, H + 6); // andaime
+    for (var j = -H; j <= 3; j += 6) R("#7A2E22", -L, j, L * 2 + 1, 1);
+    R("#E8C25A", L + 3, -H - 8, 1, H + 12); R("#E8C25A", L - 9, -H - 8, 13, 1); // guindaste
+    var sob = (t >> 2) % 8; R("#9aa7ac", L - 8, -H - 7, 1, 3 + sob); R("#E07A3A", L - 10, -H - 4 + sob, 4, 3);
+    if ((t >> 4) % 2) R("#E8C25A", -2, -H - 4, 1, 1);                 // faísca de solda
+  }
+  function barraMapa(sx, sy, frac, txt, cor, esc, tela) { // sx, sy = centro da barra na tela
+    cctx.save(); var w = Math.max(48, esc * 30), h = Math.max(6, esc * 2.5), bx = Math.round(sx - w / 2), by = Math.round(sy);
+    cctx.fillStyle = "rgba(11,22,28,.9)"; cctx.fillRect(bx - 2, by - 2, w + 4, h + 4);
+    cctx.fillStyle = "#3a4a52"; cctx.fillRect(bx, by, w, h);
+    cctx.fillStyle = cor; cctx.fillRect(bx, by, Math.round(w * Math.max(0, Math.min(1, frac))), h);
+    if (txt) { var fs = Math.round(Math.min(esc * 2.2, 6.5 / tela)); cctx.font = fs + "px 'Press Start 2P', monospace"; rotulo(txt, sx, by - fs - 8, "#F3E9D6", "rgba(11,22,28,.85)"); }
+    cctx.restore();
+  }
+  function textoFalta(ms) { var t = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(t / 60), s = t % 60; return m >= 10 ? Math.ceil(t / 60) + " min" : m + ":" + (s < 10 ? "0" : "") + s; }
   // Lucas 14/11: bases maiores no mapa. Base oxigenada = cúpula de vidro; base grande = prédio de 8 apartamentos com cúpula
   function desenharBaseMapa(x, y, grande, t) {
     var R = function (c, a, b, w, h) { mctx.fillStyle = c; mctx.fillRect(x + a, y + b, w, h); };
@@ -1370,12 +1401,17 @@
       var p = posBase(t, i), grande = /grande|placa|casa/i.test(t.plano || "");
       desenharBaseMapa(Math.round(p[0]), Math.round(p[1]), grande, tempo + i * 37);
     });
+    obrasNoMapa().forEach(function (o) { desenharObraMapa(Math.round(o.x), Math.round(o.y), o, tempo); });
     if (bauVisivel()) desenharBauGrande(estado.bau.x, estado.bau.y, tempo);
     (estado.bauzinhos || []).forEach(function (b) { desenharBauzinho(b.x, b.y, tempo); });
     desenharTorresMapa(tempo);
 
     var vivos = ordem.map(function (id) { return bonecos[id]; }), meu = meuBoneco();
-    if (meu && ((missao.modo === "consertando" && missao.trabalho === "consertar") || (missao.modo === "descansando" && !descansoLivre()))) {
+    var loteObra = meu && missao.modo === "consertando" && missao.trabalho === "construir" && missao.obra && estado.lotePorNome && lotesCfg() ? estado.lotePorNome[missao.obra.dono] : 0;
+    if (loteObra) { // engenheiro vai até a obra e trabalha do lado do andaime
+      var co = centroLote(loteObra); meu.explorando = false;
+      meu.tx = co[0] - 22 + Math.sin(meu.t / 40) * 6; meu.ty = co[1] + 12; meu.espera = 0;
+    } else if (meu && ((missao.modo === "consertando" && missao.trabalho === "consertar") || (missao.modo === "descansando" && !descansoLivre()))) {
       var alvo = PONTO_CONSERTO;
       if (missao.modo === "descansando") {
         var casaDe = eu.nome; if (eu.mora) (estado.alugueis || []).forEach(function (a) { if (a.codigo === eu.mora) casaDe = a.dono; });
@@ -1479,6 +1515,21 @@
       if (dentro(b.x, b.y)) rotulo(b.nome, (b.x - cx) * esc, (b.y + 4 - cy) * esc, b === meu ? "#0B161C" : "#F3E9D6", b === meu ? "#E07A3A" : "rgba(11,22,28,.75)");
     });
     var agoraF = Date.now();
+    // Lucas 14/11: barrinhas de tempo (obra, reivindicação, invasão)
+    obrasNoMapa().forEach(function (o) {
+      if (!dentro(o.x, o.y)) return;
+      var esperando = o.status === "aguardando";
+      barraMapa((o.x - cx) * esc, (o.y - (o.item === "base_grande" ? 40 : 30) - cy) * esc, esperando ? 0 : o.frac,
+        esperando ? "ESPERANDO ENGENHEIRO" : "OBRA · faltam " + Math.ceil(o.falta) + " min", "#E8C25A", esc, tela);
+    });
+    if (meu && LT && recon && !recon.pronto) {
+      var tot = LT.minutos * 60000, pas = agoraF - recon.inicio;
+      barraMapa((meu.x - cx) * esc, (meu.y - 34 - cy) * esc, pas / tot, "REIVINDICANDO · " + textoFalta(tot - pas), "#7FD6C8", esc, tela);
+    }
+    if (meu && inv) {
+      var totI = INVASAO_MIN * 60000, pasI = agoraF - inv.inicio;
+      barraMapa((meu.x - cx) * esc, (meu.y - 34 - cy) * esc, pasI / totI, "INVADINDO · " + textoFalta(totI - pasI), "#E05A3A", esc, tela);
+    }
     vivos.forEach(function (b) {
       if (!b.fala || b.fala.ate < agoraF || !dentro(b.x, b.y)) return;
       cctx.save(); cctx.font = Math.round(Math.min(esc * 2.6, 7.5 / tela)) + "px 'Press Start 2P', monospace";
