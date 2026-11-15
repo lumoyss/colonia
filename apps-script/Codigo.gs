@@ -162,6 +162,7 @@ const KIT_TEMPORARIO_HORAS = 24; // quem acorda ganha um kit de ferramentas temp
 const VAGAS = {};               // (antigo: vagas por número de sobreviventes)
 const VAGAS_MAX = { guarda: GUARDAS_MAX }; // número máximo de pessoas na profissão
 const MEDICO_MIN = 50;          // preço mínimo da consulta
+const ONLINE_MIN = 4;           // no mapa, conta como online quem abriu o jogo nos últimos 4 minutos (o site pede o perfil a cada 3)
 const PLANTAO_SEGUNDOS = 180;   // conta como online quem mandou sinal nos últimos 3 minutos
 // OBRAS: casa precisa de engenheiro
 const MAO_DE_OBRA = { base: 1000, base_grande: 3000, outdoor: 100 };
@@ -381,7 +382,8 @@ function doGet(e) {
 
   const ss = planilha_();
   const sobreviventes = linhas_(ss.getSheetByName(ABA_SOBREVIVENTES)).map(function (l) {
-    return { numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], visual: String(l[6] || ''), itens: String(l[9] || ''), outdoor: String(l[C_OUTDOOR - 1] || ''), veste: vesteDe_(l), funcao: funcaoDe_(l), cla: String(l[C_CLA - 1] || '') };
+    return { numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], visual: String(l[6] || ''), itens: String(l[9] || ''), outdoor: String(l[C_OUTDOOR - 1] || ''), veste: vesteDe_(l), funcao: funcaoDe_(l), cla: String(l[C_CLA - 1] || ''),
+      on: Date.now() - Math.max(Number(l[C_ON_DIA - 1]) || 0, Number(l[C_ON_ULTIMO - 1]) || 0) < ONLINE_MIN * 60000 ? 1 : 0 }; // Lucas 14/11: só quem está online aparece no mapa
   });
   const ideias = linhas_(ss.getSheetByName(ABA_IDEIAS)).map(function (l, i) {
     const quem = String(l[6] || '').split(',').filter(String).map(Number);

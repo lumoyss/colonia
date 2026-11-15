@@ -33,6 +33,9 @@
   .contador{display:inline-block;margin-top:10px;background:var(--fundo2);border:3px solid var(--verde);padding:10px 14px;font-size:12px;color:var(--creme)}
   .contador b{color:var(--laranja);font-size:16px}
   .cena{margin:18px 0 6px;border:4px solid var(--fundo3);background:#000;position:relative}
+  .mapa-online{position:absolute;bottom:8px;left:8px;z-index:4;background:rgba(11,22,28,.82);border:2px solid var(--verde);color:var(--creme);font-size:7px;padding:4px 6px;pointer-events:none}
+  .mapa-online .bolinha,.contador .bolinha{display:inline-block;width:7px;height:7px;background:#5BD16A;margin-right:5px;vertical-align:middle;animation:piscaOn 1.6s infinite}
+  @keyframes piscaOn{50%{opacity:.35}}
   .mapa-acao{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:92%;pointer-events:none}
   .mapa-acao .btn{pointer-events:auto;margin:0;padding:10px 14px;font-size:12px;width:auto;box-shadow:0 0 0 3px #0B161C,0 0 14px rgba(224,122,58,.8);animation:pulsa 1.2s ease-in-out infinite}
   .mapa-acao p{margin:0;background:rgba(11,22,28,.85);color:var(--creme);padding:4px 8px;font-size:13px;text-align:center}
@@ -268,7 +271,7 @@
     <img src="perfil.png" alt="">
     <h1 class="pix">NAVE ORION</h1>
     <p class="sub">A Terra caiu. A Nave Orion pousou num planeta com pouquíssimo oxigênio.<br>Todos a bordo dormem em hibernação, e o ar da nave está acabando.<br>Entre pelo link para acordar o seu sobrevivente.</p>
-    <div class="contador pix"><b id="total">0</b> SOBREVIVENTES ACORDADOS</div>
+    <div class="contador pix"><b id="total">0</b> SOBREVIVENTES DESPERTOS<br><span class="bolinha"></span><b id="totalOnline">0</b> ONLINE</div>
     <p id="liderNave" hidden style="margin:8px 0 0;color:var(--apagado);font-size:15px">👑 Líder da nave: <b id="liderNome"></b></p>
     <p id="cofreNave" hidden style="margin:8px 0 0;color:var(--apagado);font-size:15px">🏛️ Cofre da nave: <b id="cofreValor">0</b> moedas (impostos da colônia)</p>
     <div class="nave-meta" id="naveMeta" hidden>
@@ -333,6 +336,7 @@
   </details>
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
+    <div class="mapa-online pix" id="mapaOnline"><span class="bolinha"></span>0 online</div>
     <div class="mapa-acao" id="mapaAcao" hidden><div id="mapaAcaoBotoes" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"></div><p id="mapaAcaoInfo" hidden></p></div>
     <div class="zoom"><button type="button" id="zoomMais" aria-label="Aproximar">+</button><button type="button" id="zoomMenos" aria-label="Afastar">−</button><button type="button" id="zoomCentro" aria-label="Voltar para o meu bonequinho" style="font-size:12px">◎</button></div></div>
       <div class="missao" id="missao" hidden style="margin:0 0 12px">
@@ -361,7 +365,7 @@
   <button class="btn sec" type="button" id="btnMinerar" hidden style="margin:0 0 8px">MINERAR AQUI</button>
   <div id="terrenoBox" hidden style="text-align:center;margin:0 0 8px"><p class="legenda" id="terrenoInfo" style="margin:0 0 6px;color:var(--creme)"></p><button class="btn" type="button" id="btnTerreno" hidden style="margin:0">REGISTRAR TERRENO</button></div>
   <div class="torre-box" id="torreBox" hidden></div>
-  <p class="legenda" id="bauInfo">A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação.</p>
+  <p class="legenda" id="bauInfo">A colônia ao vivo. No mapa aparece só quem está online agora; quem saiu está dormindo na base (zZ) ou na hibernação.</p>
   <p class="legenda" style="margin-top:-6px">Toque no mapa para explorar com o seu bonequinho. Arraste para olhar em volta e use + e − (ou dois dedos) para dar zoom.</p>
 
   <nav class="abas" role="tablist">
@@ -1114,6 +1118,15 @@
     if (txt) { var fs = Math.round(Math.min(esc * 2.2, 6.5 / tela)); cctx.font = fs + "px 'Press Start 2P', monospace"; rotulo(txt, sx, by - fs - 8, "#F3E9D6", "rgba(11,22,28,.85)"); }
     cctx.restore();
   }
+  function desenharSono(x, y, t) { // "z z" subindo da casa de quem está dormindo (offline)
+    for (var k = 0; k < 2; k++) {
+      var f = ((t / 2 + k * 40) % 80) / 80, zx = x + Math.round(Math.sin(f * 6 + k) * 2) + k * 3, zy = y - Math.round(f * 10), tam = k ? 4 : 5;
+      mctx.globalAlpha = 1 - f; mctx.fillStyle = "#F3E9D6";
+      mctx.fillRect(zx, zy, tam, 1); mctx.fillRect(zx, zy + tam - 1, tam, 1);
+      for (var j = 1; j < tam - 1; j++) mctx.fillRect(zx + tam - 1 - j, zy + j, 1, 1);
+    }
+    mctx.globalAlpha = 1;
+  }
   function textoFalta(ms) { var t = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(t / 60), s = t % 60; return m >= 10 ? Math.ceil(t / 60) + " min" : m + ":" + (s < 10 ? "0" : "") + s; }
   // Lucas 14/11: bases maiores no mapa. Base oxigenada = cúpula de vidro; base grande = prédio de 8 apartamentos com cúpula
   function desenharBaseMapa(x, y, grande, t) {
@@ -1361,13 +1374,26 @@
       var id = String(s.nome);
       var roupa = s.veste != null ? s.veste : (s.itens || "");
       if (eu && logado() && s.nome === eu.nome && eu.veste != null) roupa = eu.veste;
-      if (bonecos[id]) { bonecos[id].itens = roupa; bonecos[id].numero = s.numero; return; }
+      if (bonecos[id]) { bonecos[id].itens = roupa; bonecos[id].numero = s.numero; bonecos[id].onServ = s.on ? Date.now() : bonecos[id].onServ; return; }
       var r = rnd(hash(id));
-      bonecos[id] = { nome: s.nome, numero: s.numero, itens: roupa, v: lerVisual(s.visual, s.nome), x: OFX + 190 + r() * 100, y: OFY + 150 + r() * 30, tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r };
+      bonecos[id] = { nome: s.nome, numero: s.numero, itens: roupa, v: lerVisual(s.visual, s.nome), x: OFX + 190 + r() * 100, y: OFY + 150 + r() * 30, tx: 0, ty: 0, espera: r() * 120 | 0, t: r() * 100 | 0, r: r, onServ: s.on ? Date.now() : 0 };
       ordem.push(id);
     });
   }
   function meuBoneco() { return eu && logado() ? bonecos[eu.nome] : null; }
+  // Lucas 14/11: no mapa só aparece quem está online; quem está offline está dormindo (na base ou na hibernação)
+  function estaOnline(b) {
+    if (!b) return false; var ag = Date.now();
+    return b === meuBoneco() || (b.remoto && ag - b.remoto < 60000) || (b.onServ && ag - b.onServ < 70000) || (b.fala && b.fala.ate > ag);
+  }
+  function nomeOnline(nome) { return estaOnline(bonecos[String(nome)]); }
+  var contOnline = -1, contTotal = -1;
+  function atualizarContadorOnline() {
+    var n = 0; ordem.forEach(function (id) { if (estaOnline(bonecos[id])) n++; });
+    if (n === contOnline && estado.total === contTotal) return; contOnline = n; contTotal = estado.total;
+    var a = document.getElementById("mapaOnline"); if (a) a.innerHTML = "<span class=\"bolinha\"></span>" + n + " online · " + (estado.total || 0) + " despertos";
+    var b = document.getElementById("totalOnline"); if (b) b.textContent = n;
+  }
   function bauVisivel() { var b = estado.bau; return b && b.x != null && !b.abertoPor; }
   function bauzinhoPerto(meu) { var achou = null; (estado.bauzinhos || []).forEach(function (b) { if (!achou && meu && Math.hypot(meu.x - b.x, meu.y - b.y) < 14) achou = b; }); return achou; }
   function desenharBauzinho(x, y, t) {
@@ -1400,13 +1426,15 @@
     estado.terrenos.forEach(function (t, i) {
       var p = posBase(t, i), grande = /grande|placa|casa/i.test(t.plano || "");
       desenharBaseMapa(Math.round(p[0]), Math.round(p[1]), grande, tempo + i * 37);
+      if (!nomeOnline(t.dono)) desenharSono(Math.round(p[0]) + (grande ? 14 : 10), Math.round(p[1]) - (grande ? 30 : 20), tempo + i * 23);
     });
     obrasNoMapa().forEach(function (o) { desenharObraMapa(Math.round(o.x), Math.round(o.y), o, tempo); });
     if (bauVisivel()) desenharBauGrande(estado.bau.x, estado.bau.y, tempo);
     (estado.bauzinhos || []).forEach(function (b) { desenharBauzinho(b.x, b.y, tempo); });
     desenharTorresMapa(tempo);
 
-    var vivos = ordem.map(function (id) { return bonecos[id]; }), meu = meuBoneco();
+    var vivos = ordem.map(function (id) { return bonecos[id]; }).filter(estaOnline), meu = meuBoneco();
+    if ((tempo & 31) === 0) atualizarContadorOnline();
     var loteObra = meu && missao.modo === "consertando" && missao.trabalho === "construir" && missao.obra && estado.lotePorNome && lotesCfg() ? estado.lotePorNome[missao.obra.dono] : 0;
     if (loteObra) { // engenheiro vai até a obra e trabalha do lado do andaime
       var co = centroLote(loteObra); meu.explorando = false;
@@ -1726,7 +1754,7 @@
   document.getElementById("zoomCentro").onclick = function () { cam.livre = false; };
   function tocarMapa(ev) {
     var rr = cena.getBoundingClientRect(), wx = cam.x + (ev.clientX - rr.left) / rr.width * VW, wy = cam.y + (ev.clientY - rr.top) / rr.height * VH, alvoP = null;
-    ordem.forEach(function (id) { var b = bonecos[id]; if (b && b !== meuBoneco() && b.numero && wx > b.x - 8 && wx < b.x + 8 && wy > b.y - 21 && wy < b.y + 9) alvoP = b; });
+    ordem.forEach(function (id) { var b = bonecos[id]; if (b && estaOnline(b) && b !== meuBoneco() && b.numero && wx > b.x - 8 && wx < b.x + 8 && wy > b.y - 21 && wy < b.y + 9) alvoP = b; });
     if (alvoP) { abrirPerfil(alvoP.numero); return; }
     var ofTocada = null;
     if (lotesCfg()) Object.keys(estado.outdoorOferta || {}).forEach(function (n) { var A = areaOutdoor(+n); if (wx >= A.x && wx <= A.x + A.w && wy >= A.y && wy <= A.y + A.h) ofTocada = estado.outdoorOferta[n]; });
@@ -1748,7 +1776,7 @@
   function mensagemMapa(t, ms) { var el = document.getElementById("bauInfo"); el.textContent = t; clearTimeout(mensagemMapa.t); mensagemMapa.t = setTimeout(desenharBauInfo, ms || 4000); }
   function desenharBauInfo() {
     var b = estado.bau, el = document.getElementById("bauInfo");
-    if (!b) { el.textContent = "A colônia ao vivo. Cada bonequinho é alguém que já acordou da hibernação."; return; }
+    if (!b) { el.textContent = "A colônia ao vivo. No mapa aparece só quem está online agora; quem saiu está dormindo na base (zZ) ou na hibernação."; return; }
     if (b.abertoPor) el.textContent = "O baú de hoje já foi aberto por " + b.abertoPor + ". Amanhã aparece outro!";
     else if (b.x == null) el.textContent = "O baú de hoje aparece às " + b.hora + "h em algum lugar do mapa. Fique de olho!";
     else el.textContent = "O BAÚ DE HOJE APARECEU! Toque no mapa para explorar com o seu bonequinho e encontrá-lo.";
