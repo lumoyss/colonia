@@ -2080,7 +2080,7 @@
     if (r.avisos !== undefined) desenharSino();
     if (r.reliquias) registrarReliquias(r.reliquias);
     if (r.pedidosAcompanhamento) verPedidosAcomp(r.pedidosAcompanhamento);
-    if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(abrirCheckin, 900); }
+    if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(function abrirQuandoLivre() { if (algumModalAberto()) return setTimeout(abrirQuandoLivre, 1500); abrirCheckin(); }, 900); }
     if (r.ofertaAte !== undefined && typeof mostrarOferta === "function") mostrarOferta();
     if (typeof missao !== "undefined" && missao && Number(r.descansoAte) > Date.now() && missao.modo === "parado") { missao.modo = "descansando"; missao.descanso = Math.ceil((r.descansoAte - Date.now()) / 1000); missao.temBase = typeof temCasa === "function" ? temCasa() : missao.temBase; }
     if (r.veste !== undefined && typeof bonecos !== "undefined" && eu && bonecos[eu.nome]) bonecos[eu.nome].itens = eu.veste;
