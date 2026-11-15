@@ -51,7 +51,7 @@ const C_OUT_PRECO = 25, C_OUT_ANUNCIO = 26, C_OUT_AUTOR = 27, C_OUT_ATE = 28;
 const C_FUNCAO = 29, C_FUNCAO_DATA = 30, C_PONTOS = 31, C_PONTOS_SEM = 32, C_FOME = 33, C_DOENTE_ATE = 34, C_AR = 35, C_AR_TS = 36,
   C_PLANTAO = 37, C_MEDICO_PRECO = 38, C_EXTRA = 39, C_CLA = 40, C_MUDO_ATE = 41, C_OUT_OFERTA = 42, C_ANUNCIO_OFERTA = 43,
   C_GUARDA_DIA = 44, C_BOOST_ATE = 45, C_OFERTA_ATE = 46, C_CAIXA_ATE = 47,
-  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56, C_CONSERTO_DIA = 57, C_EMAIL = 58, C_EMAIL_DIA = 59, C_PICARETA_VELHA = 60;
+  C_SEG_PRECO = 48, C_INVASAO = 49, C_VISTO = 50, C_PESQUISA = 51, C_TITULO = 52, C_CHECKIN = 53, C_VASSOURA_ATE = 54, C_MINERACAO = 55, C_APOIADOR = 56, C_CONSERTO_DIA = 57, C_EMAIL = 58, C_EMAIL_DIA = 59, C_PICARETA_VELHA = 60, C_REDE = 61;
 // E-MAIL (opcional, com consentimento no cadastro): só avisos importantes, no máximo 1 por pessoa por dia.
 // A conta gratuita do Google manda para no máximo 100 pessoas por dia; paramos com folga.
 const EMAIL_FOLGA = 10, EMAIL_NOME = 'Nave Orion';
@@ -332,7 +332,7 @@ function resetarJogo() {
 
 function setup() {
   const ss = planilha_();
-  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador', 'conserto_dia', 'email', 'email_enviado_dia', 'picareta_velha_usos']);
+  colunas_(garantirAba_(ss, ABA_SOBREVIVENTES), ['numero', 'data', 'nome', 'instagram', 'profissao', 'historia', 'visual', 'moedas', 'chave', 'itens', 'banido', 'online_dia', 'online_minutos', 'online_ultimo', 'turno_minutos', 'progresso_moeda', 'descanso_ate', 'reconhecimento', 'outdoor', 'vestindo', 'gas_dia', 'objetivo', 'amigos', 'minerou', 'outdoor_preco', 'anuncio', 'anuncio_autor', 'anuncio_ate', 'funcao', 'funcao_desde', 'pontos', 'pontos_semana', 'fome_min', 'doente_ate', 'ar_min', 'ar_quando', 'plantao', 'preco_consulta', 'extra', 'cla', 'silenciado_ate', 'outdoor_oferta', 'anuncio_oferta', 'guarda_dia', 'boost_ate', 'oferta_boas_vindas_ate', 'caixa_ate', 'seguranca_preco', 'invasao', 'visto', 'pesquisa', 'titulo', 'checkin', 'vassoura_ate', 'mineracao', 'apoiador', 'conserto_dia', 'email', 'email_enviado_dia', 'picareta_velha_usos', 'rede']);
   colunas_(garantirAba_(ss, ABA_INVASOES), ['data', 'lote', 'invasor_numero', 'invasor', 'dono_numero', 'dono', 'levou']);
   colunas_(garantirAba_(ss, ABA_SEGURANCA), ['data', 'dono_numero', 'dono', 'guarda_numero', 'guarda', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_IDEIAS), ['data', 'autor', 'tipo', 'texto', 'id', 'numero', 'gostei']);
@@ -468,8 +468,10 @@ function cadastrar_(ss, d) {
 
   if (nome.length < 2) return { ok: false, erro: 'Escolha um nome com pelo menos 2 letras.' };
   if (!profissao) return { ok: false, erro: 'Escolha uma profissão.' };
-  if (INSTAGRAM_OBRIGATORIO && !instagram) return { ok: false, erro: 'Coloque o seu @ do Instagram: cada @ acorda um sobrevivente.' };
-  if (instagram && !/^[A-Za-z0-9._]{1,30}$/.test(instagram)) return { ok: false, erro: 'Esse @ do Instagram não parece certo.' };
+  // Lucas 14/11: o jogador escolhe se veio do Instagram ou do TikTok
+  const rede = String(d.rede || 'instagram').toLowerCase() === 'tiktok' ? 'tiktok' : 'instagram', nomeRede = rede === 'tiktok' ? 'TikTok' : 'Instagram';
+  if (INSTAGRAM_OBRIGATORIO && !instagram) return { ok: false, erro: 'Coloque o seu @ do ' + nomeRede + ': cada @ acorda um sobrevivente.' };
+  if (instagram && !/^[A-Za-z0-9._]{1,30}$/.test(instagram)) return { ok: false, erro: 'Esse @ do ' + nomeRede + ' não parece certo.' };
 
   const aba = ss.getSheetByName(ABA_SOBREVIVENTES);
   const existentes = linhas_(aba);
@@ -477,7 +479,7 @@ function cadastrar_(ss, d) {
   if (existentes.some(function (l) { return String(l[2]).toLowerCase() === nomeMin; })) {
     return { ok: false, erro: 'Já existe um sobrevivente chamado ' + nome + '. Tente outro nome.' };
   }
-  if (instagram && existentes.some(function (l) { return String(l[3]).toLowerCase() === '@' + instagram.toLowerCase(); })) {
+  if (instagram && existentes.some(function (l) { return String(l[3]).toLowerCase() === '@' + instagram.toLowerCase() && (String(l[C_REDE - 1] || 'instagram') === rede); })) {
     return { ok: false, erro: 'Esse @ já tem um sobrevivente na colônia.' };
   }
 
@@ -493,6 +495,7 @@ function cadastrar_(ss, d) {
   linha[C_FUNCAO_DATA - 1] = Date.now();
   linha[C_OBJETIVO - 1] = texto_(objetivo);
   if (email) { while (linha.length < C_EMAIL) linha.push(''); linha[C_EMAIL - 1] = email; }
+  if (rede !== 'instagram') { while (linha.length < C_REDE) linha.push(''); linha[C_REDE - 1] = rede; }
   aba.appendRow(linha);
   return { ok: true, numero: numero, chave: chave, moedas: 0, itens: ticketsTexto_(), gas: GAS_GRATIS_NO_CADASTRO, objetivo: objetivo };
 }
@@ -514,7 +517,7 @@ function acharSobrevivente_(ss, d) {
 
 function perfilDe_(s) {
   const l = s.dados;
-  return { ok: true, numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], visual: String(l[6] || ''),
+  return { ok: true, numero: l[0], nome: l[2], instagram: l[3], rede: String(l[C_REDE - 1] || 'instagram'), profissao: l[4], visual: String(l[6] || ''),
     moedas: Number(l[C_MOEDAS - 1]) || 0, itens: String(l[C_ITENS - 1] || ''), chave: String(l[C_CHAVE - 1]), outdoor: String(l[C_OUTDOOR - 1] || ''), veste: vesteDe_(l), gas: temGas_(l), ar: arDe_(l), fome: Number(l[C_FOME - 1]) || 0, doenteAte: Number(l[C_DOENTE_ATE - 1]) || 0,
     kitAte: kitAte_(l), funcao: funcaoDe_(l), funcaoDesde: Number(l[C_FUNCAO_DATA - 1]) || 0, pontos: Number(l[C_PONTOS - 1]) || 0, precoConsulta: Number(l[C_MEDICO_PRECO - 1]) || MEDICO_MIN,
     objetivo: String(l[C_OBJETIVO - 1] || ''), cla: String(l[C_CLA - 1] || ''), mudoAte: Number(l[C_MUDO_ATE - 1]) || 0,
@@ -1901,7 +1904,7 @@ function perfilPublico_(numero) {
   linhas_(ss.getSheetByName(ABA_SOBREVIVENTES)).forEach(function (x) { nomes[String(x[0])] = String(x[2]); });
   const amigos = String(l[C_AMIGOS - 1] || '').split(',').filter(function (n) { return nomes[n]; });
   const casa = temCasa_(String(l[C_ITENS - 1] || '')), aluga = moradiaAlugada_(ss, l[0]);
-  return { ok: true, numero: l[0], nome: l[2], instagram: l[3], profissao: l[4], historia: l[5], visual: String(l[6] || ''),
+  return { ok: true, numero: l[0], nome: l[2], instagram: l[3], rede: String(l[C_REDE - 1] || 'instagram'), profissao: l[4], historia: l[5], visual: String(l[6] || ''),
     itens: String(l[C_ITENS - 1] || ''), veste: vesteDe_(l), desde: new Date(l[C_DATA - 1]).getTime(), moedas: Number(l[C_MOEDAS - 1]) || 0,
     objetivo: String(l[C_OBJETIVO - 1] || ''), amigos: amigos.map(function (n) { return { numero: n, nome: nomes[n] }; }),
     casa: casa, aluga: aluga ? true : false, titulo: String(l[C_TITULO - 1] || ''), lider: String(l[2]).toLowerCase() === LIDER_NOME.toLowerCase(), apoiador: !!Number(l[C_APOIADOR - 1]), gas: temGas_(l), funcao: FUNCOES[funcaoDe_(l)].nome, pontos: Number(l[C_PONTOS - 1]) || 0, conselheiro: conselheiro_(ss, l[0]) };
@@ -2427,7 +2430,7 @@ function colunas_(aba, cabecalho) {
 
 function linhas_(aba) {
   if (!aba || aba.getLastRow() < 2) return [];
-  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 60)).getValues();
+  return aba.getRange(2, 1, aba.getLastRow() - 1, Math.max(aba.getLastColumn(), 61)).getValues();
 }
 
 function gerarChave_() {

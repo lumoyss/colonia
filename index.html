@@ -395,7 +395,9 @@
       <form id="cadastro" autocomplete="off">
         <label for="nome">Nome do sobrevivente</label>
         <input id="nome" maxlength="24" required placeholder="ex.: Mara">
-        <label for="instagram">Seu @ do Instagram <span class="dica">(obrigatório: cada @ acorda 1 sobrevivente)</span></label>
+        <label for="rede">De onde você veio?</label>
+        <select id="rede"><option value="instagram">Instagram</option><option value="tiktok">TikTok</option></select>
+        <label for="instagram" id="instagramRot">Seu @ do Instagram <span class="dica">(obrigatório: cada @ acorda 1 sobrevivente)</span></label>
         <input id="instagram" maxlength="31" placeholder="@seuperfil" required>
         <label for="profissao">Profissão na colônia</label>
         <select id="profissao" required>
@@ -1752,7 +1754,7 @@
     ev.preventDefault();
     var prof = elProf.value === "__outra" ? elOutra.value.trim() : elProf.value;
     var dados = {
-      acao: "cadastrar", nome: elNome.value.trim(), instagram: document.getElementById("instagram").value.trim(),
+      acao: "cadastrar", nome: elNome.value.trim(), instagram: document.getElementById("instagram").value.trim(), rede: document.getElementById("rede").value,
       profissao: prof, historia: elHist.value.trim(), visual: visualTexto(visual), site: document.getElementById("site").value,
       objetivo: document.getElementById("objetivo").value.trim(),
       email: document.getElementById("emailCad").value.trim(), aceitaEmail: document.getElementById("aceitaEmailCad").checked
@@ -1773,6 +1775,9 @@
     });
   });
 
+  document.getElementById("rede").addEventListener("change", function () {
+    document.getElementById("instagramRot").firstChild.textContent = "Seu @ do " + (this.value === "tiktok" ? "TikTok" : "Instagram") + " ";
+  });
   var MAPA_PROF = { "Mecânica(o)": "mecanico", "Engenheira(o)": "engenheiro", "Agricultor(a)": "agricultor", "Cozinheira(o)": "cozinheiro", "Minerador(a)": "minerador", "Explorador(a)": "explorador", "Médica(o)": "medico", "Guarda": "guarda", "Desempregado(a)": "desempregado" };
   function descProfissao() {
     var v = document.getElementById("profissao").value, info = funcaoInfo(MAPA_PROF[v] || "livre"), el = document.getElementById("profissaoDesc");
@@ -2919,7 +2924,7 @@
       retratoEm(document.getElementById("perfilSprite"), lerVisual(p.visual, p.nome), p.veste);
       document.getElementById("perfilNome").textContent = String(p.nome).toUpperCase();
       var dias = Math.max(0, Math.floor((Date.now() - p.desde) / 86400000));
-      var linhas = [["Sobrevivente", "#" + p.numero], ["Instagram", p.instagram || "—"], ["Profissão", p.profissao || "—"],
+      var linhas = [["Sobrevivente", "#" + p.numero], [p.rede === "tiktok" ? "TikTok" : "Instagram", p.instagram || "—"], ["Profissão", p.profissao || "—"],
         ["No jogo há", dias === 0 ? "menos de 1 dia" : dias + (dias === 1 ? " dia" : " dias")], ["Moedas", Number(p.moedas).toLocaleString("pt-BR")],
         ["Mora", p.casa ? "Na própria casa" : p.aluga ? "De aluguel" : "Na nave"], ["Objetivo", p.objetivo || "—"], ["História", p.historia || "—"],
         ["Amigos", p.amigos.length ? p.amigos.map(function (a) { return a.nome; }).join(", ") : "—"]];
@@ -2929,7 +2934,7 @@
       if (p.lider) linhas.unshift(["Cargo", "👑 Líder da Nave"]);
       linhas.forEach(function (l) {
         var dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = l[0];
-        if (l[0] === "Instagram" && p.instagram) { var a = document.createElement("a"); a.href = "https://instagram.com/" + String(p.instagram).replace(/^@/, ""); a.target = "_blank"; a.rel = "noopener"; a.textContent = p.instagram; a.style.color = "var(--verde2)"; dd.appendChild(a); }
+        if ((l[0] === "Instagram" || l[0] === "TikTok") && p.instagram) { var a = document.createElement("a"); a.href = l[0] === "TikTok" ? "https://www.tiktok.com/@" + String(p.instagram).replace(/^@/, "") : "https://instagram.com/" + String(p.instagram).replace(/^@/, ""); a.target = "_blank"; a.rel = "noopener"; a.textContent = p.instagram; a.style.color = "var(--verde2)"; dd.appendChild(a); }
         else dd.textContent = l[1];
         dl.appendChild(dt); dl.appendChild(dd);
       });
