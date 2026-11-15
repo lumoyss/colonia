@@ -147,6 +147,27 @@
   .inv-grade{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:var(--fundo2);padding:8px;border:3px solid var(--fundo3)}
   .slot{aspect-ratio:1;background:var(--fundo);border:2px solid var(--fundo3);position:relative;font-size:26px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;color:var(--creme);font-family:inherit;min-width:0}
   .slot.vazio{cursor:default;background:#0e1c22}
+  .ic-pixel{width:72%;height:72%;image-rendering:pixelated;image-rendering:crisp-edges;filter:drop-shadow(0 2px 0 rgba(0,0,0,.45));pointer-events:none}
+  .slot:not(.vazio){box-shadow:inset 0 -4px 0 rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.06);transition:transform .1s}
+  .slot:not(.vazio):hover .ic-pixel,.slot[aria-pressed=true] .ic-pixel{transform:translateY(-2px) scale(1.06)}
+  .slot.r-comum{background:radial-gradient(circle at 50% 40%,#2f434c,#16262d 70%);border-color:#3c5560}
+  .slot.r-util{background:radial-gradient(circle at 50% 40%,#22605c,#11302e 70%);border-color:#3FA7A0}
+  .slot.r-comida{background:radial-gradient(circle at 50% 40%,#3e6a2c,#1c3214 70%);border-color:#6fae4a}
+  .slot.r-roupa{background:radial-gradient(circle at 50% 40%,#2f4f86,#16253f 70%);border-color:#5d86d0}
+  .slot.r-imovel{background:radial-gradient(circle at 50% 40%,#7a4a2a,#3a2214 70%);border-color:#E07A3A}
+  .slot.r-especial{background:radial-gradient(circle at 50% 40%,#7a3a22,#3a1a10 70%);border-color:#E8C25A}
+  .slot.r-raro{background:radial-gradient(circle at 50% 40%,#5c3384,#26123a 70%);border-color:#D69CFF;animation:brilhoRaro 2.4s infinite}
+  .slot.r-ouro{background:radial-gradient(circle at 50% 40%,#8a6a1a,#3a2c0a 70%);border-color:#FFD866;animation:brilhoOuro 2s infinite}
+  @keyframes brilhoRaro{50%{box-shadow:0 0 10px rgba(214,156,255,.6),inset 0 -4px 0 rgba(0,0,0,.25)}}
+  @keyframes brilhoOuro{50%{box-shadow:0 0 10px rgba(255,216,102,.7),inset 0 -4px 0 rgba(0,0,0,.25)}}
+  .inv-tit{display:flex;align-items:center;gap:6px}
+  .inv-tit .ic-pixel{image-rendering:pixelated}
+  .premio-ic{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border:3px solid #3c5560;background:radial-gradient(circle at 50% 40%,#2f434c,#16262d 70%)}
+  .premio-ic .ic-pixel{width:48px;height:48px}
+  .premio-ic.r-raro{border-color:#D69CFF;background:radial-gradient(circle at 50% 40%,#5c3384,#26123a 70%)}
+  .premio-ic.r-ouro{border-color:#FFD866;background:radial-gradient(circle at 50% 40%,#8a6a1a,#3a2c0a 70%)}
+  .premio-ic.r-especial,.premio-ic.r-imovel{border-color:#E8C25A;background:radial-gradient(circle at 50% 40%,#7a3a22,#3a1a10 70%)}
+  .premio-ic.r-util{border-color:#3FA7A0;background:radial-gradient(circle at 50% 40%,#22605c,#11302e 70%)}
   .slot.ouro{border-color:#e8c14a;background:#2a2410}
   .slot[aria-pressed=true]{border-color:var(--laranja);box-shadow:0 0 0 2px var(--laranja)}
   .slot .q{position:absolute;right:3px;bottom:2px;font-family:"Press Start 2P",monospace;font-size:9px;color:var(--creme);text-shadow:1px 1px 0 #000}
@@ -2667,9 +2688,9 @@
   /* ---------------- aviso de prêmio ("você ganhou!") ---------------- */
   function premio(titulo, itens, moedas) {
     var box = document.getElementById("premioItens"); box.innerHTML = "";
-    function cartao(ic, nome, expl) { var d = document.createElement("div"); d.style.cssText = "background:var(--fundo);border:3px solid var(--fundo3);padding:10px;min-width:96px;max-width:260px"; var i = document.createElement("div"); i.style.fontSize = "38px"; i.textContent = ic; var n = document.createElement("div"); n.style.fontWeight = "700"; n.textContent = nome; d.appendChild(i); d.appendChild(n); if (expl) { var e = document.createElement("p"); e.className = "dica"; e.style.cssText = "margin:6px 0 0;font-size:14px;text-align:left"; e.textContent = expl; d.appendChild(e); } box.appendChild(d); }
+    function cartao(ic, nome, expl) { var d = document.createElement("div"); d.style.cssText = "background:var(--fundo);border:3px solid var(--fundo3);padding:10px;min-width:96px;max-width:260px"; var i = document.createElement("div"); i.style.fontSize = "38px"; if (ic && ic.nodeType) { i.className = "premio-ic r-" + (ic.dataset.r || "comum"); i.appendChild(ic); } else i.textContent = ic; var n = document.createElement("div"); n.style.fontWeight = "700"; n.textContent = nome; d.appendChild(i); d.appendChild(n); if (expl) { var e = document.createElement("p"); e.className = "dica"; e.style.cssText = "margin:6px 0 0;font-size:14px;text-align:left"; e.textContent = expl; d.appendChild(e); } box.appendChild(d); }
     if (moedas) cartao("🪙", "+" + moedas + " moedas");
-    (itens || []).forEach(function (id) { cartao(icone(id), nomeItem(id) || id, usoItem(id) || descItem(id)); marcarVisto("item_" + id); });
+    (itens || []).forEach(function (id) { var im = iconeImg(id, 48); im.dataset.r = raridadeItem(id); cartao(im, nomeItem(id) || id, usoItem(id) || descItem(id)); marcarVisto("item_" + id); });
     document.getElementById("premioTitulo").textContent = titulo || "VOCÊ GANHOU!";
     document.getElementById("premioDica").textContent = (itens || []).length ? "Já está no seu inventário (Mercado → INVENTÁRIO)." : "As moedas já estão na sua conta.";
     document.getElementById("premioVer").hidden = !(itens || []).length;
@@ -2695,6 +2716,36 @@
     sucata: "🔩", parafusos: "🔧", garrafa: "🍾", relogio: "⌚", radio_velho: "📻", moeda_antiga: "🪙", espada_alien: "🗡️", armadura_alien: "🛡️", peca_nave: "🛠️", ticket_assembleia: "🎫", ticket_pauta: "📜", jaqueta_orion: "🧥" };
   var COMIVEIS = { comida: "sacia 4h de trabalho", refeicao: "sacia 8h de trabalho", racao: "sacia 4h de trabalho" };
   function icone(id) { return ICONES[id] || (/^lote_/.test(id) ? "🗺️" : /^empresa_/.test(id) ? "🏭" : "📦"); }
+  // Lucas 15/11: ícones mais bonitos: o emoji vira pixel art (combina com o jogo) num fundo da cor da raridade
+  function raridadeItem(id) {
+    if (/dourad/.test(id)) return "ouro";
+    if (/^reliquia_|^ticket_|^ficha_|jaqueta_orion/.test(id)) return "especial";
+    if (/alien|^cristal$/.test(id) || id === "peca_nave") return "raro";
+    if (/^lote_|^base|^outdoor|^empresa_/.test(id)) return "imovel";
+    if (COMIVEIS[id] || id === "semente") return "comida";
+    if (ehRoupa(id)) return "roupa";
+    if (["gas", "mochila", "picareta", "ferramentas", "vassoura"].indexOf(id) >= 0) return "util";
+    return "comum";
+  }
+  var cacheIcone = {};
+  function iconeImg(id, tam) {
+    var ic = icone(id);
+    if (!cacheIcone[ic]) {
+      var N = 20, c = document.createElement("canvas"); c.width = N; c.height = N; var x = c.getContext("2d");
+      x.textAlign = "center"; x.textBaseline = "middle"; x.font = "15px 'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif";
+      x.fillText(ic, N / 2, N / 2 + 1);
+      var dados = x.getImageData(0, 0, N, N), d = dados.data, out = x.createImageData(N, N), o = out.data;
+      for (var i = 0; i < d.length; i += 4) { var a = d[i + 3] > 90 ? 255 : 0; o[i] = Math.round(d[i] / 32) * 32; o[i + 1] = Math.round(d[i + 1] / 32) * 32; o[i + 2] = Math.round(d[i + 2] / 32) * 32; o[i + 3] = a; } // poucas cores, sem meio-transparente
+      var f = document.createElement("canvas"); f.width = N; f.height = N; var y = f.getContext("2d");
+      var tmp = document.createElement("canvas"); tmp.width = N; tmp.height = N; tmp.getContext("2d").putImageData(out, 0, 0);
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (k) { y.drawImage(tmp, k[0], k[1]); }); // contorno escuro
+      y.globalCompositeOperation = "source-in"; y.fillStyle = "#0B161C"; y.fillRect(0, 0, N, N); y.globalCompositeOperation = "source-over";
+      y.drawImage(tmp, 0, 0);
+      cacheIcone[ic] = f.toDataURL();
+    }
+    var im = document.createElement("img"); im.src = cacheIcone[ic]; im.alt = ""; im.className = "ic-pixel"; if (tam) { im.style.width = tam + "px"; im.style.height = tam + "px"; }
+    return im;
+  }
   function ehRoupa(id) { return id === "traje_dourado" || (estado.mercado && estado.mercado.itens.some(function (i) { return i.id === id && i.slot; })); }
   // Lucas 14/11: o jogo explica sozinho o que é cada item e o que fazer com ele
   var ITENS_TERRA_IDS = ["sucata", "parafusos", "garrafa", "relogio", "radio_velho", "moeda_antiga"];
@@ -2768,8 +2819,8 @@
     for (var k = 0; k < total; k++) (function (id) {
       var b = document.createElement("button"); b.type = "button"; b.className = "slot";
       if (!id) { b.className += " vazio"; b.disabled = true; b.setAttribute("aria-label", "Espaço vazio"); g.appendChild(b); return; }
-      if (/dourad/.test(id)) b.className += " ouro";
-      b.textContent = icone(id); b.title = nomeItem(id); b.setAttribute("aria-label", nomeItem(id) + ", " + cont[id]);
+      b.className += " r-" + raridadeItem(id);
+      b.appendChild(iconeImg(id)); b.title = nomeItem(id); b.setAttribute("aria-label", nomeItem(id) + ", " + cont[id]);
       b.setAttribute("aria-pressed", String(invSel === id));
       if (cont[id] > 1) { var q = document.createElement("span"); q.className = "q"; q.textContent = cont[id]; b.appendChild(q); }
       if (tem(eu.veste, id)) { var v = document.createElement("span"); v.className = "v"; v.textContent = "✓"; b.appendChild(v); }
@@ -2786,7 +2837,7 @@
   }
   function desenharDetalheInv(cont) {
     var d = document.getElementById("invDet"), id = invSel; d.hidden = !id; d.innerHTML = ""; if (!id) return;
-    var h = document.createElement("h4"); h.textContent = icone(id) + " " + nomeItem(id); d.appendChild(h);
+    var h = document.createElement("h4"); h.className = "inv-tit"; var hi = iconeImg(id, 32); h.appendChild(hi); h.appendChild(document.createTextNode(" " + nomeItem(id))); d.appendChild(h);
     var p = document.createElement("p"); p.className = "dica"; p.style.margin = "0"; p.textContent = "Você tem " + cont[id] + ". " + descItem(id); d.appendChild(p);
     var uso = usoItem(id); if (uso) { var pu = document.createElement("p"); pu.className = "dica"; pu.style.cssText = "margin:6px 0 0;color:var(--verde2)"; pu.textContent = "👉 " + uso; d.appendChild(pu); }
     setTimeout(function () { d.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 30);
