@@ -239,6 +239,11 @@
   .sino .qtd{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:#D93B3B;color:#fff;font-family:"Press Start 2P",monospace;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
   .sino .qtd[hidden]{display:none}
   .radio-btn{top:calc(38vh + 54px)}
+  .serv-btn{top:calc(38vh + 108px);border-color:var(--laranja)}
+  .serv-btn.novo{animation:pulsa .8s 4}
+  .serv-lista{list-style:none;padding:0;margin:8px 0}
+  .serv-lista li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border:2px solid #2c4650;margin-bottom:6px;background:var(--fundo)}
+  .serv-lista li .btn{width:auto;margin:0;padding:8px 10px;font-size:10px}
   .toast-aviso{position:fixed;right:8px;top:60px;z-index:61;max-width:min(320px,calc(100vw - 16px));background:var(--fundo2);border:3px solid var(--laranja);color:var(--creme);padding:10px 12px;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:pointer}
   .avisos-lista{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
   .avisos-lista li{background:var(--fundo);border-left:4px solid var(--fundo3);padding:8px 10px;font-size:15px}
@@ -274,6 +279,7 @@
 </nav>
 <button type="button" class="moedas-fixas" id="moedasFixas" aria-label="Suas moedas" hidden>🪙 <span id="moedasFixasN">0</span></button>
 <button type="button" class="sino radio-btn" id="radioBtn" aria-label="Abrir o rádio" hidden>📻</button>
+<button type="button" class="sino serv-btn" id="servBtn" aria-label="Serviços disponíveis" hidden>🧰<span class="qtd" id="servQtd" hidden>0</span></button>
 <button type="button" class="sino" id="sino" aria-label="Avisos" hidden>🔔<span class="qtd" id="sinoQtd" hidden>0</span></button>
 <div class="toast-aviso" id="toastAviso" role="status" hidden></div>
 <button type="button" class="oferta-toast" id="ofertaToast" hidden>🎁 OFERTA DE BOAS-VINDAS<br>ACABA EM <span id="ofertaTempo">59:59</span></button>
@@ -651,6 +657,11 @@
     <h2 class="pix" id="dicaTitulo" style="margin:6px 0 10px;color:var(--laranja)"></h2>
     <p id="dicaTexto" style="text-align:left"></p>
     <button type="button" class="btn" id="dicaOk">ENTENDI</button>
+  </div></div>
+  <div class="modal" id="servModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="servTitulo">
+    <button type="button" class="fechar" id="servFechar" aria-label="Fechar">X</button>
+    <h2 class="pix" id="servTitulo" style="margin:4px 40px 8px 0;color:var(--laranja)">🧰 SERVIÇOS</h2>
+    <div id="servCorpo"></div>
   </div></div>
   <div class="modal" id="checkinModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="checkinTitulo" style="text-align:center">
     <button type="button" class="fechar" id="checkinFechar" aria-label="Fechar">X</button>
@@ -2304,6 +2315,7 @@
       if (!r.ok) { missao.aviso = r.erro; pararTudo(); return; }
       if (r.obras) missao.obras = r.obras;
       if (r.trabalhando) missao.trabalhando = r.trabalhando; if (r.pacientes) missao.pacientes = r.pacientes;
+      atualizarServicos(r);
       if (r.minha && !missao.obra) missao.obra = { id: r.minha.id, dono: r.minha.donoNome, nome: r.minha.nome, mao: r.minha.mao, progresso: r.minha.progresso, total: (vida() && vida().obraMinutos) || 10 };
       desenharPlantao();
     });
@@ -3516,6 +3528,84 @@
     try { if (lista[0]) localStorage.setItem("colonia_aviso_visto_" + eu.nome, String(lista[0].t)); } catch (e) {}
     document.getElementById("sinoQtd").hidden = true;
   }
+
+  /* ---------- Lucas 15/11: bolinha de serviços para profissões que prestam serviço ---------- */
+  var servDados = null, servQtdAntes = -1;
+  function servicosAtivo() { var f = minhaFuncao(); return logado() && (f === "engenheiro" || f === "medico"); }
+  function contarServicos(d) {
+    if (!d) return 0;
+    if (d.funcao === "engenheiro") return (d.minha || missao.obra) ? 0 : (d.obras || []).length;
+    if (d.funcao === "medico") { var vagas = 4 - (d.pacientes || []).length; return Math.max(0, Math.min(vagas, (d.trabalhando || []).filter(function (x) { return !x.acompanhado; }).length)); }
+    return 0;
+  }
+  function atualizarServicos(d) {
+    if (!d || !d.ok || d.nada) return;
+    servDados = d; var n = contarServicos(d), q = document.getElementById("servQtd"), b = document.getElementById("servBtn");
+    q.textContent = n; q.hidden = n === 0;
+    if (servQtdAntes >= 0 && n > servQtdAntes) {
+      b.classList.remove("novo"); void b.offsetWidth; b.classList.add("novo");
+      mostrarToast(d.funcao === "engenheiro" ? "🧰 Nova obra esperando engenheiro! Toque no 🧰 para aceitar." : "🧰 Tem gente trabalhando que você pode acompanhar! Toque no 🧰.");
+    }
+    servQtdAntes = n;
+    if (!document.getElementById("servModal").hidden) desenharServicos();
+  }
+  function buscarServicos() {
+    if (!servicosAtivo() || document.hidden || TESTE) return;
+    enviar(credenciais({ acao: "servicos" })).then(atualizarServicos).catch(function () {});
+  }
+  function linhaServico(ul, texto, rotuloBtn, acao) {
+    var li = document.createElement("li"), t = document.createElement("span"); t.textContent = texto; li.appendChild(t);
+    if (rotuloBtn) { var b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = rotuloBtn; b.onclick = function () { acao(b); }; li.appendChild(b); }
+    ul.appendChild(li);
+  }
+  function desenharServicos() {
+    var c = document.getElementById("servCorpo"), d = servDados || {}, f = minhaFuncao(); c.innerHTML = "";
+    var dica = document.createElement("p"), ul = document.createElement("ul"); ul.className = "serv-lista";
+    if (f === "engenheiro") {
+      if (missao.obra || d.minha) {
+        var o = missao.obra || { nome: d.minha.nome, dono: d.minha.donoNome };
+        dica.textContent = "Você já está numa obra. Termine esta para pegar outra.";
+        linhaServico(ul, "🏗️ Construindo “" + o.nome + "” de " + o.dono, "VER NO MAPA", function () { fecharServicos(); rolar(document.getElementById("cena"), "center"); });
+      } else {
+        var om = (vida() && vida().obraMinutos) || 1; dica.textContent = "Escolha uma obra. Seu bonequinho vai até o terreno e constrói (" + om + " min). Você recebe a mão de obra no fim.";
+        if (!(d.obras || []).length) linhaServico(ul, "Nenhuma obra agora. Quando alguém adquirir uma casa, ela aparece aqui e a bolinha avisa.");
+        (d.obras || []).forEach(function (ob) {
+          linhaServico(ul, "🏗️ " + (ob.item === "base_grande" ? "Prédio" : "Casa") + " de " + ob.dono + " · +" + ob.mao + " moedas", "FAZER", function (b) {
+            b.disabled = true;
+            enviar(credenciais({ acao: "aceitar_obra", id: ob.id })).then(function (r) {
+              b.disabled = false;
+              if (!r.ok) { mensagemMapa(r.erro || "Não deu certo."); buscarServicos(); return; }
+              missao.obra = r.obra; missao.obra.progresso = 0; comecar("construir");
+              fecharServicos(); servQtdAntes = 0; atualizarServicos({ ok: true, funcao: "engenheiro", obras: [], minha: r.obra });
+              mensagemMapa("🏗️ Obra aceita! Seu bonequinho foi até o terreno de " + r.obra.dono + ".", 6000); rolar(document.getElementById("cena"), "center");
+            });
+          });
+        });
+      }
+    } else if (f === "medico") {
+      var deP = missao.modo === "plantao";
+      dica.textContent = (deP ? "Você está de plantão. " : "Fique de plantão para os doentes poderem te chamar. ") + "Acompanhando alguém que trabalha, ele não cansa nem adoece e você ganha 1 moeda por minuto (até 4 pessoas).";
+      if (!deP) linhaServico(ul, "🩺 Ficar de plantão (consultas)", "PLANTÃO", function () { comecarPlantao(); desenharServicos(); });
+      (d.pacientes || []).forEach(function (x) { linhaServico(ul, "🩺 " + x.nome + (x.ate ? " · seu paciente, +" + x.pago + " moedas" : " · esperando aceitar")); });
+      var livres = (d.trabalhando || []).filter(function (x) { return !x.acompanhado; });
+      if (!livres.length) linhaServico(ul, "Ninguém trabalhando sem médico agora. A bolinha avisa quando tiver.");
+      livres.forEach(function (x) {
+        linhaServico(ul, "🔧 " + x.nome + " está trabalhando", "ACOMPANHAR", function (b) { if (missao.modo !== "plantao") comecarPlantao(); pedirAcomp(x.numero, b); setTimeout(buscarServicos, 1500); });
+      });
+    }
+    c.appendChild(dica); c.appendChild(ul);
+  }
+  function abrirServicos() { desenharServicos(); document.getElementById("servModal").hidden = false; buscarServicos(); }
+  function fecharServicos() { document.getElementById("servModal").hidden = true; }
+  document.getElementById("servBtn").onclick = abrirServicos;
+  document.getElementById("servFechar").onclick = fecharServicos;
+  var servAtivoAntes = false;
+  setInterval(function () {
+    var on = servicosAtivo(); document.getElementById("servBtn").hidden = !on;
+    if (on && !servAtivoAntes) { servQtdAntes = -1; buscarServicos(); }
+    servAtivoAntes = on;
+  }, 2000);
+  setInterval(buscarServicos, 45000);
   document.getElementById("sino").onclick = abrirAvisos;
   // Lucas 15/11: rádio no bolso, botão fixo embaixo do sininho (saiu do menu)
   document.getElementById("radioBtn").onclick = function () { fecharMenu(); irPara("radio"); rolar(document.getElementById("painel-radio")); };

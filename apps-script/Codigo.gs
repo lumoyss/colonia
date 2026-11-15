@@ -146,7 +146,7 @@ function metasNave_(pontos) {
 // PROFISSÕES
 const FUNCOES = {
   mecanico:     { nome: 'Mecânico(a)', desc: 'O melhor para consertar a nave. Ganha: 1 moeda a cada 15 s consertando (2 com caixa de ferramentas) e, com a caixa, vale 3 pontos da nave a cada 15 s (os outros fazem 1).' },
-  engenheiro:   { nome: 'Engenheiro(a)', desc: 'Constrói as casas e prédios e instala outdoors. Ganha: a mão de obra que o dono paga (+1.000 por casa, +3.000 por prédio, +100 por outdoor), e conserta a nave como todo mundo enquanto não tem obra. A própria casa ele constrói sem pagar mão de obra.' },
+  engenheiro:   { nome: 'Engenheiro(a)', desc: 'Constrói as casas e prédios e instala outdoors. Ganha: a mão de obra que o dono paga (+300 por casa, +900 por prédio, +30 por outdoor; a obra leva 1 minuto), e conserta a nave como todo mundo enquanto não tem obra. A própria casa ele constrói sem pagar mão de obra.' },
   agricultor:   { nome: 'Agricultor(a) e cozinheiro(a)', desc: 'Produz comida para a colônia. Ganha: 1 comida a cada 10 minutos cultivando, que você vende no mercado dos sobreviventes pelo preço que quiser (todo mundo precisa comer). Sem limite de vagas.' },
   minerador:    { nome: 'Minerador(a)', desc: 'Especialista em mineração. Ganha: minera na borda pedregosa do mapa com metade da espera (precisa de picareta) e vende o que achar. Também conserta a nave.' },
   explorador:   { nome: 'Explorador(a)', desc: 'Descobre o planeta. Ganha: vê o sinal das torres escondidas, desbloqueia torres 2x mais rápido (chance de virar dono de clã) e conserta a nave.' },
@@ -165,8 +165,9 @@ const MEDICO_MIN = 50;          // preço mínimo da consulta
 const ONLINE_MIN = 4;           // no mapa, conta como online quem abriu o jogo nos últimos 4 minutos (o site pede o perfil a cada 3)
 const PLANTAO_SEGUNDOS = 180;   // conta como online quem mandou sinal nos últimos 3 minutos
 // OBRAS: casa precisa de engenheiro
-const MAO_DE_OBRA = { base: 1000, base_grande: 3000, outdoor: 100 };
-const OBRA_MINUTOS = 10;        // tempo que o engenheiro fica construindo
+const MAO_DE_OBRA = { base: 300, base_grande: 900, outdoor: 30 }; // Lucas 15/11: era 1000 / 3000 / 100
+const OBRA_MINUTOS = 1;         // tempo que o engenheiro fica construindo (Lucas 15/11: era 10)
+const OBRA_ABANDONO_MIN = 5;    // obra sem sinal do engenheiro por 5 min volta a ficar livre
 const OBRA_PRAZO_HORAS = 24;    // sem engenheiro até lá, a nave constrói sozinha
 // Picareta: minerar fora da zona dos terrenos
 const PICARETA_VELHA_USOS = 60;   // Lucas 14/11: todo mundo chega com uma picareta velha que aguenta 60 mineradas
@@ -453,12 +454,12 @@ function doPost(e) {
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_, outdoor_oferta: outdoorOferta_,
-      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, acompanhar: acompanhar_, responder_acompanhamento: responderAcompanhamento_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, email: mudarEmail_, pesquisar: pesquisar_, titulo: pegarTitulo_, checkin: checkin_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
+      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, servicos: servicos_, chamar_medico: chamarMedico_, acompanhar: acompanhar_, responder_acompanhamento: responderAcompanhamento_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, email: mudarEmail_, pesquisar: pesquisar_, titulo: pegarTitulo_, checkin: checkin_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
     const r = f ? f(ss, dados) : { ok: false, erro: 'Ação desconhecida.' };
-    if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'trabalhar', 'plantao', 'reconhecer', 'amigo', 'objetivo', 'assembleia', 'entrar_assembleia', 'falar_assembleia', 'votar', 'checkin', 'invadir', 'descansar_casa', 'minerar', 'oferta', 'pesquisar'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
+    if (r.ok && ['perfil', 'entrar', 'chat', 'consertar', 'trabalhar', 'plantao', 'servicos', 'reconhecer', 'amigo', 'objetivo', 'assembleia', 'entrar_assembleia', 'falar_assembleia', 'votar', 'checkin', 'invadir', 'descansar_casa', 'minerar', 'oferta', 'pesquisar'].indexOf(dados.acao) < 0) CacheService.getScriptCache().remove('lista');
     return json_(r);
   } finally {
     trava.releaseLock();
@@ -962,6 +963,10 @@ function plantao_(ss, d) {
     if (!(preco >= MEDICO_MIN && preco <= 100000)) return { ok: false, erro: 'O preço da consulta precisa ser de pelo menos ' + MEDICO_MIN + ' moedas.' };
     s.aba.getRange(s.linha, C_MEDICO_PRECO).setValue(preco);
   }
+  return servicosDe_(ss, s, f);
+}
+// Lucas 15/11: serviços disponíveis para a profissão (bolinha de serviços na tela). Só lê, não liga o plantão.
+function servicosDe_(ss, s, f) {
   const r = { ok: true, funcao: f };
   if (f === 'engenheiro') { r.obras = obrasAbertas_(ss); r.minha = obrasDoEngenheiro_(ss, s.dados[0])[0] || null; }
   if (f === 'medico') {
@@ -971,6 +976,13 @@ function plantao_(ss, d) {
     r.pacientes = acompanhamentoDe_(ss, s.dados[0], agoraM).pacientes;
   }
   return r;
+}
+function servicos_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const f = funcaoDe_(s.dados);
+  if (f !== 'medico' && f !== 'engenheiro') return { ok: true, funcao: f, nada: true };
+  return servicosDe_(ss, s, f);
 }
 function chamarMedico_(ss, d) {
   const s = acharSobrevivente_(ss, d);
@@ -1050,7 +1062,7 @@ function linhasObras_(ss) {
 function obrasDe_(ss, numero) { return linhasObras_(ss).filter(function (o) { return o.dono === String(numero) && (o.status === 'aguardando' || o.status === 'em obra'); }); }
 function obrasDoEngenheiro_(ss, numero) { return linhasObras_(ss).filter(function (o) { return o.eng === String(numero) && o.status === 'em obra'; }); }
 function obrasAbertas_(ss) {
-  return linhasObras_(ss).filter(function (o) { return o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_MINUTOS * 60000); })
+  return linhasObras_(ss).filter(function (o) { return o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_ABANDONO_MIN * 60000); })
     .map(function (o) { return { id: o.id, dono: o.donoNome, item: o.item, nome: o.nome, mao: o.mao, prazo: o.data + OBRA_PRAZO_HORAS * 3600000 }; });
 }
 function aceitarObra_(ss, d) {
@@ -1059,7 +1071,7 @@ function aceitarObra_(ss, d) {
   if (funcaoDe_(s.dados) !== 'engenheiro') return { ok: false, erro: 'Só engenheiros constroem casas.' };
   if (obrasDoEngenheiro_(ss, s.dados[0]).length) return { ok: false, erro: 'Termine a sua obra atual primeiro.' };
   const o = linhasObras_(ss).filter(function (x) { return x.id === String(d.id); })[0];
-  const livre = o && (o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_MINUTOS * 60000));
+  const livre = o && (o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_ABANDONO_MIN * 60000));
   if (!livre) return { ok: false, erro: 'Outro engenheiro já pegou essa obra.' };
   if (o.dono === String(s.dados[0])) return { ok: false, erro: 'Você não pode construir a sua própria obra.' };
   o.aba.getRange(o.linha, 8).setValue('em obra'); o.aba.getRange(o.linha, 9).setValue(s.dados[0]);
@@ -1074,7 +1086,7 @@ function chamarEngenheiro_(ss, d) {
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
   const o = linhasObras_(ss).filter(function (x) { return x.id === String(d.obra) && x.dono === String(s.dados[0]); })[0];
   if (!o) return { ok: false, erro: 'Essa obra não é sua.' };
-  const livre = o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_MINUTOS * 60000);
+  const livre = o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_ABANDONO_MIN * 60000);
   if (!livre) return { ok: false, erro: 'Um engenheiro já está construindo essa obra.' };
   const eng = online_(ss, 'engenheiro').filter(function (l) { return String(l[0]) === String(d.numero); })[0];
   if (!eng) return { ok: false, erro: 'Esse engenheiro não está mais de plantão.' };
@@ -1107,7 +1119,7 @@ function concluirObra_(ss, o, status) {
 // Obras sem engenheiro depois do prazo: a nave constrói sozinha (a mão de obra vai para o cofre da colônia)
 function obrasVencidas_(ss) {
   const limite = Date.now() - OBRA_PRAZO_HORAS * 3600000;
-  linhasObras_(ss).filter(function (o) { return (o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_MINUTOS * 60000)) && o.data < limite; })
+  linhasObras_(ss).filter(function (o) { return (o.status === 'aguardando' || (o.status === 'em obra' && Date.now() - o.sinal > OBRA_ABANDONO_MIN * 60000)) && o.data < limite; })
     .forEach(function (o) { concluirObra_(ss, o, 'construída pela nave'); cobrarTaxa_(ss, o.mao, 'Mão de obra da nave (' + o.nome + ')'); });
 }
 
