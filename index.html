@@ -1781,7 +1781,7 @@
     var meu = meuBoneco();
     if (!meu) { mensagemMapa("Acorde seu sobrevivente (ou entre com o seu código no Mercado) para explorar o mapa."); return; }
     if (missao.modo === "descansando" && !descansoLivre()) { mensagemMapa(missao.emCasa ? "Seu sobrevivente está descansando em casa." : "Seu sobrevivente está cansado e sem casa: espere o descanso na nave (ou chame um médico)."); return; }
-    if (missao.modo === "consertando" && (missao.trabalho === "consertar" || missao.trabalho === "torre")) { missao.modo = "parado"; pararMissao(); desenharMissao(); }
+    if (missao.modo === "consertando" && (missao.trabalho === "consertar" || missao.trabalho === "torre")) { var eraTorre = missao.trabalho === "torre"; missao.modo = "parado"; pararMissao(); desenharMissao(); mensagemMapa(eraTorre ? "⚠️ Você saiu da torre: a limpeza parou. Volte e toque em LIMPAR A TORRE para continuar." : "⚠️ Você saiu da nave: o conserto parou e as moedas pararam de cair. Volte e toque em CONSERTAR A NAVE.", 8000); }
     var r = cena.getBoundingClientRect();
     meu.ax = cam.x + (ev.clientX - r.left) / r.width * VW;
     meu.ay = cam.y + (ev.clientY - r.top) / r.height * VH + 7;
