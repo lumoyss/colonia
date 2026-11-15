@@ -1416,11 +1416,22 @@
   }
   function bauVisivel() { var b = estado.bau; return b && b.x != null && !b.abertoPor; }
   function bauzinhoPerto(meu) { var achou = null; (estado.bauzinhos || []).forEach(function (b) { if (!achou && meu && Math.hypot(meu.x - b.x, meu.y - b.y) < 14) achou = b; }); return achou; }
+  // Lucas 15/11: baú pequeno mais visível: maior, pulando, com brilho, feixe de luz e faíscas
   function desenharBauzinho(x, y, t) {
-    mctx.fillStyle = "#3a4a52"; mctx.fillRect(x - 3, y - 2, 6, 4);
-    mctx.fillStyle = "#9fb3bd"; mctx.fillRect(x - 3, y - 2, 6, 1);
-    mctx.fillStyle = "#7FD6C8"; mctx.fillRect(x - 1, y - 1, 2, 1);
-    if ((t >> 4) % 2) { mctx.fillStyle = "#c9f0e8"; mctx.fillRect(x + 3, y - 4, 1, 1); }
+    var pulo = Math.round(Math.abs(Math.sin(t / 14)) * 3), pulso = (t >> 3) % 4, yb = y - pulo;
+    mctx.fillStyle = "rgba(127,214,200,.16)"; mctx.fillRect(x - 2, y - 26, 4, 22);                 // feixe de luz
+    mctx.fillStyle = "rgba(127,214,200,.18)"; mctx.fillRect(x - 8 - pulso, y - 6 - pulso, 16 + pulso * 2, 12 + pulso * 2); // brilho pulsando
+    mctx.fillStyle = "rgba(0,0,0,.3)"; mctx.fillRect(x - 5 + (pulo > 1 ? 1 : 0), y + 4, 10 - (pulo > 1 ? 2 : 0), 2);   // sombra
+    mctx.fillStyle = "#3b200c"; mctx.fillRect(x - 6, yb - 4, 12, 8);                                // contorno
+    mctx.fillStyle = "#8a5426"; mctx.fillRect(x - 5, yb - 3, 10, 6);                                // madeira
+    mctx.fillStyle = "#b5773a"; mctx.fillRect(x - 5, yb - 5, 10, 3);                                // tampa
+    mctx.fillStyle = "#7FD6C8"; mctx.fillRect(x - 6, yb - 1, 12, 1); mctx.fillRect(x - 6, yb - 5, 1, 9); mctx.fillRect(x + 5, yb - 5, 1, 9); // ferragens
+    mctx.fillStyle = "#E8C25A"; mctx.fillRect(x - 1, yb - 2, 2, 3);                                 // fechadura
+    mctx.fillStyle = "#fff";
+    var f = (t >> 3) % 6;
+    if (f === 0) { mctx.fillRect(x + 7, yb - 7, 1, 1); mctx.fillRect(x + 6, yb - 8, 3, 1); mctx.fillRect(x + 7, yb - 9, 1, 3); }
+    else if (f === 2) { mctx.fillRect(x - 8, yb - 3, 1, 1); mctx.fillRect(x - 9, yb - 3, 3, 1); mctx.fillRect(x - 8, yb - 4, 1, 3); }
+    else if (f === 4) { mctx.fillRect(x + 2, yb - 10, 1, 1); }
   }
   function desenharBauGrande(x, y, t) {
     var pulso = (t >> 3) % 4;
@@ -1563,6 +1574,11 @@
       if (dentro(b.x, b.y)) rotulo(b.nome, (b.x - cx) * esc, (b.y + 4 - cy) * esc, b === meu ? "#0B161C" : "#F3E9D6", b === meu ? "#E07A3A" : "rgba(11,22,28,.75)");
     });
     var agoraF = Date.now();
+    (estado.bauzinhos || []).forEach(function (bz) { // etiqueta do baú pequeno
+      if (!dentro(bz.x, bz.y)) return;
+      cctx.save(); cctx.font = Math.round(Math.min(esc * 3, 8 / tela)) + "px 'Press Start 2P', monospace";
+      rotulo("🎁 BAÚ", (bz.x - cx) * esc, (bz.y - 34 - Math.abs(Math.sin(tempo / 14)) * 3 - cy) * esc, "#0B161C", "rgba(127,214,200,.9)"); cctx.restore();
+    });
     // Lucas 14/11: barrinhas de tempo (obra, reivindicação, invasão)
     obrasNoMapa().forEach(function (o) {
       if (!dentro(o.x, o.y)) return;
