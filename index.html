@@ -33,6 +33,14 @@
   .contador{display:inline-block;margin-top:10px;background:var(--fundo2);border:3px solid var(--verde);padding:10px 14px;font-size:12px;color:var(--creme)}
   .contador b{color:var(--laranja);font-size:16px}
   .cena{margin:18px 0 6px;border:4px solid var(--fundo3);background:#000;position:relative}
+  .minera-status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;background:rgba(11,22,28,.92);border:3px solid var(--laranja);padding:12px 14px;text-align:center;min-width:220px;max-width:86%;pointer-events:none}
+  .minera-status[hidden]{display:none}
+  .minera-status .pix{font-size:11px;color:var(--creme);line-height:1.5}
+  .minera-status.ruim{border-color:#D93B3B}
+  .minera-status.bom{border-color:#5BD16A}
+  .minera-status p{margin:6px 0 0;font-size:14px;color:var(--creme)}
+  .minera-barra{height:8px;background:#3a4a52;margin-top:8px}
+  .minera-barra i{display:block;height:100%;width:0;background:#E8C25A;transition:width 1.8s linear}
   .mapa-online{position:absolute;bottom:8px;left:8px;z-index:4;background:rgba(11,22,28,.82);border:2px solid var(--verde);color:var(--creme);font-size:7px;padding:4px 6px;pointer-events:none}
   .mapa-online .bolinha,.contador .bolinha{display:inline-block;width:7px;height:7px;background:#5BD16A;margin-right:5px;vertical-align:middle;animation:piscaOn 1.6s infinite}
   @keyframes piscaOn{50%{opacity:.35}}
@@ -329,7 +337,7 @@
       <li>Para ter um terreno, pare em um dos terrenos livres (com uma placa no meio) e reivindique. Depois volte para a nave e registre no Mercado (aba IMÓVEIS).</li>
       <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói. Quem é engenheiro constrói a própria casa sem pagar mão de obra.</li>
       <li>Trabalhar 1 hora seguida cansa. Cada vez que você chega no cansaço máximo, tem 40% de chance de ficar doente (só 10% se estiver bem alimentado). Um médico de plantão pode te acompanhar por 1 hora, de graça: enquanto isso você não cansa nem adoece.</li>
-      <li>Todo sobrevivente acorda com uma picareta velha que aguenta 60 mineradas; depois é preciso adquirir uma picareta nova no Mercado. Com a picareta, você pode minerar na borda pedregosa do mapa para encontrar itens (20% de chance a cada tentativa). Depois de 60 tentativas você cansa e descansa 40 minutos, ou chama um médico, que cobra o dobro.</li>
+      <li>Todo sobrevivente acorda com uma picareta velha que aguenta 60 mineradas; depois é preciso adquirir uma picareta nova no Mercado. Com a picareta, você pode minerar na borda pedregosa do mapa para encontrar itens (20% de chance a cada tentativa, uma a cada 10 segundos). A borda é feita de blocos de rocha: cada bloco precisa de 30 mineradas (somando todo mundo) para ser desbloqueado. Depois de 60 tentativas você cansa e descansa 40 minutos, ou chama um médico, que cobra o dobro.</li>
       <li>Para construir uma casa ou um prédio, ou para instalar um outdoor, é preciso contratar um engenheiro.</li>
       <li>Quem acabou de acordar fica protegido contra invasão por 3 dias. Depois disso, se alguém ficar 15 minutos parado no seu terreno, ele invade e leva 5% das suas moedas (ou um item simples). Para se proteger, contrate um guarda em SERVIÇOS (24 horas). Cada terreno só pode ser invadido 1 vez por dia.</li>
       <li>Quem some do jogo por 7 dias perde o terreno e a construção. O terreno volta a ficar livre para outra pessoa registrar.</li>
@@ -354,6 +362,7 @@
   </details>
 
   <div class="cena"><canvas id="cena" width="960" height="600" aria-label="Mapa da colônia com os sobreviventes andando"></canvas>
+    <div class="minera-status" id="mineraStatus" hidden><div id="mineraTxt" class="pix">⛏️ MINERANDO...</div><div class="minera-barra"><i id="mineraBarra"></i></div><p id="mineraSub"></p></div>
     <div class="mapa-online pix" id="mapaOnline"><span class="bolinha"></span>0 online</div>
     <div class="mapa-acao" id="mapaAcao" hidden><div id="mapaAcaoBotoes" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"></div><p id="mapaAcaoInfo" hidden></p></div>
     <div class="zoom"><button type="button" id="zoomMais" aria-label="Aproximar">+</button><button type="button" id="zoomMenos" aria-label="Afastar">−</button><button type="button" id="zoomCentro" aria-label="Voltar para o meu bonequinho" style="font-size:12px">◎</button></div></div>
@@ -1018,7 +1027,7 @@
     if (d.lider) { document.getElementById("liderNave").hidden = false; document.getElementById("liderNome").textContent = d.lider; }
     if (d.mercado && d.mercado.cofre != null) { document.getElementById("cofreNave").hidden = false; document.getElementById("cofreValor").textContent = Number(d.mercado.cofre).toLocaleString("pt-BR"); }
     desenharServicos();
-    estado.leilao = d.leilao || null; desenharLeilao(); desenharFaixaLeilao(); estado.bauzinhos = d.bauzinhos || [];
+    estado.leilao = d.leilao || null; desenharLeilao(); desenharFaixaLeilao(); estado.bauzinhos = d.bauzinhos || []; if (d.blocos) { estado.blocos = d.blocos; estado.blocoTam = d.blocoTam || 40; estado.blocoGolpes = d.blocoGolpes || 30; }
     calcularDonos(); desenharAlugueis(); desenharAnuncios(); desenharFiscal(); if (logado()) desenharExtras();
     if (d.bau) { estado.bau = d.bau; desenharBauInfo(); }
     desenharOfertas();
@@ -1328,7 +1337,12 @@
       if (lugar) mostrarDica(lugar);
     }
     alvos = alvos.slice(0, 2);
-    var info = reconhecendo || invadindo ? txt : "", mostra = alvos.length > 0 || !!info;
+    var avisoMin = "";
+    if (meu && logado() && !meu.tx && !alvos.length) {
+      if (naZonaDeMineracao(meu.x, meu.y) && blocoLimpoEm(meu.x, meu.y)) avisoMin = "Bloco já desbloqueado. Vá para uma rocha ao lado para minerar.";
+      else if (!naZonaDeMineracao(meu.x, meu.y) && (naZonaDeMineracao(meu.x - 24, meu.y) || naZonaDeMineracao(meu.x + 24, meu.y) || naZonaDeMineracao(meu.x, meu.y - 24) || naZonaDeMineracao(meu.x, meu.y + 24))) avisoMin = "Aqui é zona de terrenos: não dá para minerar. Ande até a rocha da borda.";
+    }
+    var info = reconhecendo || invadindo ? txt : avisoMin, mostra = alvos.length > 0 || !!info;
     if (box.hidden === mostra) box.hidden = !mostra;
     inf.hidden = !info; if (inf.textContent !== info) inf.textContent = info;
     var assin = "a:" + alvos.map(function (a) { return a.txt; }).join("|");
@@ -1473,6 +1487,7 @@
       desenharBaseMapa(Math.round(p[0]), Math.round(p[1]), grande, tempo + i * 37);
       if (!nomeOnline(t.dono)) desenharSono(Math.round(p[0]) + (grande ? 14 : 10), Math.round(p[1]) - (grande ? 30 : 20), tempo + i * 23);
     });
+    desenharBlocos(tempo);
     obrasNoMapa().forEach(function (o) { desenharObraMapa(Math.round(o.x), Math.round(o.y), o, tempo); });
     if (bauVisivel()) desenharBauGrande(estado.bau.x, estado.bau.y, tempo);
     (estado.bauzinhos || []).forEach(function (b) { desenharBauzinho(b.x, b.y, tempo); });
@@ -1600,6 +1615,10 @@
       barraMapa((o.x - cx) * esc, (o.y - (o.item === "base_grande" ? 40 : 30) - cy) * esc, esperando ? 0 : o.frac,
         esperando ? "ESPERANDO ENGENHEIRO" : "OBRA · faltam " + Math.ceil(o.falta) + " min", "#E8C25A", esc, tela);
     });
+    if (meu && !meu.tx && !document.getElementById("btnMinerar").hidden) { // rocha onde o bonequinho está
+      var gB = golpesBloco(meu.x, meu.y), GB = estado.blocoGolpes || 30;
+      barraMapa((meu.x - cx) * esc, (meu.y - 34 - cy) * esc, gB / GB, "ROCHA · " + gB + "/" + GB + " para desbloquear", "#E8C25A", esc, tela);
+    }
     if (meu && LT && recon && !recon.pronto) {
       var tot = LT.minutos * 60000, pas = agoraF - recon.inicio;
       barraMapa((meu.x - cx) * esc, (meu.y - 34 - cy) * esc, pas / tot, "REIVINDICANDO · " + textoFalta(tot - pas), "#7FD6C8", esc, tela);
@@ -1633,7 +1652,7 @@
     var bb = document.getElementById("btnBau"); if (bb.hidden === !!perto) bb.hidden = !perto;
     var pertoZ = !!bauzinhoPerto(meu);
     var bz = document.getElementById("btnBauzinho"); if (bz.hidden === !!pertoZ) bz.hidden = !pertoZ;
-    var pode = meu && !meu.tx && temPicareta() && naZonaDeMineracao(meu.x, meu.y);
+    var pode = meu && !meu.tx && temPicareta() && naZonaDeMineracao(meu.x, meu.y) && !blocoLimpoEm(meu.x, meu.y);
     var bm = document.getElementById("btnMinerar"); if (bm.hidden === !!pode) bm.hidden = !pode;
     requestAnimationFrame(quadro);
   }
@@ -1919,25 +1938,73 @@
     });
   });
 
+  // Lucas 15/11: blocos de rocha da borda; cada um precisa de 30 mineradas para ser desbloqueado
+  function blocoChave(x, y) { var T = estado.blocoTam || 40; return Math.floor(x / T) + "_" + Math.floor(y / T); }
+  function golpesBloco(x, y) { return Number((estado.blocos || {})[blocoChave(x, y)]) || 0; }
+  function blocoLimpoEm(x, y) { return golpesBloco(x, y) >= (estado.blocoGolpes || 30); }
+  function desenharBlocos(t) {
+    var B = estado.blocos || {}, T = estado.blocoTam || 40, G = estado.blocoGolpes || 30;
+    Object.keys(B).forEach(function (k) {
+      var g = Number(B[k]) || 0; if (!g) return;
+      var p = k.split("_"), x = +p[0] * T, y = +p[1] * T;
+      if (!naZonaDeMineracao(x + T / 2, y + T / 2)) return;
+      if (g >= G) { // desbloqueado: chão liso
+        mctx.fillStyle = "#D98F62"; mctx.fillRect(x + 1, y + 1, T - 2, T - 2);
+        mctx.fillStyle = "#E3A177"; for (var i = 4; i < T - 2; i += 8) for (var j = 4; j < T - 2; j += 8) mctx.fillRect(x + i, y + j, 1, 1);
+        mctx.fillStyle = "rgba(127,214,200,.5)"; mctx.fillRect(x + 1, y + 1, T - 2, 1); mctx.fillRect(x + 1, y + T - 2, T - 2, 1); mctx.fillRect(x + 1, y + 1, 1, T - 2); mctx.fillRect(x + T - 2, y + 1, 1, T - 2);
+        return;
+      }
+      var f = g / G, n = Math.ceil(f * 10); // rachaduras crescendo
+      mctx.fillStyle = "rgba(40,20,10," + (0.12 + f * 0.25).toFixed(2) + ")"; mctx.fillRect(x + 2, y + 2, T - 4, T - 4);
+      mctx.fillStyle = "#4a2418";
+      for (var c = 0; c < n; c++) {
+        var cx2 = x + 4 + ((c * 13 + +p[0] * 7) % (T - 10)), cy2 = y + 4 + ((c * 17 + +p[1] * 11) % (T - 10)), len = 3 + (c % 4);
+        for (var q = 0; q < len; q++) mctx.fillRect(cx2 + q, cy2 + (q % 2 ? 1 : 0) + Math.floor(q / 2), 1, 1);
+      }
+      mctx.fillStyle = "#E8C25A"; mctx.fillRect(x + 2, y + T - 4, Math.round((T - 4) * f), 2);
+    });
+  }
   function picaretaVelhaUsos() { return eu && eu.picaretaVelha != null ? Number(eu.picaretaVelha) : 60; }
   function temPicareta() { return !!eu && (tem(eu.itens, "picareta") || picaretaVelhaUsos() > 0); }
   var mineraAte = 0;
+  var mineraTimer = null;
+  function statusMinera(txt, sub, tipo, ms) {
+    var el = document.getElementById("mineraStatus"); clearTimeout(mineraTimer);
+    el.className = "minera-status" + (tipo ? " " + tipo : ""); el.hidden = false;
+    document.querySelector(".minera-barra").style.display = txt === "⛏️ MINERANDO..." ? "" : "none";
+    document.getElementById("mineraTxt").textContent = txt; document.getElementById("mineraSub").textContent = sub || "";
+    if (ms) mineraTimer = setTimeout(function () { el.hidden = true; }, ms);
+  }
   document.getElementById("btnMinerar").addEventListener("click", function () {
     var bt = this, meu = meuBoneco(); if (!meu) return;
-    if (Date.now() < mineraAte) { mensagemMapa("Sua picareta está esfriando. Espere " + Math.ceil((mineraAte - Date.now()) / 1000) + " segundos."); return; }
+    if (Date.now() < mineraAte) { statusMinera("⏳ PICARETA ESFRIANDO", "Espere " + Math.ceil((mineraAte - Date.now()) / 1000) + " segundos para minerar de novo.", "ruim", 3000); return; }
     bt.disabled = true; bt.textContent = "MINERANDO...";
+    var barra = document.getElementById("mineraBarra"); barra.style.transition = "none"; barra.style.width = "0";
+    statusMinera("⛏️ MINERANDO...", "", ""); void barra.offsetWidth; barra.style.transition = ""; barra.style.width = "100%";
+    meu.minerouAte = Date.now() + 2000;
+    var inicio = Date.now();
     enviar(credenciais({ acao: "minerar", x: Math.round(meu.x), y: Math.round(meu.y) })).then(function (r) {
-      bt.disabled = false; bt.textContent = "MINERAR AQUI";
-      if (!r.ok) { if (r.espera) mineraAte = Date.now() + r.espera * 1000; if (r.mineracaoAte) { eu.mineracaoAte = r.mineracaoAte; salvarEu(); } mensagemMapa(r.erro || "Não deu para minerar.", r.cansadoMineracao ? 7000 : 4000); return; }
-      mineraAte = Date.now() + (r.espera || 30) * 1000;
-      aplicarPerfil(r); salvarEu();
-      if (meuBoneco()) meuBoneco().minerouAte = Date.now() + 1500;
-      var resto = r.mineradasMax ? " (" + r.mineradas + " de " + r.mineradasMax + " antes de cansar)" : "";
-      if (r.picaretaVelha != null) { resto += " Picareta velha: " + r.picaretaVelha + " usos." ; if (r.picaretaVelha <= 0) mensagemMapa("Sua picareta velha quebrou! Adquira uma picareta nova no Mercado (Ferramentas) para continuar minerando.", 8000); else if (r.picaretaVelha <= 10 && r.achou) mensagemMapa("Sua picareta velha está quase quebrando: restam " + r.picaretaVelha + " usos.", 5000); }
-      if (r.cansouMineracao) mensagemMapa("Você cansou de minerar. Descanse 40 minutos ou chame um médico em Serviços.", 8000);
-      if (r.achou) premio("VOCÊ MINEROU!", [r.achou]); else if (!r.cansouMineracao) mensagemMapa("Só pedra dessa vez... tente de novo daqui a pouco." + resto);
-    });
+      setTimeout(function () { mostrarResultadoMinera(r); bt.disabled = false; bt.textContent = "MINERAR AQUI"; }, Math.max(0, 2000 - (Date.now() - inicio)));
+    }).catch(function () { bt.disabled = false; bt.textContent = "MINERAR AQUI"; statusMinera("📡 SEM SINAL", "Não deu para falar com a nave. Tente de novo.", "ruim", 4000); });
   });
+  function mostrarResultadoMinera(r) {
+    document.getElementById("mineraBarra").style.width = "0";
+    if (!r.ok) {
+      if (r.espera) mineraAte = Date.now() + r.espera * 1000;
+      if (r.mineracaoAte) { eu.mineracaoAte = r.mineracaoAte; salvarEu(); }
+      if (r.blocoLimpo) { estado.blocos = estado.blocos || {}; estado.blocos[r.blocoLimpo] = estado.blocoGolpes || 30; }
+      statusMinera("🚫 NÃO DEU PARA MINERAR", r.erro || "Tente de novo.", "ruim", r.cansadoMineracao ? 7000 : 4500); return;
+    }
+    mineraAte = Date.now() + (r.espera || 10) * 1000;
+    aplicarPerfil(r); salvarEu();
+    if (r.bloco) { estado.blocos = estado.blocos || {}; estado.blocos[r.bloco.chave] = r.bloco.golpes; }
+    var bloco = r.bloco ? (r.bloco.desbloqueou ? "🎉 Você terminou de quebrar este bloco: área desbloqueada!" : "Bloco de rocha: " + r.bloco.golpes + " de " + r.bloco.total + " golpes para desbloquear.") : "";
+    var velha = r.picaretaVelha != null ? " Picareta velha: " + r.picaretaVelha + " usos." : "";
+    if (r.picaretaVelha != null && r.picaretaVelha <= 0) mensagemMapa("Sua picareta velha quebrou! Adquira uma picareta nova no Mercado (Ferramentas) para continuar minerando.", 8000);
+    if (r.cansouMineracao) mensagemMapa("Você cansou de minerar. Descanse 40 minutos ou chame um médico em Serviços.", 8000);
+    if (r.achou) { statusMinera("✨ VOCÊ ACHOU: " + (nomeItem(r.achou) || r.achou).toUpperCase() + "!", bloco, "bom", 3500); premio("VOCÊ MINEROU!", [r.achou]); }
+    else statusMinera(r.bloco && r.bloco.desbloqueou ? "🎉 BLOCO DESBLOQUEADO!" : "😕 INFELIZMENTE NÃO ACHOU NADA", (bloco + velha).trim() + (r.bloco && r.bloco.desbloqueou ? "" : " Tente de novo em " + (r.espera || 10) + " s."), r.bloco && r.bloco.desbloqueou ? "bom" : "", 4500);
+  }
 
   /* ---------------- criador de personagem ---------------- */
   var prev = document.getElementById("preview");

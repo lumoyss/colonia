@@ -171,9 +171,10 @@ const OBRA_ABANDONO_MIN = 5;    // obra sem sinal do engenheiro por 5 min volta 
 const OBRA_PRAZO_HORAS = 24;    // sem engenheiro até lá, a nave constrói sozinha
 // Picareta: minerar fora da zona dos terrenos
 const PICARETA_VELHA_USOS = 60;   // Lucas 14/11: todo mundo chega com uma picareta velha que aguenta 60 mineradas
-const MINERAR_SEGUNDOS = 30;       // tempo entre uma minerada e outra
+const MINERAR_SEGUNDOS = 10;       // tempo entre uma minerada e outra (Lucas 15/11: era 30; minerador espera a metade)
 const MINERAR_CHANCE = 0.2;     // chance de achar um recurso (Lucas 14/11: era 40%)
 // Mineração cansa: depois de MINERAR_LIMITE tentativas, descansa MINERAR_DESCANSO_MIN minutos (ou chama médico, que cobra MEDICO_MINERACAO_X vezes)
+const BLOCO_TAM = 40, BLOCO_GOLPES = 30; // Lucas 15/11: a borda é dividida em blocos de rocha; cada bloco precisa de 30 mineradas (de qualquer pessoa) para ser desbloqueado
 const MINERAR_LIMITE = 60, MINERAR_DESCANSO_MIN = 40, MEDICO_MINERACAO_X = 2;
 // O que sai na mineração (quando acha algo): 80% item simples da Terra, 15% cristal, 4% peça vital da nave, 1% item raro alienígena
 const MINERACAO = { terra: 0.80, cristal: 0.15, pecaNave: 0.04, raro: 0.01 };
@@ -429,7 +430,7 @@ function doGet(e) {
   const b = bauDeHoje_(), aberto = PropertiesService.getScriptProperties().getProperty('BAU_' + b.dia);
   const bau = { dia: b.dia, hora: b.hora, aparece: b.aparece, x: Date.now() >= b.aparece ? b.x : null, y: Date.now() >= b.aparece ? b.y : null, abertoPor: aberto ? JSON.parse(aberto).nome : '' };
   const resposta = { ok: true, bauzinhos: bauzinhos_().lista, total: sobreviventes.length, sobreviventes: sobreviventes.slice(-600), ideias: ideias, terrenos: terrenos, mercado: mercado, chat: true, alugueis: alugueis, outdoors: outdoors,
-    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE, metas: metasNave_(pontosNave) }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, lider: LIDER_NOME, guardas: guardasSeguranca_(todas), titulos: TITULOS, checkinMoedas: CHECKIN_MOEDAS, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
+    nave: { pontos: pontosNave, meta: META_NAVE, etapa: ETAPA_NAVE, metas: metasNave_(pontosNave) }, ranking: rankings_(todas), medicos: medicos, engenheirosOnline: engenheiros, engenheiros: engenheirosLista, lider: LIDER_NOME, guardas: guardasSeguranca_(todas), titulos: TITULOS, checkinMoedas: CHECKIN_MOEDAS, blocos: blocos_(), blocoTam: BLOCO_TAM, blocoGolpes: BLOCO_GOLPES, pesquisa: { precos: PESQUISA, pontosPorMoeda: PESQUISA_PONTOS_POR_MOEDA, total: Number(PropertiesService.getScriptProperties().getProperty('PESQUISA_TOTAL')) || 0, ranking: todas.map(function (l) { return { nome: String(l[2]), pontos: Number(l[C_PESQUISA - 1]) || 0 }; }).filter(function (x) { return x.pontos > 0; }).sort(function (a, b) { return b.pontos - a.pontos; }).slice(0, 10) },
     obras: ss.getSheetByName(ABA_OBRAS) ? obrasAbertas_(ss) : [], funcoes: funcoes,
     obrasMapa: ss.getSheetByName(ABA_OBRAS) ? linhasObras_(ss).filter(function (o) { return (o.status === 'aguardando' || o.status === 'em obra'); })
       .map(function (o) { return { dono: o.donoNome, item: o.item, status: o.status, progresso: o.progresso, total: OBRA_MINUTOS, eng: o.engNome }; }) : [],
@@ -1885,6 +1886,8 @@ function vestir_(ss, d) {
 
 /* ---------- Picareta: minerar fora da zona dos terrenos ---------- */
 function picaretaVelha_(l) { const v = l[C_PICARETA_VELHA - 1]; return v === '' || v == null ? PICARETA_VELHA_USOS : Number(v) || 0; }
+function blocos_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('BLOCOS') || '{}'); } catch (e) { return {}; } }
+function blocoChave_(x, y) { return Math.floor(Number(x) / BLOCO_TAM) + '_' + Math.floor(Number(y) / BLOCO_TAM); }
 function minerar_(ss, d) {
   const s = acharSobrevivente_(ss, d);
   if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
@@ -1898,8 +1901,13 @@ function minerar_(ss, d) {
   if (estaDoente_(s.dados)) return { ok: false, erro: 'Você está doente e não consegue minerar agora.' };
   const mc = mineracaoDe_(s.dados);
   if (mc.ate > agora) return { ok: false, cansadoMineracao: true, mineracaoAte: mc.ate, erro: 'Você está cansado de minerar. Descanse ' + Math.ceil((mc.ate - agora) / 60000) + ' minutos ou chame um médico em Serviços.' };
+  const blocos = blocos_(), chaveB = blocoChave_(d.x, d.y), golpesB = Number(blocos[chaveB]) || 0;
+  if (golpesB >= BLOCO_GOLPES) return { ok: false, erro: 'Esse bloco já foi desbloqueado. Vá para uma rocha ao lado para continuar minerando.', blocoLimpo: chaveB };
   if (agora - ultimo < espera * 1000) return { ok: false, erro: 'Sua picareta precisa esfriar. Tente de novo em ' + Math.ceil((espera * 1000 - (agora - ultimo)) / 1000) + ' segundos.', espera: Math.ceil((espera * 1000 - (agora - ultimo)) / 1000) };
   s.aba.getRange(s.linha, C_MINERAR).setValue(agora);
+  blocos[chaveB] = golpesB + 1; PropertiesService.getScriptProperties().setProperty('BLOCOS', JSON.stringify(blocos));
+  const desbloqueou = blocos[chaveB] >= BLOCO_GOLPES;
+  if (desbloqueou) { try { avisoRadio_(ss, '⛏️ ' + p.nome + ' terminou de quebrar um bloco de rocha da borda! A área foi desbloqueada.'); CacheService.getScriptCache().remove('lista'); } catch (e) { /* segue */ } }
   if (usaVelha) s.aba.getRange(s.linha, C_PICARETA_VELHA).setValue(velha - 1);
   const feitas = (agora - ultimo > MINERAR_DESCANSO_MIN * 60000 ? 0 : mc.feitas) + 1, cansou = feitas >= MINERAR_LIMITE;
   const ateM = cansou ? agora + MINERAR_DESCANSO_MIN * 60000 : 0;
@@ -1918,7 +1926,7 @@ function minerar_(ss, d) {
     ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Mineração: ' + achou, 0]);
   }
   if (usaVelha) p.picaretaVelha = velha - 1;
-  p.achou = achou; p.espera = espera; p.mineradas = feitas; p.mineradasMax = MINERAR_LIMITE; if (cansou) { p.mineracaoAte = ateM; p.cansouMineracao = true; }
+  p.bloco = { chave: chaveB, golpes: blocos[chaveB], total: BLOCO_GOLPES, desbloqueou: desbloqueou }; p.achou = achou; p.espera = espera; p.mineradas = feitas; p.mineradasMax = MINERAR_LIMITE; if (cansou) { p.mineracaoAte = ateM; p.cansouMineracao = true; }
   return p;
 }
 
