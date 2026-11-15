@@ -307,6 +307,7 @@
       <li>Mais ou menos a cada 15 minutos aparece um baú pequeno em algum lugar do mapa, com 20 a 70 moedas. Ele fica lá até alguém abrir, e podem haver no máximo 2 baús esperando no mapa.</li>
       <li>Para ter um terreno, pare em um dos terrenos livres (com uma placa no meio) e reivindique. Depois volte para a nave e registre no Mercado (aba IMÓVEIS).</li>
       <li>Para construir uma casa ou um prédio é preciso um engenheiro (profissão). Se nenhum engenheiro aceitar a obra em 24 horas, a nave constrói. Quem é engenheiro constrói a própria casa sem pagar mão de obra.</li>
+      <li>Trabalhar 1 hora seguida cansa. Cada vez que você chega no cansaço máximo, tem 40% de chance de ficar doente (só 10% se estiver bem alimentado). Um médico de plantão pode te acompanhar por 1 hora, de graça: enquanto isso você não cansa nem adoece.</li>
       <li>Todo sobrevivente acorda com uma picareta velha que aguenta 60 mineradas; depois é preciso adquirir uma picareta nova no Mercado. Com a picareta, você pode minerar na borda pedregosa do mapa para encontrar itens (20% de chance a cada tentativa). Depois de 60 tentativas você cansa e descansa 40 minutos, ou chama um médico, que cobra o dobro.</li>
       <li>Para construir uma casa ou um prédio, ou para instalar um outdoor, é preciso contratar um engenheiro.</li>
       <li>Quem acabou de acordar fica protegido contra invasão por 3 dias. Depois disso, se alguém ficar 15 minutos parado no seu terreno, ele invade e leva 5% das suas moedas (ou um item simples). Para se proteger, contrate um guarda em SERVIÇOS (24 horas). Cada terreno só pode ser invadido 1 vez por dia.</li>
@@ -623,6 +624,12 @@
     <p class="dica" id="premioDica">Já está no seu inventário.</p>
     <button type="button" class="btn sec" id="premioVer">VER MEU INVENTÁRIO</button>
   </div></div>
+  <div class="modal" id="acompModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="acompTitulo" style="text-align:center">
+    <div style="font-size:44px">🩺</div>
+    <h2 class="pix" id="acompTitulo" style="margin:6px 0 10px;color:var(--laranja)">UM MÉDICO QUER TE ACOMPANHAR</h2>
+    <p id="acompTexto" style="text-align:left"></p>
+    <div class="linha" style="justify-content:center;gap:8px"><button type="button" class="btn" id="acompSim">ACEITAR</button><button type="button" class="btn sec" id="acompNao">NÃO, OBRIGADO</button></div>
+  </div></div>
   <div class="modal" id="dicaModal" hidden><div class="caixa" role="dialog" aria-modal="true" aria-labelledby="dicaTitulo" style="text-align:center">
     <div id="dicaIcone" style="font-size:44px"></div>
     <h2 class="pix" id="dicaTitulo" style="margin:6px 0 10px;color:var(--laranja)"></h2>
@@ -635,6 +642,7 @@
     <h2 class="pix" id="perfilNome" style="text-align:center;margin:0"></h2>
     <dl id="perfilDados"></dl>
     <button class="btn sec" type="button" id="perfilAmigo" hidden>ADICIONAR AMIGO</button>
+    <button class="btn" type="button" id="perfilAcomp" hidden>🩺 ACOMPANHAR (1 HORA)</button>
     <div class="msg" id="msgPerfil" role="status"></div>
   </div></div>
 
@@ -1849,9 +1857,10 @@
   function salvarEu() { gravarLocal("colonia_eu", eu); desenharConta(); }
   function credenciais(extra) { var o = { nome: eu.nome, chave: eu.chave }; for (var k in extra) o[k] = extra[k]; return o; }
   function aplicarPerfil(r) {
-    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias", "mineracaoAte", "email", "picaretaVelha"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
+    ["moedas", "itens", "numero", "outdoor", "veste", "gas", "objetivo", "amigos", "mora", "moraAte", "ar", "fome", "doenteAte", "funcao", "funcaoDesde", "pontos", "precoConsulta", "acompanhadoAte", "acompanhadoPor", "pedidosAcompanhamento", "pacientes", "kitAte", "obra", "profissao", "cla", "mudoAte", "silencio", "criacoes", "instagram", "avisos", "boostAte", "ofertaAte", "segurancaAte", "segurancaGuarda", "precoSeguranca", "pesquisa", "horasOnline", "assembleias", "titulo", "vassouraAte", "checkin", "reliquias", "mineracaoAte", "email", "picaretaVelha"].forEach(function (k) { if (r[k] !== undefined) eu[k] = r[k]; });
     if (r.avisos !== undefined) desenharSino();
     if (r.reliquias) registrarReliquias(r.reliquias);
+    if (r.pedidosAcompanhamento) verPedidosAcomp(r.pedidosAcompanhamento);
     if (r.checkin && !r.checkin.feitoHoje && !checkinPedido && !TESTE) { checkinPedido = true; setTimeout(fazerCheckin, 1500); }
     if (r.ofertaAte !== undefined && typeof mostrarOferta === "function") mostrarOferta();
     if (typeof missao !== "undefined" && missao && Number(r.descansoAte) > Date.now() && missao.modo === "parado") { missao.modo = "descansando"; missao.descanso = Math.ceil((r.descansoAte - Date.now()) / 1000); missao.temBase = typeof temCasa === "function" ? temCasa() : missao.temBase; }
@@ -1987,6 +1996,7 @@
     else txt = missao.aviso || "Seu sobrevivente está parado.";
     if (comBoost() && !doente() && missao.modo !== "descansando") txt += " ⚡ Remédio do médico: sem cansaço por " + tempoTxt((eu.boostAte - Date.now()) / 1000) + ".";
     if (!des && !doente() && V) { if (fome >= 0.85) txt += " Você está com fome: coma algo!"; if (ar <= 0.1) txt += " O ar está acabando: encha o tanque no Mercado!"; }
+    if (Number(eu.acompanhadoAte) > Date.now()) txt += " 🩺 Acompanhado(a) por Dr(a). " + (eu.acompanhadoPor || "") + " até " + new Date(Number(eu.acompanhadoAte)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) + ": sem cansaço e sem doença enquanto o médico estiver online.";
     st.textContent = txt;
     // botões
     var modos = modosDe(f), plantao = f === "medico" || f === "engenheiro";
@@ -2044,9 +2054,29 @@
     if (r.horaGuarda) mensagemMapa("Hora completa de guarda: +" + r.horaGuarda + " moedas!");
     if (r.consertoHoje === r.consertoCheio + 1) mensagemMapa("Você já consertou 4 horas hoje! Pode continuar: os pontos para a nave seguem inteiros, mas as moedas agora caem 1 vez por minuto (não a cada 15 s). Amanhã volta ao normal.", 10000);
     if (r.estado === "cansado" || r.estado === "descansando") { pararMissao(); if (missao.modo !== "descansando") missao.emCasa = false; missao.modo = "descansando"; missao.descanso = r.descansoSeg; }
-    else if (r.estado === "doente") { pararMissao(); missao.modo = "parado"; eu.doenteAte = Date.now() + r.descansoSeg * 1000; salvarEu(); }
+    else if (r.estado === "doente") { pararMissao(); missao.modo = "parado"; eu.doenteAte = Date.now() + r.descansoSeg * 1000; salvarEu(); if (r.causa === "cansaco") mensagemMapa("🤒 Você trabalhou cansado demais e ficou doente! Descanse 1 hora ou chame um médico. Comer direito diminui a chance de adoecer.", 9000); }
+    if (r.acompanhadoAte !== undefined) { eu.acompanhadoAte = r.acompanhadoAte; eu.acompanhadoPor = r.acompanhadoPor; }
+    if (r.pedidosAcompanhamento) verPedidosAcomp(r.pedidosAcompanhamento);
     desenharMissao();
   }
+  var acompRespondidos = {};
+  function verPedidosAcomp(lista) {
+    var p = (lista || []).filter(function (x) { return !acompRespondidos[x.id]; })[0], m = document.getElementById("acompModal");
+    if (!p || !m.hidden) return;
+    if (Array.prototype.some.call(document.querySelectorAll(".modal"), function (x) { return !x.hidden; })) return;
+    m.dataset.id = p.id;
+    document.getElementById("acompTexto").textContent = "Dr(a). " + p.medico + " quer acompanhar você por 1 hora, de graça. Enquanto você trabalha, você não cansa e não fica doente (o médico precisa ficar online). Aceita?";
+    m.hidden = false;
+  }
+  function responderAcomp(aceitar) {
+    var m = document.getElementById("acompModal"), id = m.dataset.id; m.hidden = true; acompRespondidos[id] = 1;
+    enviar(credenciais({ acao: "responder_acompanhamento", id: id, aceitar: aceitar })).then(function (r) {
+      if (!r.ok) return mensagemMapa(r.erro || "Não deu certo.");
+      if (aceitar) { aplicarPerfil(r); salvarEu(); mensagemMapa("🩺 Você está sendo acompanhado(a) por 1 hora. Bom trabalho!", 6000); desenharMissao(); }
+    });
+  }
+  document.getElementById("acompSim").onclick = function () { responderAcomp(true); };
+  document.getElementById("acompNao").onclick = function () { responderAcomp(false); };
   function pingMissao() {
     if (missao.modo !== "consertando" || document.hidden) return;
     var extra = { acao: "trabalhar", modo: missao.trabalho };
@@ -2065,15 +2095,25 @@
     enviar(credenciais(extra)).then(function (r) {
       if (!r.ok) { missao.aviso = r.erro; pararTudo(); return; }
       if (r.obras) missao.obras = r.obras;
+      if (r.trabalhando) missao.trabalhando = r.trabalhando; if (r.pacientes) missao.pacientes = r.pacientes;
       if (r.minha && !missao.obra) missao.obra = { id: r.minha.id, dono: r.minha.donoNome, nome: r.minha.nome, mao: r.minha.mao, progresso: r.minha.progresso, total: (vida() && vida().obraMinutos) || 10 };
       desenharPlantao();
+    });
+  }
+  function pedirAcomp(numero, b) {
+    if (b) b.disabled = true;
+    enviar(credenciais({ acao: "acompanhar", numero: numero })).then(function (r) {
+      if (b) b.disabled = false;
+      if (!r.ok) { mensagemMapa(r.erro || "Não deu certo."); mensagem("msgPerfil", r.erro || "Não deu certo."); return; }
+      mensagemMapa("🩺 Pedido enviado para " + r.paciente + ". Assim que aceitar, você começa a ganhar.", 6000); mensagem("msgPerfil", "Pedido enviado para " + r.paciente + "!", true);
+      pingPlantao();
     });
   }
   function desenharPlantao() {
     var box = document.getElementById("plantaoBox"), f = minhaFuncao();
     var mostrar = missao.modo === "plantao" && !missao.obra;
     box.hidden = !mostrar; if (!mostrar) return;
-    var assin = f + JSON.stringify(missao.obras) + (eu.precoConsulta || "");
+    var assin = f + JSON.stringify(missao.obras) + (eu.precoConsulta || "") + JSON.stringify(missao.trabalhando || []) + JSON.stringify(missao.pacientes || []);
     if (box.dataset.assin === assin) return; box.dataset.assin = assin;
     box.innerHTML = "";
     if (f === "medico") {
@@ -2083,6 +2123,20 @@
       var bt = document.createElement("button"); bt.type = "button"; bt.className = "btn sec mini"; bt.textContent = "SALVAR";
       bt.onclick = function () { enviar(credenciais({ acao: "plantao", preco: Math.floor(Number(inp.value) || 0) })).then(function (r) { if (!r.ok) { missao.aviso = r.erro; return mensagem("msgMercado", r.erro); } eu.precoConsulta = Math.floor(Number(inp.value)); salvarEu(); bt.textContent = "SALVO!"; setTimeout(function () { bt.textContent = "SALVAR"; }, 1500); }); };
       linha.appendChild(inp); linha.appendChild(bt); box.appendChild(l); box.appendChild(linha);
+      // acompanhamento (Lucas 14/11)
+      var hA = document.createElement("h3"); hA.className = "pix cat"; hA.textContent = "ACOMPANHAR QUEM ESTÁ TRABALHANDO"; box.appendChild(hA);
+      var dA = document.createElement("p"); dA.className = "dica"; dA.textContent = "Acompanhe até 4 pessoas por 1 hora: elas não cansam nem adoecem, e a nave te paga 1 moeda por minuto que cada uma trabalha. Fique de plantão para valer."; box.appendChild(dA);
+      var pacs = missao.pacientes || [];
+      if (pacs.length) { var pP = document.createElement("p"); pP.textContent = "Seus pacientes: " + pacs.map(function (x) { return x.nome + (x.ate ? " (até " + new Date(x.ate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) + ", +" + x.pago + " moedas)" : " (esperando aceitar)"); }).join(", "); box.appendChild(pP); }
+      var ulA = document.createElement("ul"); ulA.className = "lista-mini"; box.appendChild(ulA);
+      var trab = missao.trabalhando || [];
+      if (!trab.length) { var vA = document.createElement("li"); vA.textContent = "Ninguém trabalhando agora. Quando alguém começar a trabalhar, aparece aqui."; ulA.appendChild(vA); }
+      trab.forEach(function (x) {
+        var li = document.createElement("li"), t = document.createElement("span"); t.textContent = x.nome; li.appendChild(t);
+        if (x.acompanhado) { var e = document.createElement("span"); e.className = "dica"; e.textContent = /^meu/.test(x.acompanhado) ? (/pedido/.test(x.acompanhado) ? " · esperando aceitar" : " · seu paciente") : " · com outro médico"; li.appendChild(e); }
+        else { var b = document.createElement("button"); b.type = "button"; b.className = "btn mini"; b.textContent = "ACOMPANHAR"; b.onclick = function () { pedirAcomp(x.numero, b); }; li.appendChild(b); }
+        ulA.appendChild(li);
+      });
     } else {
       var h = document.createElement("h3"); h.className = "pix cat"; h.textContent = "OBRAS ESPERANDO ENGENHEIRO"; box.appendChild(h);
       var ul = document.createElement("ul"); ul.className = "lista-mini"; box.appendChild(ul);
@@ -2942,12 +2996,19 @@
     }).catch(function () { document.getElementById("perfilNome").textContent = "SEM CONEXÃO"; });
   }
   function desenharBotaoAmigo() {
+    var ba = document.getElementById("perfilAcomp"), pa = perfilAberto;
+    ba.hidden = !pa || !logado() || minhaFuncao() !== "medico" || String(pa.numero) === String(eu.numero);
     var b = document.getElementById("perfilAmigo"), p = perfilAberto;
     b.hidden = !p || !logado() || String(p.numero) === String(eu.numero);
     if (b.hidden) return;
     var ja = String(eu.amigos || "").split(",").indexOf(String(p.numero)) >= 0;
     b.textContent = ja ? "REMOVER DOS AMIGOS" : "ADICIONAR COMO AMIGO"; b.dataset.ja = ja ? "1" : "";
   }
+  document.getElementById("perfilAcomp").addEventListener("click", function () {
+    if (!perfilAberto) return;
+    if (missao.modo !== "plantao") return mensagem("msgPerfil", "Fique de plantão primeiro (painel TRABALHO → FICAR DE PLANTÃO).");
+    pedirAcomp(perfilAberto.numero, this);
+  });
   document.getElementById("perfilAmigo").addEventListener("click", function () {
     var b = this, p = perfilAberto; if (!p) return;
     b.disabled = true;

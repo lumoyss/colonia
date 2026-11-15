@@ -27,6 +27,7 @@ const ABA_CHAT = 'Chat';
 const ABA_OFERTAS = 'Ofertas';
 const ABA_ALUGUEIS = 'Alugueis';
 const ABA_OBRAS = 'Obras';
+const ABA_ACOMPANHA = 'Acompanhamentos';
 const ABA_TORRES = 'Torres';
 const ABA_SILENCIO = 'Silenciados';
 const ABA_CRIACOES = 'Criacoes';
@@ -106,6 +107,11 @@ const TURNO_MINUTOS = 60;       // depois de 1 hora seguida trabalhando, cansa
 const DESCANSO_EM_CASA = 5;     // quem tem casa (dono ou aluguel) e descansa em casa: 5 minutos
 const DESCANSO_COM_BASE = 10;   // quem tem casa mas fica fora (minerando, explorando): 10 minutos
 const DESCANSO_SEM_BASE = 20;   // quem não tem casa descansa 20 minutos na nave
+// Lucas 14/11: ao chegar no cansaço máximo, chance de ficar doente (bem alimentado = chance menor)
+const DOENCA_CHANCE = 0.40, DOENCA_CHANCE_ALIMENTADO = 0.10;
+// Médico acompanhante: o médico de plantão acompanha alguém por 1 hora (grátis para o paciente);
+// o paciente não cansa nem adoece, e a nave paga o médico por minuto trabalhado do paciente.
+const ACOMPANHA_MINUTOS = 60, ACOMPANHA_MOEDAS_HORA = 60, ACOMPANHA_MAX = 4, ACOMPANHA_PEDIDO_MIN = 10;
 const BOOST_MINUTOS = 30;       // curado pelo médico do cansaço: trabalha 30 minutos direto sem cansar
 const GUARDA_MOEDAS_MIN = 3, GUARDA_BONUS_HORA = 70; // guarda: 3 moedas por minuto online + 70 a cada hora completa (o tempo do dia soma até a meia-noite)
 const GUARDAS_MAX = 5, MEDICOS_ONLINE_MAX = 6;
@@ -144,7 +150,7 @@ const FUNCOES = {
   agricultor:   { nome: 'Agricultor(a) e cozinheiro(a)', desc: 'Produz comida para a colônia. Ganha: 1 comida a cada 10 minutos cultivando, que você vende no mercado dos sobreviventes pelo preço que quiser (todo mundo precisa comer). Sem limite de vagas.' },
   minerador:    { nome: 'Minerador(a)', desc: 'Especialista em mineração. Ganha: minera na borda pedregosa do mapa com metade da espera (precisa de picareta) e vende o que achar. Também conserta a nave.' },
   explorador:   { nome: 'Explorador(a)', desc: 'Descobre o planeta. Ganha: vê o sinal das torres escondidas, desbloqueia torres 2x mais rápido (chance de virar dono de clã) e conserta a nave.' },
-  medico:       { nome: 'Médico(a)', desc: 'Cura na hora quem ficou doente ou cansado (e o cansado ganha 30 minutos trabalhando direto). Ganha: o preço da consulta que você escolher (mínimo 50). Até 6 médicos de plantão ao mesmo tempo. Não conserta a nave.' },
+  medico:       { nome: 'Médico(a)', desc: 'Cura na hora quem ficou doente ou cansado (e o cansado ganha 30 minutos trabalhando direto). Ganha: o preço da consulta que você escolher (mínimo 50). Também acompanha até 4 pessoas por 1 hora enquanto elas trabalham (elas não cansam nem adoecem) e a nave paga 60 moedas por hora por paciente. Precisa ficar de plantão. Até 6 médicos de plantão ao mesmo tempo. Não conserta a nave.' },
   guarda:       { nome: 'Guarda', desc: 'Cuida do rádio e dos outdoors. Ganha: 3 moedas por minuto com o site aberto, +70 a cada hora completa (o tempo do dia soma até a meia-noite) e +20 por cada flagra. Máximo de 5 guardas.' },
   desempregado: { nome: 'Desempregado(a)', desc: 'Sem emprego fixo. Não ganha consertando, mas não gasta ar nem sente fome (não fica doente). Ganha vendendo coisas e fazendo bicos para os outros.' },
   livre:        { nome: 'Profissão livre', desc: 'Faz de tudo um pouco. Ganha: 1 moeda a cada 15 s consertando a nave (2 com caixa de ferramentas) e pode vender o que achar no mapa e nos baús.' }
@@ -347,6 +353,7 @@ function setup() {
   colunas_(garantirAba_(ss, ABA_ENTRADAS), ['dia', 'numero', 'como']);
   ticketsIniciais_(ss);
   colunas_(garantirAba_(ss, ABA_OBRAS), ['id', 'data', 'dono_numero', 'dono', 'item', 'nome_da_casa', 'mao_de_obra', 'status', 'engenheiro_numero', 'engenheiro', 'progresso', 'ultimo_sinal']);
+  colunas_(garantirAba_(ss, ABA_ACOMPANHA), ['id', 'data', 'medico_numero', 'medico', 'paciente_numero', 'paciente', 'status', 'inicio', 'ate', 'moedas_pagas']);
   colunas_(garantirAba_(ss, ABA_ALUGUEIS), ['data', 'imovel', 'dono_numero', 'dono', 'inquilino_numero', 'inquilino', 'preco', 'ate']);
   colunas_(garantirAba_(ss, ABA_TORRES), ['id', 'nome', 'status', 'pontos', 'meta', 'preco', 'contribuicoes', 'recusaram', 'oferta_numero', 'oferta_ate', 'dono_numero', 'dono', 'nome_do_cla', 'preco_entrada', 'descoberta_por', 'descoberta_em']);
   garantirTorres_(ss);
@@ -442,7 +449,7 @@ function doPost(e) {
     const acoes = { cadastrar: cadastrar_, ideia: ideia_, entrar: perfil_, perfil: perfil_, moedas: pedirMoedas_, confirmar: confirmar_, comprar: comprar_, chat: enviarChat_, consertar: consertar_,
       bau: abrirBau_, vender: vender_, cancelar: cancelarOferta_, comprar_oferta: comprarOferta_,
       reconhecer: reconhecer_, registrar_terreno: registrarTerreno_, outdoor: trocarOutdoor_, outdoor_preco: precoOutdoor_, tirar_outdoor: tirarOutdoor_, anunciar: anunciar_, outdoor_oferta: outdoorOferta_,
-      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, email: mudarEmail_, pesquisar: pesquisar_, titulo: pegarTitulo_, checkin: checkin_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
+      curtir: curtir_, trabalhar: trabalhar_, comer: comer_, funcao: trocarFuncao_, plantao: plantao_, chamar_medico: chamarMedico_, acompanhar: acompanhar_, responder_acompanhamento: responderAcompanhamento_, assembleia: assembleia_, entrar_assembleia: entrarAssembleia_, criar_pauta: criarPauta_, falar_assembleia: falarAssembleia_, votar: votar_, oferta: ativarOferta_, descansar_casa: descansarEmCasa_, usar_peca: usarPecaNave_, invadir: invadir_, email: mudarEmail_, pesquisar: pesquisar_, titulo: pegarTitulo_, checkin: checkin_, seguranca_preco: precoSeguranca_, contratar_seguranca: contratarSeguranca_, chamar_engenheiro: chamarEngenheiro_, aceitar_obra: aceitarObra_, vestir: vestir_, minerar: minerar_, aluguel_preco: precoAluguel_, alugar: alugar_, amigo: amigo_, objetivo: mudarObjetivo_,
       descobrir_torre: descobrirTorre_, torre_responder: responderTorre_, cla_preco: precoCla_, entrar_cla: entrarCla_, sair_cla: sairCla_,
       silenciar: silenciar_, censurar_outdoor: censurarOutdoor_, reclamar: reclamar_, criar: criar_, lance: lance_, leilao_frase: fraseLeilao_, bauzinho: abrirBauzinho_ };
     const f = acoes[dados.acao];
@@ -547,6 +554,7 @@ function perfil_(ss, d) {
   }
   p.horasOnline = Math.floor((Number(s.dados[C_ON_MIN - 1]) || 0) / 60); p.assembleias = assembleiasDe_(ss, p.numero);
   p.titulo = String(s.dados[C_TITULO - 1] || '');
+  const ac = acompanhamentoDe_(ss, p.numero, Date.now()); p.acompanhadoAte = ac.ativo ? ac.ativo.ate : 0; p.acompanhadoPor = ac.ativo ? ac.ativo.medNome : ''; p.pedidosAcompanhamento = ac.pedidos; p.pacientes = ac.pacientes;
   p.email = String(s.dados[C_EMAIL - 1] || ''); p.vassouraAte = Number(s.dados[C_VASSOURA_ATE - 1]) || 0; p.checkin = checkinEstado_(s.dados); p.reliquias = nomesReliquias_(ss, p.itens);
   return p;
 }
@@ -793,7 +801,15 @@ function trabalhar_(ss, d) {
     if (lista.indexOf('comida') < 0) return { ok: false, erro: 'Você não tem comida para cozinhar. Compre dos agricultores no mercado dos sobreviventes.' };
   }
 
-  const boost = (Number(l[C_BOOST_ATE - 1]) || 0) > agora;
+  // médico acompanhante: só vale enquanto o médico está de plantão
+  const acomp = !desemp ? acompanhamentoDe_(ss, l[0], agora) : { ativo: null, pedidos: [], pacientes: [] };
+  let acompMed = null;
+  if (acomp.ativo) { const mL = linhaPorNumero_(ss, acomp.ativo.med); if (mL && medicoOnline_(mL.dados, agora)) acompMed = acomp.ativo; }
+  if (acompMed) {
+    const pagar = Math.round(ACOMPANHA_MOEDAS_HORA / 60);
+    creditar_(ss, acompMed.med, pagar); acompMed.aba.getRange(acompMed.linha, 10).setValue(acompMed.pago + pagar);
+  }
+  const boost = (Number(l[C_BOOST_ATE - 1]) || 0) > agora || !!acompMed;
   if (modo !== 'vigiar' && !boost) turno++;
   progresso++;
   if (!desemp) { fome++; if (!tem_(String(l[C_ITENS - 1] || ''), 'mochila') || progresso % 2 === 0) ar = Math.max(0, ar - 1); cel(C_FOME, fome); cel(C_AR, ar); cel(C_AR_TS, agora); }
@@ -829,14 +845,20 @@ function trabalhar_(ss, d) {
     lista.push(produziu); cel(C_ITENS, lista.join(','));
   }
   let est = 'trabalhando', restante = 0;
+  let causa = '';
   if (modo !== 'vigiar' && turno >= TURNO_MINUTOS) {
     turno = 0; est = 'cansado';
     restante = (temBase ? DESCANSO_COM_BASE : DESCANSO_SEM_BASE) * 60;
     cel(C_DESCANSO, agora + restante * 1000);
+    // cansaço máximo: chance de adoecer (quem comeu direito tem menos chance)
+    const alimentado = fome < FOME_LIMITE / 2;
+    if (!desemp && Math.random() < (alimentado ? DOENCA_CHANCE_ALIMENTADO : DOENCA_CHANCE)) {
+      est = 'doente'; causa = 'cansaco'; restante = DOENTE_MINUTOS * 60; cel(C_DOENTE_ATE, agora + DOENTE_MINUTOS * 60000); cel(C_DESCANSO, 0);
+    }
   }
   if (ganhou) { moedas += ganhou; cel(C_MOEDAS, moedas); }
   cel(C_ON_ULTIMO, agora); cel(C_TURNO, turno); cel(C_PROGRESSO, progresso);
-  return r(est, restante, { consertoHoje: consertoHoje, consertoCheio: CONSERTO_CHEIO_MIN, horaGuarda: horaGuarda, boostAte: boost ? Number(l[C_BOOST_ATE - 1]) : 0, temCaixa: modo === 'consertar' ? temKit_(l) : undefined });
+  return r(est, restante, { causa: causa || undefined, acompanhadoAte: acompMed ? acompMed.ate : 0, acompanhadoPor: acompMed ? acompMed.medNome : '', pedidosAcompanhamento: acomp.pedidos, consertoHoje: consertoHoje, consertoCheio: CONSERTO_CHEIO_MIN, horaGuarda: horaGuarda, boostAte: boost ? Number(l[C_BOOST_ATE - 1]) : 0, temCaixa: modo === 'consertar' ? temKit_(l) : undefined });
 }
 function somarPontos_(s, l, n) {
   s.aba.getRange(s.linha, C_PONTOS).setValue((Number(l[C_PONTOS - 1]) || 0) + n);
@@ -938,6 +960,12 @@ function plantao_(ss, d) {
   }
   const r = { ok: true, funcao: f };
   if (f === 'engenheiro') { r.obras = obrasAbertas_(ss); r.minha = obrasDoEngenheiro_(ss, s.dados[0])[0] || null; }
+  if (f === 'medico') {
+    const agoraM = Date.now(), ac = linhasAcomp_(ss).filter(function (a) { return acompAtivo_(a, agoraM) || acompPedidoValido_(a, agoraM); });
+    r.trabalhando = linhas_(s.aba).filter(function (l) { return String(l[0]) !== String(s.dados[0]) && funcaoDe_(l) !== 'medico' && funcaoDe_(l) !== 'desempregado' && agoraM - (Number(l[C_ON_ULTIMO - 1]) || 0) < 3 * 60000; })
+      .slice(0, 30).map(function (l) { const a = ac.filter(function (x) { return x.pac === String(l[0]); })[0]; return { numero: String(l[0]), nome: String(l[2]), acompanhado: a ? (a.med === String(s.dados[0]) ? 'meu' : 'outro') + (a.status === 'pedido' ? '_pedido' : '') : '' }; });
+    r.pacientes = acompanhamentoDe_(ss, s.dados[0], agoraM).pacientes;
+  }
   return r;
 }
 function chamarMedico_(ss, d) {
@@ -960,6 +988,54 @@ function chamarMedico_(ss, d) {
   ss.getSheetByName(ABA_COMPRAS).appendRow([new Date(), p.numero, texto_(String(p.nome)), 'Consulta com ' + med[2], preco]);
   p.doenteAte = 0; p.curadoPor = String(med[2]);
   return p;
+}
+
+/* ---------- Médico acompanhante (Lucas 14/11) ---------- */
+function linhasAcomp_(ss) {
+  const aba = ss.getSheetByName(ABA_ACOMPANHA); if (!aba) return [];
+  return linhas_(aba).map(function (l, i) { return { aba: aba, linha: i + 2, id: String(l[0]), data: new Date(l[1]).getTime(), med: String(l[2]), medNome: String(l[3]), pac: String(l[4]), pacNome: String(l[5]), status: String(l[6]), inicio: Number(l[7]) || 0, ate: Number(l[8]) || 0, pago: Number(l[9]) || 0 }; });
+}
+function acompAtivo_(a, agora) { return a.status === 'ativo' && a.ate > agora; }
+function acompPedidoValido_(a, agora) { return a.status === 'pedido' && agora - a.data < ACOMPANHA_PEDIDO_MIN * 60000; }
+function medicoOnline_(l, agora) { return !!l && funcaoDe_(l) === 'medico' && agora - (Number(l[C_PLANTAO - 1]) || 0) < PLANTAO_SEGUNDOS * 1000; }
+function acompanhar_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const agora = Date.now();
+  if (funcaoDe_(s.dados) !== 'medico') return { ok: false, erro: 'Só médicos acompanham pacientes.' };
+  if (!medicoOnline_(s.dados, agora)) return { ok: false, erro: 'Fique de plantão (painel TRABALHO) para acompanhar pacientes.' };
+  const alvo = linhaPorNumero_(ss, d.numero);
+  if (!alvo) return { ok: false, erro: 'Sobrevivente não encontrado.' };
+  if (String(alvo.dados[0]) === String(s.dados[0])) return { ok: false, erro: 'Você não pode acompanhar a si mesmo.' };
+  if (funcaoDe_(alvo.dados) === 'medico') return { ok: false, erro: 'Médicos não precisam de acompanhamento.' };
+  const todos = linhasAcomp_(ss), meus = todos.filter(function (a) { return a.med === String(s.dados[0]) && (acompAtivo_(a, agora) || acompPedidoValido_(a, agora)); });
+  if (meus.length >= ACOMPANHA_MAX) return { ok: false, erro: 'Você já acompanha (ou pediu para acompanhar) ' + ACOMPANHA_MAX + ' pessoas. Espere alguma terminar.' };
+  if (todos.some(function (a) { return a.pac === String(alvo.dados[0]) && acompAtivo_(a, agora); })) return { ok: false, erro: alvo.dados[2] + ' já está sendo acompanhado(a) por um médico.' };
+  if (meus.some(function (a) { return a.pac === String(alvo.dados[0]); })) return { ok: false, erro: 'Você já pediu para acompanhar ' + alvo.dados[2] + '. Espere a resposta.' };
+  const id = 'AC' + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
+  ss.getSheetByName(ABA_ACOMPANHA).appendRow([id, new Date(), s.dados[0], texto_(String(s.dados[2])), alvo.dados[0], texto_(String(alvo.dados[2])), 'pedido', 0, 0, 0]);
+  avisar_(ss, alvo.dados[0], '🩺 Dr(a). ' + s.dados[2] + ' quer acompanhar você por 1 hora (grátis): enquanto trabalha, você não cansa nem fica doente. Abra o site para aceitar.');
+  return { ok: true, pedido: id, paciente: String(alvo.dados[2]) };
+}
+function responderAcompanhamento_(ss, d) {
+  const s = acharSobrevivente_(ss, d);
+  if (!s) return { ok: false, erro: 'Entre com o seu sobrevivente.' };
+  const agora = Date.now(), a = linhasAcomp_(ss).filter(function (x) { return x.id === String(d.id) && x.pac === String(s.dados[0]); })[0];
+  if (!a || !acompPedidoValido_(a, agora)) return { ok: false, erro: 'Esse pedido de acompanhamento já expirou.' };
+  if (!d.aceitar) { a.aba.getRange(a.linha, 7).setValue('recusado'); return { ok: true, recusado: true }; }
+  const med = linhaPorNumero_(ss, a.med);
+  if (!med || !medicoOnline_(med.dados, agora)) { a.aba.getRange(a.linha, 7).setValue('expirado'); return { ok: false, erro: 'O médico saiu do plantão. Peça para ele tentar de novo.' }; }
+  a.aba.getRange(a.linha, 7).setValue('ativo'); a.aba.getRange(a.linha, 8).setValue(agora); a.aba.getRange(a.linha, 9).setValue(agora + ACOMPANHA_MINUTOS * 60000);
+  s.aba.getRange(s.linha, C_DOENTE_ATE).setValue(0);
+  avisar_(ss, a.med, '🩺 ' + s.dados[2] + ' aceitou o seu acompanhamento. Fique de plantão: você ganha enquanto ' + s.dados[2] + ' trabalha.');
+  const p = perfil_(ss, d); return p;
+}
+function acompanhamentoDe_(ss, numero, agora) {
+  const todos = linhasAcomp_(ss);
+  const ativo = todos.filter(function (a) { return a.pac === String(numero) && acompAtivo_(a, agora); })[0] || null;
+  const pedidos = todos.filter(function (a) { return a.pac === String(numero) && acompPedidoValido_(a, agora); }).map(function (a) { return { id: a.id, medico: a.medNome }; });
+  const pacientes = todos.filter(function (a) { return a.med === String(numero) && (acompAtivo_(a, agora) || acompPedidoValido_(a, agora)); }).map(function (a) { return { nome: a.pacNome, numero: a.pac, ate: a.status === 'ativo' ? a.ate : 0, pago: a.pago }; });
+  return { ativo: ativo, pedidos: pedidos, pacientes: pacientes };
 }
 
 /* ---------- Obras (engenheiro constrói as casas) ---------- */
